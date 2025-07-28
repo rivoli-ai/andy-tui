@@ -29,11 +29,14 @@ Foundation types and interfaces that define the reactive system:
 ```
 Andy.TUI.Core/
 ├── Observable/
-│   ├── IObservableProperty.cs
-│   ├── ObservableProperty.cs
-│   ├── ComputedProperty.cs
-│   ├── ObservableCollection.cs
-│   └── DependencyTracker.cs
+│   ├── IObservableProperty.cs          # Base interface for observable properties
+│   ├── ObservableProperty.cs           # Thread-safe observable value container
+│   ├── IComputedProperty.cs            # Interface for computed properties
+│   ├── ComputedProperty.cs             # Auto-updating derived values
+│   ├── ObservableCollection.cs         # Observable collection with batch operations
+│   ├── ObservableCollectionExtensions.cs # LINQ integration helpers
+│   ├── DependencyTracker.cs            # Automatic dependency tracking
+│   └── PropertyChangedEventArgs.cs     # Event args for property changes
 ├── VirtualDom/
 │   ├── VirtualNode.cs
 │   ├── VirtualElement.cs
@@ -48,6 +51,36 @@ Andy.TUI.Core/
     ├── RenderScheduler.cs
     └── TerminalRenderer.cs
 ```
+
+#### Observable System Details
+
+The Observable system is the heart of Andy.TUI's reactivity:
+
+**ObservableProperty<T>**
+- Thread-safe implementation with lock-based synchronization
+- Weak reference support for event handlers to prevent memory leaks
+- Value equality checking to avoid unnecessary notifications
+- Explicit disposal pattern for cleanup
+
+**ComputedProperty<T>**
+- Automatically tracks dependencies during computation
+- Lazy evaluation - only computes when accessed
+- Invalidation propagation from dependencies
+- Circular dependency detection
+- Efficient recomputation only when dependencies change
+
+**ObservableCollection<T>**
+- Extends .NET's built-in ObservableCollection
+- Batch operations (AddRange, RemoveRange) with single notification
+- Notification suspension for bulk updates
+- Thread-safe operations
+- Integration with dependency tracking for computed properties
+
+**DependencyTracker**
+- Thread-local tracking context
+- Automatic dependency discovery during property access
+- Supports nested computed property scenarios
+- Minimal overhead when not in tracking context
 
 ### 2. Components Layer (`Andy.TUI.Components`)
 Built-in UI components and layouts:
@@ -122,6 +155,84 @@ Andy.TUI.Framework/
 └── Hosting/
     ├── TuiHost.cs
     └── ServiceCollectionExtensions.cs
+```
+
+## Observable System Usage
+
+### Basic Observable Properties
+
+```csharp
+// Create an observable property
+var name = new ObservableProperty<string>("John");
+var age = new ObservableProperty<int>(25);
+
+// Subscribe to changes
+name.ValueChanged += (s, e) => 
+    Console.WriteLine($"Name changed from {e.OldValue} to {e.NewValue}");
+
+// Update value - triggers notifications
+name.Value = "Jane";
+```
+
+### Computed Properties
+
+```csharp
+// Create observable source properties
+var firstName = new ObservableProperty<string>("John");
+var lastName = new ObservableProperty<string>("Doe");
+
+// Create computed property that depends on others
+var fullName = new ComputedProperty<string>(() => 
+    $"{firstName.Value} {lastName.Value}");
+
+// Computed property automatically updates
+Console.WriteLine(fullName.Value); // "John Doe"
+firstName.Value = "Jane";
+Console.WriteLine(fullName.Value); // "Jane Doe" - automatically updated
+```
+
+### Observable Collections
+
+```csharp
+// Create an observable collection
+var items = new ObservableCollection<TodoItem>();
+
+// Create computed properties based on collection
+var totalCount = new ComputedProperty<int>(() => items.Count);
+var completedCount = new ComputedProperty<int>(() => 
+    items.Count(item => item.IsCompleted));
+
+// Batch operations with single notification
+items.AddRange(new[] { item1, item2, item3 });
+
+// Suspend notifications for multiple operations
+using (items.SuspendNotifications())
+{
+    items.Add(item4);
+    items.Remove(item1);
+    items[0] = updatedItem;
+} // Single reset notification fired here
+```
+
+### Memory Management
+
+```csharp
+// Properties support weak references to prevent leaks
+var property = new ObservableProperty<int>(42);
+
+// Subscribe returns IDisposable for cleanup
+var subscription = property.Subscribe(value => 
+    Console.WriteLine($"Value: {value}"));
+
+// Dispose when done
+subscription.Dispose();
+
+// Or use Observe for immediate + future values
+using (property.Observe(value => ProcessValue(value)))
+{
+    // Callback invoked immediately with current value
+    // and on all future changes until disposed
+}
 ```
 
 ## Key Features

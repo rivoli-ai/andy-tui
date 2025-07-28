@@ -8,20 +8,21 @@ Andy.TUI is a modern terminal user interface library that brings reactive progra
 
 ## Current Status (Phase 1 - Core Foundation)
 
-### ✅ Completed Features
+### Completed Features
 
-- **Observable System**
+- **Observable System** (100% implemented, 89.7% test coverage)
   - `ObservableProperty<T>` - Thread-safe properties with change notifications
   - `ComputedProperty<T>` - Automatically recalculates when dependencies change
+  - `ObservableCollection<T>` - Observable collections with batch operations
   - `DependencyTracker` - Automatic dependency tracking for computed properties
-  - Comprehensive unit tests (36 tests, all passing)
-  - Example application demonstrating the reactive system
+  - Comprehensive unit tests (67 tests, all passing)
+  - Full API documentation and examples
 
-### 🚧 In Progress
+### In Progress
 
-- `ObservableCollection<T>` - Observable collections with change notifications
 - Virtual DOM system for efficient terminal rendering
 - Diff engine for minimal terminal updates
+- Terminal abstraction layer
 
 ## Getting Started
 
@@ -44,10 +45,20 @@ dotnet test
 ### Running Examples
 
 ```bash
+# View available examples
+dotnet run --project examples/Andy.TUI.Examples
+
+# Run specific example
 dotnet run --project examples/Andy.TUI.Examples observable
+dotnet run --project examples/Andy.TUI.Examples collection
+
+# Run all examples
+dotnet run --project examples/Andy.TUI.Examples all
 ```
 
 ## Example Usage
+
+### Observable Properties
 
 ```csharp
 // Create observable properties
@@ -65,16 +76,46 @@ fullName.Subscribe(name => Console.WriteLine($"Name: {name}"));
 firstName.Value = "Jane"; // Output: "Name: Jane Doe"
 ```
 
+### Observable Collections
+
+```csharp
+// Create an observable collection
+var tasks = new ObservableCollection<string>();
+
+// Create computed properties based on the collection
+var taskCount = new ComputedProperty<int>(() => tasks.Count);
+var summary = new ComputedProperty<string>(() => 
+    $"You have {tasks.Count} tasks");
+
+// Batch operations
+tasks.AddRange(new[] { "Task 1", "Task 2", "Task 3" });
+
+// Suspend notifications for multiple changes
+using (tasks.SuspendNotifications())
+{
+    tasks.Add("Task 4");
+    tasks.RemoveAll(t => t.Contains("2"));
+    tasks[0] = "Updated Task";
+} // Single notification fired here
+```
+
 ## Architecture
 
 The library is organized into several key components:
 
 - **Andy.TUI.Core** - Core reactive system and virtual DOM
+  - Observable system with automatic dependency tracking
+  - Thread-safe property implementations
+  - Memory-efficient weak reference support
 - **Andy.TUI.Terminal** - Terminal abstraction layer (planned)
 - **Andy.TUI.Components** - Built-in UI components (planned)
 - **Andy.TUI.Framework** - Application framework (planned)
 
-For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+### Documentation
+
+- [Architecture Overview](docs/ARCHITECTURE.md) - Detailed architecture and design decisions
+- [Observable API Reference](docs/OBSERVABLE_API.md) - Complete API documentation for the Observable system
+- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Roadmap and development phases
 
 ## Contributing
 
