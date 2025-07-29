@@ -1,8 +1,8 @@
-using Andy.TUI.Core.Components;
+using Andy.TUI.Components;
 using Moq;
 using Xunit;
 
-namespace Andy.TUI.Core.Tests.Components;
+namespace Andy.TUI.Components.Tests;
 
 public class ComponentContextTests
 {

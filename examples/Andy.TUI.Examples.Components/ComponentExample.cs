@@ -1,6 +1,6 @@
 using System;
-using Andy.TUI.Core.Components;
-using Andy.TUI.Core.Components.EventHandling;
+using Andy.TUI.Components;
+using Andy.TUI.Components.EventHandling;
 using Andy.TUI.Core.Observable;
 using Andy.TUI.Core.VirtualDom;
 using Microsoft.Extensions.DependencyInjection;

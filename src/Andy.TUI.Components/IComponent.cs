@@ -1,6 +1,6 @@
 using Andy.TUI.Core.VirtualDom;
 
-namespace Andy.TUI.Core.Components;
+namespace Andy.TUI.Components;
 
 /// <summary>
 /// Defines the contract for all UI components in the Andy.TUI framework.

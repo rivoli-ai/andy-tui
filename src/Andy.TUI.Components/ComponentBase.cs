@@ -1,7 +1,7 @@
 using Andy.TUI.Core.Observable;
 using Andy.TUI.Core.VirtualDom;
 
-namespace Andy.TUI.Core.Components;
+namespace Andy.TUI.Components;
 
 /// <summary>
 /// Base class for all UI components providing lifecycle management, state management, and property binding.

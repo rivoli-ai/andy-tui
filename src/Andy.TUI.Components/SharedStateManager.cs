@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Andy.TUI.Core.Components;
+namespace Andy.TUI.Components;
 
 /// <summary>
 /// Default implementation of ISharedStateManager that manages shared state across components.

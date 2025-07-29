@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Andy.TUI.Core.Components;
+namespace Andy.TUI.Components;
 
 /// <summary>
 /// Default implementation of IThemeProvider that provides access to theme resources and styling information.

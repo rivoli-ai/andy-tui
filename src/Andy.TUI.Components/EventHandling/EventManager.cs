@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Andy.TUI.Core.Components.EventHandling;
+namespace Andy.TUI.Components.EventHandling;
 
 /// <summary>
 /// Manages event handling and propagation for components.

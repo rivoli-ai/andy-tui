@@ -1,4 +1,4 @@
-namespace Andy.TUI.Core.Components;
+namespace Andy.TUI.Components;
 
 /// <summary>
 /// Default implementation of IComponentContext providing context and services to components.

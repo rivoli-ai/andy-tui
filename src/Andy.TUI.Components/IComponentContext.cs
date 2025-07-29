@@ -1,4 +1,4 @@
-namespace Andy.TUI.Core.Components;
+namespace Andy.TUI.Components;
 
 /// <summary>
 /// Provides context and services to components, including parent/child relationships,

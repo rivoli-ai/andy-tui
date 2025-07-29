@@ -1,4 +1,4 @@
-namespace Andy.TUI.Core.Components.EventHandling;
+namespace Andy.TUI.Components.EventHandling;
 
 /// <summary>
 /// Defines the contract for handling component events.

@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Andy.TUI.Core\Andy.TUI.Core.csproj" />
+    <ProjectReference Include="..\..\src\Andy.TUI.Components\Andy.TUI.Components.csproj" />
   </ItemGroup>
 
   <ItemGroup>
