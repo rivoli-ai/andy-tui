@@ -21,6 +21,8 @@ class Program
             Console.WriteLine("  dotnet run terminal-matrix - Matrix digital rain screensaver");
             Console.WriteLine("  dotnet run terminal-cowsay - Cowsay implementation");
             Console.WriteLine("  dotnet run terminal-mario  - 16x16 Pixel Mario game");
+            Console.WriteLine("  dotnet run terminal-aquarium - Animated aquarium");
+            Console.WriteLine("  dotnet run terminal-fire - ASCII fire effect");
             Console.WriteLine("\nOther:");
             Console.WriteLine("  dotnet run all            - Run all terminal examples");
             return;
@@ -57,6 +59,12 @@ class Program
                 break;
             case "terminal-mario":
                 PixelMarioExample.Run();
+                break;
+            case "terminal-aquarium":
+                AquariumExample.Run();
+                break;
+            case "terminal-fire":
+                FireEffectExample.Run();
                 break;
             case "all":
                 BasicTerminalExample.Run();
