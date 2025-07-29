@@ -81,8 +81,9 @@ public class MatrixScreensaverExample
         Console.WriteLine("Press any key to start...");
         Console.ReadKey(true);
         
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
         // Hide cursor for better effect
         terminal.CursorVisible = false;
@@ -99,8 +100,8 @@ public class MatrixScreensaverExample
         // Initialize columns (accounting for stats area)
         var random = new Random();
         var statsHeight = 7; // Height of statistics box
-        var effectiveHeight = renderer.Height - statsHeight - 1;
-        var columns = new MatrixColumn[renderer.Width];
+        var effectiveHeight = renderingSystem.Terminal.Height - statsHeight - 1;
+        var columns = new MatrixColumn[renderingSystem.Terminal.Width];
         for (int i = 0; i < columns.Length; i++)
         {
             columns[i] = new MatrixColumn(effectiveHeight, random);
@@ -109,9 +110,8 @@ public class MatrixScreensaverExample
         // Animation parameters
         var frameCount = 0;
         var startTime = DateTime.Now;
-        var targetFps = 60.0;
-        var targetFrameTime = TimeSpan.FromMilliseconds(1000.0 / targetFps);
-        var nextFrameTime = DateTime.Now;
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 60;
         
         // Performance tracking
         var lastFpsUpdate = DateTime.Now;
@@ -125,12 +125,15 @@ public class MatrixScreensaverExample
         var veryDarkGreen = Style.Default.WithForegroundColor(Color.FromRgb(0, 100, 0));
         var fadedGreen = Style.Default.WithForegroundColor(Color.FromRgb(0, 50, 0));
         
-        while (!exit)
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
-            renderer.BeginFrame();
-            
+            if (exit)
+                return;
+                
             // Clear with black background
-            renderer.Clear();
+            renderingSystem.Clear();
             
             // Update and draw each column
             for (int x = 0; x < columns.Length; x++)
@@ -139,7 +142,7 @@ public class MatrixScreensaverExample
                 column.Update(random);
                 
                 // Draw the column (stop before statistics area)
-                var maxY = renderer.Height - statsHeight - 1;
+                var maxY = renderingSystem.Terminal.Height - statsHeight - 1;
                 
                 for (int i = 0; i < column.Length + column.TrailLength; i++)
                 {
@@ -186,7 +189,7 @@ public class MatrixScreensaverExample
                             style = Style.Default.WithForegroundColor(Color.White);
                         }
                         
-                        renderer.DrawText(x, y, column.Characters[i], style);
+                        renderingSystem.WriteText(x, y, column.Characters[i], style);
                     }
                 }
                 
@@ -199,9 +202,7 @@ public class MatrixScreensaverExample
             }
             
             // Draw statistics at bottom
-            DrawStatistics(renderer, frameCount, startTime, currentFps, columns);
-            
-            renderer.EndFrame();
+            DrawStatistics(renderingSystem, frameCount, startTime, currentFps, columns);
             
             frameCount++;
             framesSinceLastUpdate++;
@@ -215,14 +216,17 @@ public class MatrixScreensaverExample
                 lastFpsUpdate = currentTime;
             }
             
-            // Frame rate control
-            var now = DateTime.Now;
-            var sleepTime = nextFrameTime - now;
-            if (sleepTime > TimeSpan.Zero)
-            {
-                Thread.Sleep(sleepTime);
-            }
-            nextFrameTime += targetFrameTime;
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit
+        while (!exit)
+        {
+            Thread.Sleep(50);
         }
         
         inputHandler.Stop();
@@ -230,12 +234,13 @@ public class MatrixScreensaverExample
         
         // Restore cursor
         terminal.CursorVisible = true;
+        renderingSystem.Shutdown();
         
         Console.Clear();
         Console.WriteLine("\nExiting the Matrix...");
     }
     
-    private static void DrawStatistics(TerminalRenderer renderer, int frameCount, DateTime startTime, double fps, MatrixColumn[] columns)
+    private static void DrawStatistics(RenderingSystem renderingSystem, int frameCount, DateTime startTime, double fps, MatrixColumn[] columns)
     {
         // Calculate statistics
         var elapsed = (DateTime.Now - startTime).TotalSeconds;
@@ -250,47 +255,47 @@ public class MatrixScreensaverExample
         var gen2 = GC.CollectionCount(2);
         
         // Create a semi-transparent background for stats
-        var statsY = renderer.Height - 6;
+        var statsY = renderingSystem.Terminal.Height - 6;
         var statsStyle = Style.Default.WithForegroundColor(Color.FromRgb(0, 150, 0));
         var labelStyle = Style.Default.WithForegroundColor(Color.FromRgb(0, 100, 0));
         
         // Draw stats border
-        renderer.DrawBox(0, statsY - 1, renderer.Width, 7, BorderStyle.Single, labelStyle);
+        renderingSystem.DrawBox(0, statsY - 1, renderingSystem.Terminal.Width, 7, labelStyle, BoxStyle.Single);
         
         // Title
         var title = " MATRIX DIGITAL RAIN ";
-        renderer.DrawText((renderer.Width - title.Length) / 2, statsY - 1, title, statsStyle);
+        renderingSystem.WriteText((renderingSystem.Terminal.Width - title.Length) / 2, statsY - 1, title, statsStyle);
         
         // Performance stats
-        renderer.DrawText(2, statsY, "FPS: ", labelStyle);
-        renderer.DrawText(7, statsY, $"{fps:F1} (avg: {avgFps:F1})", statsStyle);
-        renderer.DrawText(30, statsY, "Frame: ", labelStyle);
-        renderer.DrawText(37, statsY, $"{frameCount}", statsStyle);
-        renderer.DrawText(50, statsY, "Time: ", labelStyle);
-        renderer.DrawText(56, statsY, $"{elapsed:F1}s", statsStyle);
+        renderingSystem.WriteText(2, statsY, "FPS: ", labelStyle);
+        renderingSystem.WriteText(7, statsY, $"{fps:F1} (avg: {avgFps:F1})", statsStyle);
+        renderingSystem.WriteText(30, statsY, "Frame: ", labelStyle);
+        renderingSystem.WriteText(37, statsY, $"{frameCount}", statsStyle);
+        renderingSystem.WriteText(50, statsY, "Time: ", labelStyle);
+        renderingSystem.WriteText(56, statsY, $"{elapsed:F1}s", statsStyle);
         
         // Memory stats
-        renderer.DrawText(2, statsY + 1, "Memory: ", labelStyle);
-        renderer.DrawText(10, statsY + 1, $"{gcMemory:F1} MB", statsStyle);
-        renderer.DrawText(25, statsY + 1, "Working Set: ", labelStyle);
-        renderer.DrawText(38, statsY + 1, $"{workingSet:F1} MB", statsStyle);
+        renderingSystem.WriteText(2, statsY + 1, "Memory: ", labelStyle);
+        renderingSystem.WriteText(10, statsY + 1, $"{gcMemory:F1} MB", statsStyle);
+        renderingSystem.WriteText(25, statsY + 1, "Working Set: ", labelStyle);
+        renderingSystem.WriteText(38, statsY + 1, $"{workingSet:F1} MB", statsStyle);
         
         // GC stats
-        renderer.DrawText(2, statsY + 2, "GC: ", labelStyle);
-        renderer.DrawText(6, statsY + 2, $"Gen0: {gen0}  Gen1: {gen1}  Gen2: {gen2}", statsStyle);
+        renderingSystem.WriteText(2, statsY + 2, "GC: ", labelStyle);
+        renderingSystem.WriteText(6, statsY + 2, $"Gen0: {gen0}  Gen1: {gen1}  Gen2: {gen2}", statsStyle);
         
         // Matrix stats
-        var activeColumns = columns.Count(c => c.Position >= -c.TrailLength && c.Position <= renderer.Height);
+        var activeColumns = columns.Count(c => c.Position >= -c.TrailLength && c.Position <= renderingSystem.Terminal.Height);
         var totalCharacters = columns.Sum(c => c.Characters.Length);
-        renderer.DrawText(2, statsY + 3, "Rain Columns: ", labelStyle);
-        renderer.DrawText(16, statsY + 3, $"{activeColumns}/{columns.Length}", statsStyle);
-        renderer.DrawText(30, statsY + 3, "Characters: ", labelStyle);
-        renderer.DrawText(42, statsY + 3, $"{totalCharacters:N0}", statsStyle);
-        renderer.DrawText(55, statsY + 3, "Speed: ", labelStyle);
-        renderer.DrawText(62, statsY + 3, "Variable", statsStyle);
+        renderingSystem.WriteText(2, statsY + 3, "Rain Columns: ", labelStyle);
+        renderingSystem.WriteText(16, statsY + 3, $"{activeColumns}/{columns.Length}", statsStyle);
+        renderingSystem.WriteText(30, statsY + 3, "Characters: ", labelStyle);
+        renderingSystem.WriteText(42, statsY + 3, $"{totalCharacters:N0}", statsStyle);
+        renderingSystem.WriteText(55, statsY + 3, "Speed: ", labelStyle);
+        renderingSystem.WriteText(62, statsY + 3, "Variable", statsStyle);
         
         // Exit instruction
-        renderer.DrawText(2, statsY + 4, "Press any key to exit", 
+        renderingSystem.WriteText(2, statsY + 4, "Press any key to exit", 
             Style.Default.WithForegroundColor(Color.FromRgb(0, 200, 0)).WithDim());
     }
 }

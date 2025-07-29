@@ -17,7 +17,7 @@ public class AquariumExample
         public Color Color { get; set; }
         
         public abstract void Update(double width, double height);
-        public abstract void Draw(TerminalRenderer renderer);
+        public abstract void Draw(RenderingSystem renderingSystem);
     }
     
     private class Fish : SeaCreature
@@ -40,7 +40,7 @@ public class AquariumExample
             }
             
             // Gentle vertical movement
-            Y += Math.Sin(X * 0.1) * 0.1;
+            Y += Math.Sin(X * 0.05) * 0.05; // Slower wave motion
             
             // Keep within bounds
             if (Y < 5) Y = 5;
@@ -55,90 +55,149 @@ public class AquariumExample
             }
         }
         
-        public override void Draw(TerminalRenderer renderer)
+        public override void Draw(RenderingSystem renderingSystem)
         {
-            var style = Style.Default.WithForegroundColor(Color);
+            // Calculate water background color at fish position
+            var depth = (double)Y / renderingSystem.Terminal.Height;
+            var blue = (int)(50 + depth * 150);
+            var green = (int)(50 + depth * 50);
+            var waterColor = Color.FromRgb(0, (byte)green, (byte)blue);
+            
+            var style = Style.Default
+                .WithForegroundColor(Color)
+                .WithBackgroundColor(waterColor);
             
             switch (Type)
             {
                 case FishType.Small:
-                    DrawSmallFish(renderer, (int)X, (int)Y, style);
+                    DrawSmallFish(renderingSystem, (int)X, (int)Y, style);
                     break;
                 case FishType.Medium:
-                    DrawMediumFish(renderer, (int)X, (int)Y, style);
+                    DrawMediumFish(renderingSystem, (int)X, (int)Y, style);
                     break;
                 case FishType.Large:
-                    DrawLargeFish(renderer, (int)X, (int)Y, style);
+                    DrawLargeFish(renderingSystem, (int)X, (int)Y, style);
                     break;
                 case FishType.Tropical:
-                    DrawTropicalFish(renderer, (int)X, (int)Y, style);
+                    DrawTropicalFish(renderingSystem, (int)X, (int)Y, style);
                     break;
             }
         }
         
-        private void DrawSmallFish(TerminalRenderer renderer, int x, int y, Style style)
+        private void DrawSmallFish(RenderingSystem renderingSystem, int x, int y, Style style)
         {
-            if (FacingRight)
+            var text = FacingRight 
+                ? (AnimationFrame == 0 ? "><>" : ">><")
+                : (AnimationFrame == 0 ? "<><" : "><<");
+                
+            // Draw each character without background to preserve water
+            for (int i = 0; i < text.Length; i++)
             {
-                renderer.DrawText(x, y, AnimationFrame == 0 ? "><>" : ">><", style);
-            }
-            else
-            {
-                renderer.DrawText(x, y, AnimationFrame == 0 ? "<><" : "><<", style);
+                renderingSystem.Buffer.SetCell(x + i, y, text[i], style);
             }
         }
         
-        private void DrawMediumFish(TerminalRenderer renderer, int x, int y, Style style)
+        private void DrawMediumFish(RenderingSystem renderingSystem, int x, int y, Style style)
         {
-            if (FacingRight)
+            var text = FacingRight 
+                ? (AnimationFrame == 0 ? "><(((°>" : "><((°>")
+                : (AnimationFrame == 0 ? "<°)))><" : "<°))><");
+                
+            // Draw each character without background to preserve water
+            for (int i = 0; i < text.Length; i++)
             {
-                renderer.DrawText(x, y, AnimationFrame == 0 ? "><(((°>" : "><((°>", style);
-            }
-            else
-            {
-                renderer.DrawText(x, y, AnimationFrame == 0 ? "<°)))><" : "<°))><", style);
+                renderingSystem.Buffer.SetCell(x + i, y, text[i], style);
             }
         }
         
-        private void DrawLargeFish(TerminalRenderer renderer, int x, int y, Style style)
+        private void DrawLargeFish(RenderingSystem renderingSystem, int x, int y, Style baseStyle)
         {
-            if (FacingRight)
+            // Helper to draw text with appropriate water background
+            void DrawTextWithWaterBg(int px, int py, string text)
             {
-                renderer.DrawText(x, y - 1, "    ,", style);
-                renderer.DrawText(x, y, AnimationFrame == 0 ? ">=(°>" : ">={°>", style);
-                renderer.DrawText(x, y + 1, "    '", style);
+                for (int i = 0; i < text.Length; i++)
+                {
+                    if (text[i] != ' ') // Skip spaces to preserve background
+                    {
+                        // Calculate water background color at this position
+                        var depth = (double)py / renderingSystem.Terminal.Height;
+                        var blue = (int)(50 + depth * 150);
+                        var green = (int)(50 + depth * 50);
+                        var waterColor = Color.FromRgb(0, (byte)green, (byte)blue);
+                        
+                        var style = baseStyle.WithBackgroundColor(waterColor);
+                        renderingSystem.Buffer.SetCell(px + i, py, text[i], style);
+                    }
+                }
             }
-            else
-            {
-                renderer.DrawText(x, y - 1, ",", style);
-                renderer.DrawText(x, y, AnimationFrame == 0 ? "<°)=<" : "<°}=<", style);
-                renderer.DrawText(x, y + 1, "'", style);
-            }
-        }
-        
-        private void DrawTropicalFish(TerminalRenderer renderer, int x, int y, Style style)
-        {
-            var stripeStyle = Style.Default.WithForegroundColor(Color.FromRgb(255, 255, 0));
             
             if (FacingRight)
             {
-                renderer.DrawText(x, y - 1, "  ___", style);
-                renderer.DrawChar(x + 1, y, '>', style);
-                renderer.DrawChar(x + 2, y, '(', stripeStyle);
-                renderer.DrawChar(x + 3, y, AnimationFrame == 0 ? '°' : 'o', style);
-                renderer.DrawChar(x + 4, y, ')', stripeStyle);
-                renderer.DrawChar(x + 5, y, '>', style);
-                renderer.DrawText(x, y + 1, "  ¯¯¯", style);
+                DrawTextWithWaterBg(x, y - 1, "    ,");
+                DrawTextWithWaterBg(x, y, AnimationFrame == 0 ? ">=(°>" : ">={°>");
+                DrawTextWithWaterBg(x, y + 1, "    '");
             }
             else
             {
-                renderer.DrawText(x, y - 1, "___", style);
-                renderer.DrawChar(x, y, '<', style);
-                renderer.DrawChar(x + 1, y, '(', stripeStyle);
-                renderer.DrawChar(x + 2, y, AnimationFrame == 0 ? '°' : 'o', style);
-                renderer.DrawChar(x + 3, y, ')', stripeStyle);
-                renderer.DrawChar(x + 4, y, '<', style);
-                renderer.DrawText(x, y + 1, "¯¯¯", style);
+                DrawTextWithWaterBg(x, y - 1, ",");
+                DrawTextWithWaterBg(x, y, AnimationFrame == 0 ? "<°)=<" : "<°}=<");
+                DrawTextWithWaterBg(x, y + 1, "'");
+            }
+        }
+        
+        private void DrawTropicalFish(RenderingSystem renderingSystem, int x, int y, Style baseStyle)
+        {
+            var stripeStyle = Style.Default.WithForegroundColor(Color.FromRgb(255, 255, 0));
+            
+            // Helper to draw text with water background
+            void DrawTextWithWaterBg(int px, int py, string text, Style s)
+            {
+                for (int i = 0; i < text.Length; i++)
+                {
+                    if (text[i] != ' ')
+                    {
+                        var depth = (double)py / renderingSystem.Terminal.Height;
+                        var blue = (int)(50 + depth * 150);
+                        var green = (int)(50 + depth * 50);
+                        var waterColor = Color.FromRgb(0, (byte)green, (byte)blue);
+                        
+                        var style = s.WithBackgroundColor(waterColor);
+                        renderingSystem.Buffer.SetCell(px + i, py, text[i], style);
+                    }
+                }
+            }
+            
+            // Helper to draw single char with water background
+            void DrawCharWithWaterBg(int px, int py, char ch, Style s)
+            {
+                var depth = (double)py / renderingSystem.Terminal.Height;
+                var blue = (int)(50 + depth * 150);
+                var green = (int)(50 + depth * 50);
+                var waterColor = Color.FromRgb(0, (byte)green, (byte)blue);
+                
+                var style = s.WithBackgroundColor(waterColor);
+                renderingSystem.Buffer.SetCell(px, py, ch, style);
+            }
+            
+            if (FacingRight)
+            {
+                DrawTextWithWaterBg(x, y - 1, "  ___", baseStyle);
+                DrawCharWithWaterBg(x + 1, y, '>', baseStyle);
+                DrawCharWithWaterBg(x + 2, y, '(', stripeStyle);
+                DrawCharWithWaterBg(x + 3, y, AnimationFrame == 0 ? '°' : 'o', baseStyle);
+                DrawCharWithWaterBg(x + 4, y, ')', stripeStyle);
+                DrawCharWithWaterBg(x + 5, y, '>', baseStyle);
+                DrawTextWithWaterBg(x, y + 1, "  ¯¯¯", baseStyle);
+            }
+            else
+            {
+                DrawTextWithWaterBg(x, y - 1, "___", baseStyle);
+                DrawCharWithWaterBg(x, y, '<', baseStyle);
+                DrawCharWithWaterBg(x + 1, y, '(', stripeStyle);
+                DrawCharWithWaterBg(x + 2, y, AnimationFrame == 0 ? '°' : 'o', baseStyle);
+                DrawCharWithWaterBg(x + 3, y, ')', stripeStyle);
+                DrawCharWithWaterBg(x + 4, y, '<', baseStyle);
+                DrawTextWithWaterBg(x, y + 1, "¯¯¯", baseStyle);
             }
         }
     }
@@ -168,16 +227,27 @@ public class AquariumExample
             X += Math.Sin(WobblePhase) * 0.2;
         }
         
-        public void Draw(TerminalRenderer renderer)
+        public void Draw(RenderingSystem renderingSystem)
         {
-            var style = Style.Default.WithForegroundColor(Color.FromRgb(200, 200, 255));
+            var x = (int)X;
+            var y = (int)Y;
+            
+            // Calculate water background color at bubble position
+            var depth = (double)y / renderingSystem.Terminal.Height;
+            var blue = (int)(50 + depth * 150);
+            var green = (int)(50 + depth * 50);
+            var waterColor = Color.FromRgb(0, (byte)green, (byte)blue);
+            
+            var style = Style.Default
+                .WithForegroundColor(Color.FromRgb(200, 200, 255))
+                .WithBackgroundColor(waterColor);
             
             if (Size < 0.5)
-                renderer.DrawChar((int)X, (int)Y, '·', style);
+                renderingSystem.Buffer.SetCell(x, y, '·', style);
             else if (Size < 1.0)
-                renderer.DrawChar((int)X, (int)Y, 'o', style);
+                renderingSystem.Buffer.SetCell(x, y, 'o', style);
             else
-                renderer.DrawChar((int)X, (int)Y, 'O', style);
+                renderingSystem.Buffer.SetCell(x, y, 'O', style);
         }
     }
     
@@ -193,24 +263,32 @@ public class AquariumExample
             SwayPhase += 0.05;
         }
         
-        public void Draw(TerminalRenderer renderer, int groundY)
+        public void Draw(RenderingSystem renderingSystem, int groundY)
         {
-            var style = Style.Default.WithForegroundColor(Color);
-            
             for (int i = 0; i < Height; i++)
             {
                 var sway = Math.Sin(SwayPhase + i * 0.3) * 2;
                 var x = X + (int)sway;
                 var y = groundY - i;
                 
+                // Calculate water background color at seaweed position
+                var depth = (double)y / renderingSystem.Terminal.Height;
+                var blue = (int)(50 + depth * 150);
+                var green = (int)(50 + depth * 50);
+                var waterColor = Color.FromRgb(0, (byte)green, (byte)blue);
+                
+                var style = Style.Default
+                    .WithForegroundColor(Color)
+                    .WithBackgroundColor(waterColor);
+                
                 if (i == Height - 1)
-                    renderer.DrawChar(x, y, '♣', style);
+                    renderingSystem.Buffer.SetCell(x, y, '♣', style);
                 else if (i % 3 == 0)
-                    renderer.DrawChar(x, y, ')', style);
+                    renderingSystem.Buffer.SetCell(x, y, ')', style);
                 else if (i % 3 == 1)
-                    renderer.DrawChar(x, y, '|', style);
+                    renderingSystem.Buffer.SetCell(x, y, '|', style);
                 else
-                    renderer.DrawChar(x, y, '(', style);
+                    renderingSystem.Buffer.SetCell(x, y, '(', style);
             }
         }
     }
@@ -222,8 +300,9 @@ public class AquariumExample
         Console.WriteLine("Press any key to start...");
         Console.ReadKey(true);
         
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
         // Hide cursor
         terminal.CursorVisible = false;
@@ -251,9 +330,9 @@ public class AquariumExample
             var fish1 = new Fish
             {
                 Type = fishType,
-                X = random.Next(10, renderer.Width - 10),
-                Y = random.Next(5, renderer.Height - 15),
-                VelocityX = (random.NextDouble() - 0.5) * 2,
+                X = random.Next(10, renderingSystem.Terminal.Width - 10),
+                Y = random.Next(5, renderingSystem.Terminal.Height - 15),
+                VelocityX = (random.NextDouble() - 0.5) * 0.8, // Slower movement
                 FacingRight = random.NextDouble() > 0.5,
                 Color = GetRandomFishColor(random),
                 AnimationFrame = random.Next(2)
@@ -263,42 +342,55 @@ public class AquariumExample
         }
         
         // Create seaweed
-        for (int i = 0; i < renderer.Width / 15; i++)
+        for (int i = 0; i < renderingSystem.Terminal.Width / 15; i++)
         {
             seaweeds.Add(new Seaweed
             {
-                X = random.Next(5, renderer.Width - 5),
+                X = random.Next(5, renderingSystem.Terminal.Width - 5),
                 Height = random.Next(5, 12),
                 SwayPhase = random.NextDouble() * Math.PI * 2,
                 Color = Color.FromRgb(0, (byte)random.Next(100, 200), 0)
             });
         }
         
-        // Animation loop
+        // Animation parameters
         var frameCount = 0;
+        var startTime = DateTime.Now;
+        var lastFpsUpdate = DateTime.Now;
+        var framesSinceLastUpdate = 0;
+        var currentFps = 0.0;
         
-        while (!exit)
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 20;
+        
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
-            renderer.BeginFrame();
+            if (exit)
+                return;
+                
+            // Clear buffer
+            renderingSystem.Clear();
             
             // Draw water background
-            DrawWaterBackground(renderer);
+            DrawWaterBackground(renderingSystem);
             
             // Draw sand at bottom
-            DrawSandBottom(renderer);
+            DrawSandBottom(renderingSystem);
             
             // Update and draw seaweed
             foreach (var weed in seaweeds)
             {
                 weed.Update();
-                weed.Draw(renderer, renderer.Height - 5);
+                weed.Draw(renderingSystem, renderingSystem.Terminal.Height - 5);
             }
             
             // Update and draw fish
             foreach (var f in fish)
             {
-                f.Update(renderer.Width, renderer.Height);
-                f.Draw(renderer);
+                f.Update(renderingSystem.Terminal.Width, renderingSystem.Terminal.Height);
+                f.Draw(renderingSystem);
             }
             
             // Create new bubbles occasionally
@@ -306,8 +398,8 @@ public class AquariumExample
             {
                 bubbles.Add(new Bubble
                 {
-                    X = random.Next(5, renderer.Width - 5),
-                    Y = renderer.Height - 6,
+                    X = random.Next(5, renderingSystem.Terminal.Width - 5),
+                    Y = renderingSystem.Terminal.Height - 6,
                     Size = random.NextDouble() * 1.5,
                     WobblePhase = random.NextDouble() * Math.PI * 2
                 });
@@ -325,7 +417,7 @@ public class AquariumExample
                 }
                 else
                 {
-                    bubble.Draw(renderer);
+                    bubble.Draw(renderingSystem);
                 }
             }
             
@@ -333,16 +425,45 @@ public class AquariumExample
             var titleStyle = Style.Default
                 .WithForegroundColor(Color.White)
                 .WithBackgroundColor(Color.FromRgb(0, 50, 100));
-            renderer.DrawText(2, 1, " 🐠 Terminal Aquarium 🐟 ", titleStyle);
+            renderingSystem.WriteText(2, 1, " 🐠 Terminal Aquarium 🐟 ", titleStyle);
             
             // Draw info
-            renderer.DrawText(2, renderer.Height - 2, "ESC or Q to exit", 
+            renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 2, "ESC or Q to exit", 
                 Style.Default.WithForegroundColor(Color.FromRgb(100, 100, 100)));
             
-            renderer.EndFrame();
-            
+            // Update FPS calculation
             frameCount++;
-            Thread.Sleep(50); // ~20 FPS for smooth animation
+            framesSinceLastUpdate++;
+            
+            var currentTime = DateTime.Now;
+            if ((currentTime - lastFpsUpdate).TotalSeconds >= 0.5)
+            {
+                currentFps = framesSinceLastUpdate / (currentTime - lastFpsUpdate).TotalSeconds;
+                framesSinceLastUpdate = 0;
+                lastFpsUpdate = currentTime;
+            }
+            
+            // Draw FPS with water background
+            var fpsDepth = 1.0 / renderingSystem.Terminal.Height;
+            var fpsBlue = (int)(50 + fpsDepth * 150);
+            var fpsGreen = (int)(50 + fpsDepth * 50);
+            var fpsWaterColor = Color.FromRgb(0, (byte)fpsGreen, (byte)fpsBlue);
+            var fpsStyle = Style.Default
+                .WithForegroundColor(Color.BrightGreen)
+                .WithBackgroundColor(fpsWaterColor);
+            renderingSystem.WriteText(renderingSystem.Terminal.Width - 15, 1, $"FPS: {currentFps:F1}", fpsStyle);
+            
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit
+        while (!exit)
+        {
+            Thread.Sleep(50);
         }
         
         inputHandler.Stop();
@@ -350,46 +471,47 @@ public class AquariumExample
         
         // Restore cursor
         terminal.CursorVisible = true;
+        renderingSystem.Shutdown();
         
         Console.Clear();
         Console.WriteLine("\nThanks for visiting the aquarium!");
     }
     
-    private static void DrawWaterBackground(TerminalRenderer renderer)
+    private static void DrawWaterBackground(RenderingSystem renderingSystem)
     {
         // Create gradient water effect
-        for (int y = 0; y < renderer.Height; y++)
+        for (int y = 0; y < renderingSystem.Terminal.Height; y++)
         {
-            var depth = (double)y / renderer.Height;
+            var depth = (double)y / renderingSystem.Terminal.Height;
             var blue = (int)(50 + depth * 150);
             var green = (int)(50 + depth * 50);
             var waterColor = Color.FromRgb(0, (byte)green, (byte)blue);
             var style = Style.Default.WithBackgroundColor(waterColor);
             
-            for (int x = 0; x < renderer.Width; x++)
+            for (int x = 0; x < renderingSystem.Terminal.Width; x++)
             {
-                renderer.DrawChar(x, y, ' ', style);
+                renderingSystem.Buffer.SetCell(x, y, ' ', style);
             }
         }
     }
     
-    private static void DrawSandBottom(TerminalRenderer renderer)
+    private static void DrawSandBottom(RenderingSystem renderingSystem)
     {
         var sandColor = Color.FromRgb(194, 178, 128);
         var darkSandColor = Color.FromRgb(160, 140, 90);
         
-        for (int y = renderer.Height - 5; y < renderer.Height; y++)
+        for (int y = renderingSystem.Terminal.Height - 5; y < renderingSystem.Terminal.Height; y++)
         {
-            for (int x = 0; x < renderer.Width; x++)
+            for (int x = 0; x < renderingSystem.Terminal.Width; x++)
             {
                 var isDark = (x + y) % 3 == 0;
                 var style = Style.Default.WithBackgroundColor(isDark ? darkSandColor : sandColor);
-                renderer.DrawChar(x, y, ' ', style);
+                renderingSystem.Buffer.SetCell(x, y, ' ', style);
                 
                 // Add some texture
-                if (y == renderer.Height - 5 && x % 7 == 0)
+                if (y == renderingSystem.Terminal.Height - 5 && x % 7 == 0)
                 {
-                    renderer.DrawChar(x, y, '~', Style.Default.WithForegroundColor(darkSandColor));
+                    renderingSystem.Buffer.SetCell(x, y, '~', Style.Default.WithForegroundColor(darkSandColor));
                 }
             }
         }

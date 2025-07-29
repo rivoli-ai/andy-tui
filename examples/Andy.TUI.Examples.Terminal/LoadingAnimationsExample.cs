@@ -38,11 +38,12 @@ public class LoadingAnimationsExample
         Console.WriteLine("Starting animations...");
         Thread.Sleep(1000);
 
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
-
-        // Hide cursor
-        terminal.CursorVisible = false;
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
+        
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 20; // 20 FPS for smooth animation
 
         // Create input handler for exit
         var inputHandler = new ConsoleInputHandler();
@@ -70,10 +71,14 @@ public class LoadingAnimationsExample
         var frameCount = 0;
         var startTime = DateTime.Now;
 
-        while (!exit && animations.Any(a => !a.IsComplete))
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
-            renderer.BeginFrame();
-            renderer.Clear();
+            if (exit || !animations.Any(a => !a.IsComplete))
+                return;
+                
+            renderingSystem.Clear();
 
             // Update animations
             var currentTime = DateTime.Now;
@@ -87,85 +92,93 @@ public class LoadingAnimationsExample
 
             // Draw title
             var titleStyle = Style.Default.WithForegroundColor(Color.Yellow).WithBold();
-            renderer.DrawText(2, 1, "🔄 Loading Animations Showcase", titleStyle);
+            renderingSystem.WriteText(2, 1, "🔄 Loading Animations Showcase", titleStyle);
 
             // Draw animations
             int yOffset = 4;
             foreach (var animation in animations)
             {
-                DrawAnimation(renderer, animation, 2, yOffset, 50);
+                DrawAnimation(renderingSystem, animation, 2, yOffset, 50);
                 yOffset += 3;
             }
 
             // Draw instructions
             var instructionStyle = Style.Default.WithForegroundColor(Color.DarkGray);
-            renderer.DrawText(2, renderer.Height - 2, "Press ESC or Q to exit", instructionStyle);
+            renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 2, "Press ESC or Q to exit", instructionStyle);
 
             // Draw performance stats
             var totalElapsed = (DateTime.Now - startTime).TotalSeconds;
             var fps = frameCount / totalElapsed;
             var statsStyle = Style.Default.WithForegroundColor(Color.Green);
-            renderer.DrawText(renderer.Width - 15, 1, $"FPS: {fps:F1}", statsStyle);
-
-            renderer.EndFrame();
+            renderingSystem.WriteText(renderingSystem.Terminal.Width - 15, 1, $"FPS: {fps:F1}", statsStyle);
+            
             frameCount++;
-            Thread.Sleep(50); // ~20 FPS for smooth animation
+            
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit
+        while (!exit && animations.Any(a => !a.IsComplete))
+        {
+            Thread.Sleep(50);
         }
 
         inputHandler.Stop();
         inputHandler.Dispose();
-
-        // Restore cursor
-        terminal.CursorVisible = true;
+        renderingSystem.Shutdown();
 
         Console.Clear();
         Console.WriteLine("\nAll animations completed!");
     }
 
-    private static void DrawAnimation(TerminalRenderer renderer, LoadingAnimation animation, int x, int y, int width)
+    private static void DrawAnimation(RenderingSystem renderingSystem, LoadingAnimation animation, int x, int y, int width)
     {
         var nameStyle = Style.Default.WithForegroundColor(Color.White);
         var progressStyle = Style.Default.WithForegroundColor(Color.Cyan);
         var completeStyle = Style.Default.WithForegroundColor(Color.Green);
 
         // Draw animation name
-        renderer.DrawText(x, y, animation.Name, animation.IsComplete ? completeStyle : nameStyle);
+        renderingSystem.WriteText(x, y, animation.Name, animation.IsComplete ? completeStyle : nameStyle);
 
         // Draw progress percentage
         var progressText = animation.IsComplete ? "✓ Complete" : $"{animation.Progress}%";
-        renderer.DrawText(x + 20, y, progressText, animation.IsComplete ? completeStyle : progressStyle);
+        renderingSystem.WriteText(x + 20, y, progressText, animation.IsComplete ? completeStyle : progressStyle);
 
         // Draw the specific animation
         switch (animation.Type)
         {
             case AnimationType.Spinner:
-                DrawSpinner(renderer, animation, x, y + 1, width);
+                DrawSpinner(renderingSystem, animation, x, y + 1, width);
                 break;
             case AnimationType.ProgressBar:
-                DrawProgressBar(renderer, animation, x, y + 1, width);
+                DrawProgressBar(renderingSystem, animation, x, y + 1, width);
                 break;
             case AnimationType.Dots:
-                DrawLoadingDots(renderer, animation, x, y + 1, width);
+                DrawLoadingDots(renderingSystem, animation, x, y + 1, width);
                 break;
             case AnimationType.Pulse:
-                DrawPulse(renderer, animation, x, y + 1, width);
+                DrawPulse(renderingSystem, animation, x, y + 1, width);
                 break;
             case AnimationType.Snake:
-                DrawSnakeLoader(renderer, animation, x, y + 1, width);
+                DrawSnakeLoader(renderingSystem, animation, x, y + 1, width);
                 break;
             case AnimationType.Bounce:
-                DrawBounceBall(renderer, animation, x, y + 1, width);
+                DrawBounceBall(renderingSystem, animation, x, y + 1, width);
                 break;
             case AnimationType.Wave:
-                DrawWave(renderer, animation, x, y + 1, width);
+                DrawWave(renderingSystem, animation, x, y + 1, width);
                 break;
             case AnimationType.Matrix:
-                DrawMatrixRain(renderer, animation, x, y + 1, width);
+                DrawMatrixRain(renderingSystem, animation, x, y + 1, width);
                 break;
         }
     }
 
-    private static void DrawSpinner(TerminalRenderer renderer, LoadingAnimation animation, int x, int y, int width)
+    private static void DrawSpinner(RenderingSystem renderingSystem, LoadingAnimation animation, int x, int y, int width)
     {
         if (animation.IsComplete) return;
 
@@ -173,11 +186,11 @@ public class LoadingAnimationsExample
         var spinnerIndex = (animation.Frame / 3) % spinnerChars.Length;
         var style = Style.Default.WithForegroundColor(Color.Yellow);
 
-        renderer.DrawChar(x, y, spinnerChars[spinnerIndex], style);
-        renderer.DrawText(x + 2, y, "Loading...", style);
+        renderingSystem.Buffer.SetCell(x, y, spinnerChars[spinnerIndex], style);
+        renderingSystem.WriteText(x + 2, y, "Loading...", style);
     }
 
-    private static void DrawProgressBar(TerminalRenderer renderer, LoadingAnimation animation, int x, int y, int width)
+    private static void DrawProgressBar(RenderingSystem renderingSystem, LoadingAnimation animation, int x, int y, int width)
     {
         var barWidth = Math.Min(width - 10, 40);
         var filledWidth = (animation.Progress * barWidth) / 100;
@@ -187,29 +200,29 @@ public class LoadingAnimationsExample
         var emptyStyle = Style.Default.WithForegroundColor(Color.DarkGray);
 
         // Draw frame
-        renderer.DrawChar(x, y, '[', frameStyle);
-        renderer.DrawChar(x + barWidth + 1, y, ']', frameStyle);
+        renderingSystem.Buffer.SetCell(x, y, '[', frameStyle);
+        renderingSystem.Buffer.SetCell(x + barWidth + 1, y, ']', frameStyle);
 
         // Draw progress
         for (int i = 0; i < barWidth; i++)
         {
             if (i < filledWidth)
             {
-                renderer.DrawChar(x + 1 + i, y, '█', fillStyle);
+                renderingSystem.Buffer.SetCell(x + 1 + i, y, '█', fillStyle);
             }
             else
             {
-                renderer.DrawChar(x + 1 + i, y, '░', emptyStyle);
+                renderingSystem.Buffer.SetCell(x + 1 + i, y, '░', emptyStyle);
             }
         }
     }
 
-    private static void DrawLoadingDots(TerminalRenderer renderer, LoadingAnimation animation, int x, int y, int width)
+    private static void DrawLoadingDots(RenderingSystem renderingSystem, LoadingAnimation animation, int x, int y, int width)
     {
         if (animation.IsComplete)
         {
             var completeStyle = Style.Default.WithForegroundColor(Color.Green);
-            renderer.DrawText(x, y, "● ● ● Done!", completeStyle);
+            renderingSystem.WriteText(x, y, "● ● ● Done!", completeStyle);
             return;
         }
 
@@ -221,18 +234,18 @@ public class LoadingAnimationsExample
         for (int i = 0; i < dotCount; i++)
         {
             var dotStyle = (i <= activeDot) ? style : dimStyle;
-            renderer.DrawChar(x + i * 2, y, '●', dotStyle);
+            renderingSystem.Buffer.SetCell(x + i * 2, y, '●', dotStyle);
         }
 
-        renderer.DrawText(x + 8, y, "Loading", style);
+        renderingSystem.WriteText(x + 8, y, "Loading", style);
     }
 
-    private static void DrawPulse(TerminalRenderer renderer, LoadingAnimation animation, int x, int y, int width)
+    private static void DrawPulse(RenderingSystem renderingSystem, LoadingAnimation animation, int x, int y, int width)
     {
         if (animation.IsComplete)
         {
             var completeStyle = Style.Default.WithForegroundColor(Color.Green).WithBold();
-            renderer.DrawText(x, y, "◉ Ready!", completeStyle);
+            renderingSystem.WriteText(x, y, "◉ Ready!", completeStyle);
             return;
         }
 
@@ -242,16 +255,16 @@ public class LoadingAnimationsExample
         var style = Style.Default.WithForegroundColor(color);
 
         var pulseChar = pulsePhase > 0.7 ? '◉' : pulsePhase > 0.4 ? '◎' : '○';
-        renderer.DrawChar(x, y, pulseChar, style);
-        renderer.DrawText(x + 2, y, "Pulsing...", style);
+        renderingSystem.Buffer.SetCell(x, y, pulseChar, style);
+        renderingSystem.WriteText(x + 2, y, "Pulsing...", style);
     }
 
-    private static void DrawSnakeLoader(TerminalRenderer renderer, LoadingAnimation animation, int x, int y, int width)
+    private static void DrawSnakeLoader(RenderingSystem renderingSystem, LoadingAnimation animation, int x, int y, int width)
     {
         if (animation.IsComplete)
         {
             var completeStyle = Style.Default.WithForegroundColor(Color.Green);
-            renderer.DrawText(x, y, "▓▓▓▓▓▓▓▓ Complete!", completeStyle);
+            renderingSystem.WriteText(x, y, "▓▓▓▓▓▓▓▓ Complete!", completeStyle);
             return;
         }
 
@@ -263,7 +276,7 @@ public class LoadingAnimationsExample
         // Clear the line
         for (int i = 0; i < width - 20; i++)
         {
-            renderer.DrawChar(x + i, y, ' ', Style.Default);
+            renderingSystem.Buffer.SetCell(x + i, y, ' ', Style.Default);
         }
 
         // Draw snake
@@ -274,17 +287,17 @@ public class LoadingAnimationsExample
             {
                 var segmentStyle = i == 0 ? style : tailStyle;
                 var segmentChar = i == 0 ? '▓' : '▒';
-                renderer.DrawChar(x + segmentX, y, segmentChar, segmentStyle);
+                renderingSystem.Buffer.SetCell(x + segmentX, y, segmentChar, segmentStyle);
             }
         }
     }
 
-    private static void DrawBounceBall(TerminalRenderer renderer, LoadingAnimation animation, int x, int y, int width)
+    private static void DrawBounceBall(RenderingSystem renderingSystem, LoadingAnimation animation, int x, int y, int width)
     {
         if (animation.IsComplete)
         {
             var completeStyle = Style.Default.WithForegroundColor(Color.Green);
-            renderer.DrawText(x, y, "● Finished bouncing!", completeStyle);
+            renderingSystem.WriteText(x, y, "● Finished bouncing!", completeStyle);
             return;
         }
 
@@ -298,27 +311,27 @@ public class LoadingAnimationsExample
         // Clear the bounce area
         for (int i = 0; i < bounceWidth; i++)
         {
-            renderer.DrawChar(x + i, y, ' ', Style.Default);
-            renderer.DrawChar(x + i, y + 1, ' ', Style.Default);
+            renderingSystem.Buffer.SetCell(x + i, y, ' ', Style.Default);
+            renderingSystem.Buffer.SetCell(x + i, y + 1, ' ', Style.Default);
         }
 
         // Draw ball
-        renderer.DrawChar(x + ballX, y + ballY, '●', style);
+        renderingSystem.Buffer.SetCell(x + ballX, y + ballY, '●', style);
 
         // Draw floor
         var floorStyle = Style.Default.WithForegroundColor(Color.DarkGray);
         for (int i = 0; i < bounceWidth; i++)
         {
-            renderer.DrawChar(x + i, y + 2, '─', floorStyle);
+            renderingSystem.Buffer.SetCell(x + i, y + 2, '─', floorStyle);
         }
     }
 
-    private static void DrawWave(TerminalRenderer renderer, LoadingAnimation animation, int x, int y, int width)
+    private static void DrawWave(RenderingSystem renderingSystem, LoadingAnimation animation, int x, int y, int width)
     {
         if (animation.IsComplete)
         {
             var completeStyle = Style.Default.WithForegroundColor(Color.Green);
-            renderer.DrawText(x, y, "∿∿∿∿∿∿∿∿ Wave complete!", completeStyle);
+            renderingSystem.WriteText(x, y, "∿∿∿∿∿∿∿∿ Wave complete!", completeStyle);
             return;
         }
 
@@ -334,23 +347,23 @@ public class LoadingAnimationsExample
             // Clear column
             for (int clearY = y - 1; clearY <= y + 3; clearY++)
             {
-                renderer.DrawChar(x + i, clearY, ' ', Style.Default);
+                renderingSystem.Buffer.SetCell(x + i, clearY, ' ', Style.Default);
             }
             
             // Draw wave point
             if (waveY >= y - 1 && waveY <= y + 3)
             {
-                renderer.DrawChar(x + i, waveY, '∿', style);
+                renderingSystem.Buffer.SetCell(x + i, waveY, '∿', style);
             }
         }
     }
 
-    private static void DrawMatrixRain(TerminalRenderer renderer, LoadingAnimation animation, int x, int y, int width)
+    private static void DrawMatrixRain(RenderingSystem renderingSystem, LoadingAnimation animation, int x, int y, int width)
     {
         if (animation.IsComplete)
         {
             var completeStyle = Style.Default.WithForegroundColor(Color.Green);
-            renderer.DrawText(x, y, "█ █ █ Matrix loaded!", completeStyle);
+            renderingSystem.WriteText(x, y, "█ █ █ Matrix loaded!", completeStyle);
             return;
         }
 
@@ -366,11 +379,11 @@ public class LoadingAnimationsExample
                 var style = Style.Default.WithForegroundColor(Color.FromRgb(0, green, 0));
                 
                 var matrixChar = random.NextDouble() > 0.5 ? '1' : '0';
-                renderer.DrawChar(x + i, y, matrixChar, style);
+                renderingSystem.Buffer.SetCell(x + i, y, matrixChar, style);
             }
             else
             {
-                renderer.DrawChar(x + i, y, ' ', Style.Default);
+                renderingSystem.Buffer.SetCell(x + i, y, ' ', Style.Default);
             }
         }
     }

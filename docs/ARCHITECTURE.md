@@ -60,8 +60,7 @@ Andy.TUI.Core/
 │   └── LifecycleManager.cs
 └── Rendering/
     ├── IRenderContext.cs
-    ├── RenderScheduler.cs
-    └── TerminalRenderer.cs
+    └── RenderScheduler.cs
 ```
 
 #### Observable System Details

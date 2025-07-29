@@ -28,6 +28,9 @@ class Program
             Console.WriteLine("  dotnet run terminal-art - ASCII art gallery with effects");
             Console.WriteLine("  dotnet run terminal-weather - Weather dashboard with animations");
             Console.WriteLine("  dotnet run terminal-input-system - Enhanced input system demonstration");
+            Console.WriteLine("\nRendering System:");
+            Console.WriteLine("  dotnet run rendering-basic - Basic rendering system demo");
+            Console.WriteLine("  dotnet run rendering-advanced - Advanced rendering techniques");
             Console.WriteLine("\nOther:");
             Console.WriteLine("  dotnet run all            - Run all terminal examples");
             return;
@@ -85,6 +88,12 @@ class Program
                 break;
             case "terminal-input-system":
                 BasicInputSystemExample.Run();
+                break;
+            case "rendering-basic":
+                RenderingSystemExample.Run();
+                break;
+            case "rendering-advanced":
+                AdvancedRenderingExample.Run();
                 break;
             case "all":
                 BasicTerminalExample.Run();

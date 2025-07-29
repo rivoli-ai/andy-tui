@@ -50,6 +50,18 @@ public readonly struct Color : IEquatable<Color>
     public static Color Yellow { get; } = new Color(System.ConsoleColor.Yellow);
     public static Color White { get; } = new Color(System.ConsoleColor.White);
     
+    /// <summary>
+    /// Bright console colors (using 8-bit color indices).
+    /// </summary>
+    public static Color BrightBlack { get; } = new Color((byte)8);
+    public static Color BrightRed { get; } = new Color((byte)9);
+    public static Color BrightGreen { get; } = new Color((byte)10);
+    public static Color BrightYellow { get; } = new Color((byte)11);
+    public static Color BrightBlue { get; } = new Color((byte)12);
+    public static Color BrightMagenta { get; } = new Color((byte)13);
+    public static Color BrightCyan { get; } = new Color((byte)14);
+    public static Color BrightWhite { get; } = new Color((byte)15);
+    
     public Color()
     {
         Type = ColorType.None;

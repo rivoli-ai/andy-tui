@@ -60,8 +60,9 @@ public class PixelMarioExample
         Console.WriteLine("Press any key to start...");
         Console.ReadKey(true);
         
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
         // Hide cursor for better effect
         terminal.CursorVisible = false;
@@ -85,7 +86,7 @@ public class PixelMarioExample
         var keyPollTimer = 0;
         
         // Game state
-        var groundLevel = Math.Min(40, renderer.Height - 10); // Limit height to make it playable
+        var groundLevel = Math.Min(40, renderingSystem.Terminal.Height - 10); // Limit height to make it playable
         var mario = new Mario 
         { 
             X = 10, 
@@ -102,9 +103,9 @@ public class PixelMarioExample
         // Animation parameters
         var frameCount = 0;
         var startTime = DateTime.Now;
-        var targetFps = 60.0;
-        var targetFrameTime = TimeSpan.FromMilliseconds(1000.0 / targetFps);
-        var nextFrameTime = DateTime.Now;
+        
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 60;
         
         // Physics constants
         const double gravity = 0.4;  // Reduced gravity for higher jumps
@@ -114,10 +115,14 @@ public class PixelMarioExample
         const double moveSpeed = 3;  // Increased horizontal speed
         const double friction = 0.9;  // Less friction for better momentum
         
-        while (!exit)
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
-            renderer.BeginFrame();
-            renderer.Clear();
+            if (exit)
+                return;
+                
+            renderingSystem.Clear();
             
             // Poll for current key state every few frames
             keyPollTimer++;
@@ -215,7 +220,7 @@ public class PixelMarioExample
             }
             
             // Screen boundaries
-            mario.X = Math.Max(0, Math.Min(renderer.Width - 16, mario.X));
+            mario.X = Math.Max(0, Math.Min(renderingSystem.Terminal.Width - 16, mario.X));
             
             // Check collisions
             CheckCoinCollisions(mario, coins, ref score);
@@ -232,39 +237,40 @@ public class PixelMarioExample
             }
             
             // Draw background
-            DrawSky(renderer, groundLevel);
-            DrawClouds(renderer, frameCount);
-            DrawGround(renderer, groundLevel);
+            DrawSky(renderingSystem, groundLevel);
+            DrawClouds(renderingSystem, frameCount);
+            DrawGround(renderingSystem, groundLevel);
             
             // Draw level elements
             foreach (var block in blocks)
             {
-                DrawBlock(renderer, block);
+                DrawBlock(renderingSystem, block);
             }
             
             foreach (var coin in coins.Where(c => !c.Collected))
             {
-                DrawCoin(renderer, coin);
+                DrawCoin(renderingSystem, coin);
             }
             
             // Draw Mario
-            DrawMario(renderer, mario);
+            DrawMario(renderingSystem, mario);
             
             // Draw HUD
-            DrawHUD(renderer, score, frameCount, startTime);
-            
-            renderer.EndFrame();
+            DrawHUD(renderingSystem, score, frameCount, startTime);
             
             frameCount++;
             
-            // Frame rate control
-            var now = DateTime.Now;
-            var sleepTime = nextFrameTime - now;
-            if (sleepTime > TimeSpan.Zero)
-            {
-                Thread.Sleep(sleepTime);
-            }
-            nextFrameTime += targetFrameTime;
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit
+        while (!exit)
+        {
+            Thread.Sleep(50);
         }
         
         inputHandler.Stop();
@@ -322,49 +328,49 @@ public class PixelMarioExample
         });
     }
     
-    private static void DrawSky(TerminalRenderer renderer, int groundLevel)
+    private static void DrawSky(RenderingSystem renderingSystem, int groundLevel)
     {
         var skyColor = Color.FromRgb(92, 148, 252); // Classic Mario sky blue
         var skyStyle = Style.Default.WithBackgroundColor(skyColor);
         
         for (int y = 0; y < groundLevel; y++)
         {
-            for (int x = 0; x < renderer.Width; x++)
+            for (int x = 0; x < renderingSystem.Terminal.Width; x++)
             {
-                renderer.DrawChar(x, y, ' ', skyStyle);
+                renderingSystem.Buffer.SetCell(x, y, ' ', skyStyle);
             }
         }
     }
     
-    private static void DrawClouds(TerminalRenderer renderer, int frameCount)
+    private static void DrawClouds(RenderingSystem renderingSystem, int frameCount)
     {
         var cloudStyle = Style.Default
             .WithForegroundColor(Color.White)
             .WithBackgroundColor(Color.FromRgb(92, 148, 252));
         
         // Static clouds (not moving)
-        DrawCloud(renderer, 20, 5, cloudStyle);
-        DrawCloud(renderer, 80, 8, cloudStyle);
-        DrawCloud(renderer, 140, 6, cloudStyle);
+        DrawCloud(renderingSystem, 20, 5, cloudStyle);
+        DrawCloud(renderingSystem, 80, 8, cloudStyle);
+        DrawCloud(renderingSystem, 140, 6, cloudStyle);
     }
     
-    private static void DrawCloud(TerminalRenderer renderer, int x, int y, Style style)
+    private static void DrawCloud(RenderingSystem renderingSystem, int x, int y, Style style)
     {
-        renderer.DrawText(x, y, "    ☁☁☁    ", style);
-        renderer.DrawText(x, y + 1, "  ☁☁☁☁☁☁  ", style);
-        renderer.DrawText(x, y + 2, "☁☁☁☁☁☁☁☁", style);
+        renderingSystem.WriteText(x, y, "    ☁☁☁    ", style);
+        renderingSystem.WriteText(x, y + 1, "  ☁☁☁☁☁☁  ", style);
+        renderingSystem.WriteText(x, y + 2, "☁☁☁☁☁☁☁☁", style);
     }
     
-    private static void DrawGround(TerminalRenderer renderer, int groundLevel)
+    private static void DrawGround(RenderingSystem renderingSystem, int groundLevel)
     {
         var groundColor = Color.FromRgb(139, 69, 19); // Brown
         var groundStyle = Style.Default.WithBackgroundColor(groundColor);
         
-        for (int y = groundLevel; y < renderer.Height; y++)
+        for (int y = groundLevel; y < renderingSystem.Terminal.Height; y++)
         {
-            for (int x = 0; x < renderer.Width; x++)
+            for (int x = 0; x < renderingSystem.Terminal.Width; x++)
             {
-                renderer.DrawChar(x, y, ' ', groundStyle);
+                renderingSystem.Buffer.SetCell(x, y, ' ', groundStyle);
             }
         }
         
@@ -373,14 +379,14 @@ public class PixelMarioExample
             .WithForegroundColor(Color.FromRgb(0, 255, 0))
             .WithBackgroundColor(groundColor);
         
-        for (int x = 0; x < renderer.Width; x++)
+        for (int x = 0; x < renderingSystem.Terminal.Width; x++)
         {
             if (x % 2 == 0)
-                renderer.DrawChar(x, groundLevel - 1, '▀', grassStyle);
+                renderingSystem.Buffer.SetCell(x, groundLevel - 1, '▀', grassStyle);
         }
     }
     
-    private static void DrawMario(TerminalRenderer renderer, Mario mario)
+    private static void DrawMario(RenderingSystem renderingSystem, Mario mario)
     {
         var x = (int)mario.X;
         var y = (int)mario.Y;
@@ -395,7 +401,7 @@ public class PixelMarioExample
                 var color = pixels[py, px];
                 if (color != null)
                 {
-                    renderer.DrawChar(x + px, y + py, '█', Style.Default.WithForegroundColor(color.Value));
+                    renderingSystem.Buffer.SetCell(x + px, y + py, '█', Style.Default.WithForegroundColor(color.Value));
                 }
             }
         }
@@ -494,7 +500,7 @@ public class PixelMarioExample
         return pixels;
     }
     
-    private static void DrawCoin(TerminalRenderer renderer, Coin coin)
+    private static void DrawCoin(RenderingSystem renderingSystem, Coin coin)
     {
         var coinColor = Color.Yellow;
         var darkYellow = Color.FromRgb(200, 180, 0);
@@ -505,44 +511,44 @@ public class PixelMarioExample
         if (coin.AnimationFrame == 0 || coin.AnimationFrame == 2)
         {
             // Front view of coin
-            renderer.DrawChar(coin.X + 1, coin.Y, '█', style);
-            renderer.DrawChar(coin.X, coin.Y + 1, '█', style);
-            renderer.DrawChar(coin.X + 1, coin.Y + 1, '█', style);
-            renderer.DrawChar(coin.X + 2, coin.Y + 1, '█', style);
-            renderer.DrawChar(coin.X + 1, coin.Y + 2, '█', style);
+            renderingSystem.Buffer.SetCell(coin.X + 1, coin.Y, '█', style);
+            renderingSystem.Buffer.SetCell(coin.X, coin.Y + 1, '█', style);
+            renderingSystem.Buffer.SetCell(coin.X + 1, coin.Y + 1, '█', style);
+            renderingSystem.Buffer.SetCell(coin.X + 2, coin.Y + 1, '█', style);
+            renderingSystem.Buffer.SetCell(coin.X + 1, coin.Y + 2, '█', style);
         }
         else if (coin.AnimationFrame == 1)
         {
             // Side view (thin)
-            renderer.DrawChar(coin.X + 1, coin.Y, '█', darkStyle);
-            renderer.DrawChar(coin.X + 1, coin.Y + 1, '█', darkStyle);
-            renderer.DrawChar(coin.X + 1, coin.Y + 2, '█', darkStyle);
+            renderingSystem.Buffer.SetCell(coin.X + 1, coin.Y, '█', darkStyle);
+            renderingSystem.Buffer.SetCell(coin.X + 1, coin.Y + 1, '█', darkStyle);
+            renderingSystem.Buffer.SetCell(coin.X + 1, coin.Y + 2, '█', darkStyle);
         }
         else
         {
             // Other side view
-            renderer.DrawChar(coin.X + 1, coin.Y, '█', style);
-            renderer.DrawChar(coin.X + 1, coin.Y + 1, '█', darkStyle);
-            renderer.DrawChar(coin.X + 1, coin.Y + 2, '█', style);
+            renderingSystem.Buffer.SetCell(coin.X + 1, coin.Y, '█', style);
+            renderingSystem.Buffer.SetCell(coin.X + 1, coin.Y + 1, '█', darkStyle);
+            renderingSystem.Buffer.SetCell(coin.X + 1, coin.Y + 2, '█', style);
         }
     }
     
-    private static void DrawBlock(TerminalRenderer renderer, Block block)
+    private static void DrawBlock(RenderingSystem renderingSystem, Block block)
     {
         var y = block.Y + (block.IsHit ? -block.AnimationOffset : 0);
         
         switch (block.Type)
         {
             case BlockType.Question:
-                DrawQuestionBlock(renderer, block.X, y, block.IsHit);
+                DrawQuestionBlock(renderingSystem, block.X, y, block.IsHit);
                 break;
                 
             case BlockType.Brick:
-                DrawBrickBlock(renderer, block.X, y);
+                DrawBrickBlock(renderingSystem, block.X, y);
                 break;
                 
             case BlockType.Pipe:
-                DrawPipe(renderer, block.X, block.Y);
+                DrawPipe(renderingSystem, block.X, block.Y);
                 break;
         }
         
@@ -553,7 +559,7 @@ public class PixelMarioExample
         }
     }
     
-    private static void DrawQuestionBlock(TerminalRenderer renderer, int x, int y, bool isHit)
+    private static void DrawQuestionBlock(RenderingSystem renderingSystem, int x, int y, bool isHit)
     {
         // Draw an 8x8 question block
         var yellow = isHit ? Color.FromRgb(139, 69, 19) : Color.Yellow;
@@ -570,26 +576,26 @@ public class PixelMarioExample
                 {
                     // Question mark pixels
                     if ((py == 1 || py == 2) && (px >= 3 && px <= 4)) // Top
-                        renderer.DrawChar(x + px, y + py, '█', Style.Default.WithForegroundColor(black));
+                        renderingSystem.Buffer.SetCell(x + px, y + py, '█', Style.Default.WithForegroundColor(black));
                     else if (py == 3 && px == 5) // Right side
-                        renderer.DrawChar(x + px, y + py, '█', Style.Default.WithForegroundColor(black));
+                        renderingSystem.Buffer.SetCell(x + px, y + py, '█', Style.Default.WithForegroundColor(black));
                     else if (py == 4 && px == 4) // Middle
-                        renderer.DrawChar(x + px, y + py, '█', Style.Default.WithForegroundColor(black));
+                        renderingSystem.Buffer.SetCell(x + px, y + py, '█', Style.Default.WithForegroundColor(black));
                     else if (py == 6 && (px == 3 || px == 4)) // Dot
-                        renderer.DrawChar(x + px, y + py, '█', Style.Default.WithForegroundColor(black));
+                        renderingSystem.Buffer.SetCell(x + px, y + py, '█', Style.Default.WithForegroundColor(black));
                     else
-                        renderer.DrawChar(x + px, y + py, '█', Style.Default.WithForegroundColor(yellow));
+                        renderingSystem.Buffer.SetCell(x + px, y + py, '█', Style.Default.WithForegroundColor(yellow));
                 }
                 else
                 {
                     // Hit block - all brown
-                    renderer.DrawChar(x + px, y + py, '█', Style.Default.WithForegroundColor(brown));
+                    renderingSystem.Buffer.SetCell(x + px, y + py, '█', Style.Default.WithForegroundColor(brown));
                 }
             }
         }
     }
     
-    private static void DrawBrickBlock(TerminalRenderer renderer, int x, int y)
+    private static void DrawBrickBlock(RenderingSystem renderingSystem, int x, int y)
     {
         // Draw an 8x8 brick block
         var brown = Color.FromRgb(139, 69, 19);
@@ -605,17 +611,17 @@ public class PixelMarioExample
                 
                 if (isDarkLine || isVerticalLine)
                 {
-                    renderer.DrawChar(x + px, y + py, '█', Style.Default.WithForegroundColor(darkBrown));
+                    renderingSystem.Buffer.SetCell(x + px, y + py, '█', Style.Default.WithForegroundColor(darkBrown));
                 }
                 else
                 {
-                    renderer.DrawChar(x + px, y + py, '█', Style.Default.WithForegroundColor(brown));
+                    renderingSystem.Buffer.SetCell(x + px, y + py, '█', Style.Default.WithForegroundColor(brown));
                 }
             }
         }
     }
     
-    private static void DrawPipe(TerminalRenderer renderer, int x, int y)
+    private static void DrawPipe(RenderingSystem renderingSystem, int x, int y)
     {
         var pipeColor = Color.FromRgb(0, 255, 0);
         var darkGreen = Color.FromRgb(0, 200, 0);
@@ -632,11 +638,11 @@ public class PixelMarioExample
                     // Black outline
                     if (px == 0 || px == 7)
                     {
-                        renderer.DrawChar(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(black));
+                        renderingSystem.Buffer.SetCell(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(black));
                     }
                     else
                     {
-                        renderer.DrawChar(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(pipeColor));
+                        renderingSystem.Buffer.SetCell(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(pipeColor));
                     }
                 }
                 // Pipe body
@@ -648,22 +654,22 @@ public class PixelMarioExample
                         // Black outline on sides
                         if (px == 1 || px == 6)
                         {
-                            renderer.DrawChar(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(black));
+                            renderingSystem.Buffer.SetCell(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(black));
                         }
                         // Highlight on left side
                         else if (px == 2)
                         {
-                            renderer.DrawChar(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(pipeColor));
+                            renderingSystem.Buffer.SetCell(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(pipeColor));
                         }
                         // Shadow on right side
                         else if (px == 5)
                         {
-                            renderer.DrawChar(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(darkGreen));
+                            renderingSystem.Buffer.SetCell(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(darkGreen));
                         }
                         // Main body
                         else
                         {
-                            renderer.DrawChar(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(pipeColor));
+                            renderingSystem.Buffer.SetCell(x - 2 + px, y + py, '█', Style.Default.WithForegroundColor(pipeColor));
                         }
                     }
                 }
@@ -754,23 +760,23 @@ public class PixelMarioExample
                a.Y + a.Height > b.Y;
     }
     
-    private static void DrawHUD(TerminalRenderer renderer, int score, int frameCount, DateTime startTime)
+    private static void DrawHUD(RenderingSystem renderingSystem, int score, int frameCount, DateTime startTime)
     {
         var hudStyle = Style.Default.WithForegroundColor(Color.White);
         
         // Score
-        renderer.DrawText(2, 2, $"SCORE: {score:D6}", hudStyle);
+        renderingSystem.WriteText(2, 2, $"SCORE: {score:D6}", hudStyle);
         
         // Time
         var elapsed = (DateTime.Now - startTime).TotalSeconds;
-        renderer.DrawText(renderer.Width - 15, 2, $"TIME: {elapsed:F0}", hudStyle);
+        renderingSystem.WriteText(renderingSystem.Terminal.Width - 15, 2, $"TIME: {elapsed:F0}", hudStyle);
         
         // FPS
         var fps = frameCount / elapsed;
-        renderer.DrawText(2, 3, $"FPS: {fps:F1}", hudStyle);
+        renderingSystem.WriteText(2, 3, $"FPS: {fps:F1}", hudStyle);
         
         // Controls
-        renderer.DrawText(2, renderer.Height - 2, "← → Move   SPACE Jump   ESC Quit", 
+        renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 2, "← → Move   SPACE Jump   ESC Quit", 
             Style.Default.WithForegroundColor(Color.DarkGray));
     }
     

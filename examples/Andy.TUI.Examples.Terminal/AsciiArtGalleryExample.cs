@@ -36,8 +36,9 @@ public class AsciiArtGalleryExample
         Console.WriteLine("Starting gallery...");
         Thread.Sleep(1500);
 
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
 
         // Hide cursor
         terminal.CursorVisible = false;
@@ -65,11 +66,18 @@ public class AsciiArtGalleryExample
 
         var frameCount = 0;
         var startTime = DateTime.Now;
+        
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 20;
 
-        while (!exit)
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
-            renderer.BeginFrame();
-            renderer.Clear();
+            if (exit)
+                return;
+                
+            renderingSystem.Clear();
 
             // Handle input
             if (pressedKeys.Contains(ConsoleKey.LeftArrow))
@@ -93,14 +101,23 @@ public class AsciiArtGalleryExample
             }
 
             // Draw gallery
-            DrawGallery(renderer, artPieces[currentPiece], currentPiece, artPieces.Count, 
+            DrawGallery(renderingSystem, artPieces[currentPiece], currentPiece, artPieces.Count, 
                        currentEffect, effectFrame, frameCount, startTime);
-
-            renderer.EndFrame();
 
             effectFrame++;
             frameCount++;
-            Thread.Sleep(50); // ~20 FPS
+            
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit
+        while (!exit)
+        {
+            Thread.Sleep(50);
         }
 
         inputHandler.Stop();
@@ -108,6 +125,7 @@ public class AsciiArtGalleryExample
 
         // Restore cursor
         terminal.CursorVisible = true;
+        renderingSystem.Shutdown();
 
         Console.Clear();
         Console.WriteLine("\nThanks for visiting the ASCII Art Gallery!");
@@ -276,84 +294,84 @@ public class AsciiArtGalleryExample
         };
     }
 
-    private static void DrawGallery(TerminalRenderer renderer, ArtPiece piece, int currentIndex, int totalPieces,
+    private static void DrawGallery(RenderingSystem renderingSystem, ArtPiece piece, int currentIndex, int totalPieces,
                                    DisplayEffect effect, int effectFrame, int frameCount, DateTime startTime)
     {
         // Draw header
         var headerStyle = Style.Default.WithForegroundColor(Color.Yellow).WithBold();
-        renderer.DrawText(2, 1, "🎨 ASCII Art Gallery", headerStyle);
+        renderingSystem.WriteText(2, 1, "🎨 ASCII Art Gallery", headerStyle);
 
         // Draw navigation info
         var navStyle = Style.Default.WithForegroundColor(Color.Cyan);
-        renderer.DrawText(2, 2, $"Piece {currentIndex + 1} of {totalPieces}", navStyle);
+        renderingSystem.WriteText(2, 2, $"Piece {currentIndex + 1} of {totalPieces}", navStyle);
 
         // Draw art piece info
         var titleStyle = Style.Default.WithForegroundColor(piece.PrimaryColor).WithBold();
         var artistStyle = Style.Default.WithForegroundColor(piece.SecondaryColor);
         var descStyle = Style.Default.WithForegroundColor(Color.White);
 
-        renderer.DrawText(2, 4, $"Title: {piece.Title}", titleStyle);
-        renderer.DrawText(2, 5, $"Artist: {piece.Artist}", artistStyle);
-        renderer.DrawText(2, 6, piece.Description, descStyle);
+        renderingSystem.WriteText(2, 4, $"Title: {piece.Title}", titleStyle);
+        renderingSystem.WriteText(2, 5, $"Artist: {piece.Artist}", artistStyle);
+        renderingSystem.WriteText(2, 6, piece.Description, descStyle);
 
         // Draw the ASCII art with effects
         int artStartY = 8;
-        int artStartX = Math.Max(2, (renderer.Width - GetMaxLineLength(piece.Lines)) / 2);
+        int artStartX = Math.Max(2, (renderingSystem.Terminal.Width - GetMaxLineLength(piece.Lines)) / 2);
 
-        DrawArtWithEffect(renderer, piece, artStartX, artStartY, effect, effectFrame);
+        DrawArtWithEffect(renderingSystem, piece, artStartX, artStartY, effect, effectFrame);
 
         // Draw effect info
         var effectStyle = Style.Default.WithForegroundColor(Color.Magenta);
-        renderer.DrawText(2, renderer.Height - 4, $"Current Effect: {effect}", effectStyle);
+        renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 4, $"Current Effect: {effect}", effectStyle);
 
         // Draw controls
         var controlsStyle = Style.Default.WithForegroundColor(Color.DarkGray);
-        renderer.DrawText(2, renderer.Height - 3, "← → Navigate | SPACE Change Effect | ESC/Q Exit", controlsStyle);
+        renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 3, "← → Navigate | SPACE Change Effect | ESC/Q Exit", controlsStyle);
 
         // Draw performance stats
         var elapsed = (DateTime.Now - startTime).TotalSeconds;
         var fps = frameCount / elapsed;
         var statsStyle = Style.Default.WithForegroundColor(Color.Green);
-        renderer.DrawText(renderer.Width - 15, 1, $"FPS: {fps:F1}", statsStyle);
+        renderingSystem.WriteText(renderingSystem.Terminal.Width - 15, 1, $"FPS: {fps:F1}", statsStyle);
     }
 
-    private static void DrawArtWithEffect(TerminalRenderer renderer, ArtPiece piece, int x, int y,
+    private static void DrawArtWithEffect(RenderingSystem renderingSystem, ArtPiece piece, int x, int y,
                                          DisplayEffect effect, int effectFrame)
     {
         switch (effect)
         {
             case DisplayEffect.None:
-                DrawArtNormal(renderer, piece, x, y);
+                DrawArtNormal(renderingSystem, piece, x, y);
                 break;
             case DisplayEffect.TypeWriter:
-                DrawArtTypeWriter(renderer, piece, x, y, effectFrame);
+                DrawArtTypeWriter(renderingSystem, piece, x, y, effectFrame);
                 break;
             case DisplayEffect.FadeIn:
-                DrawArtFadeIn(renderer, piece, x, y, effectFrame);
+                DrawArtFadeIn(renderingSystem, piece, x, y, effectFrame);
                 break;
             case DisplayEffect.SlideIn:
-                DrawArtSlideIn(renderer, piece, x, y, effectFrame);
+                DrawArtSlideIn(renderingSystem, piece, x, y, effectFrame);
                 break;
             case DisplayEffect.Rainbow:
-                DrawArtRainbow(renderer, piece, x, y, effectFrame);
+                DrawArtRainbow(renderingSystem, piece, x, y, effectFrame);
                 break;
             case DisplayEffect.Glitch:
-                DrawArtGlitch(renderer, piece, x, y, effectFrame);
+                DrawArtGlitch(renderingSystem, piece, x, y, effectFrame);
                 break;
         }
     }
 
-    private static void DrawArtNormal(TerminalRenderer renderer, ArtPiece piece, int x, int y)
+    private static void DrawArtNormal(RenderingSystem renderingSystem, ArtPiece piece, int x, int y)
     {
         var style = Style.Default.WithForegroundColor(piece.PrimaryColor);
         
         for (int i = 0; i < piece.Lines.Length; i++)
         {
-            renderer.DrawText(x, y + i, piece.Lines[i], style);
+            renderingSystem.WriteText(x, y + i, piece.Lines[i], style);
         }
     }
 
-    private static void DrawArtTypeWriter(TerminalRenderer renderer, ArtPiece piece, int x, int y, int frame)
+    private static void DrawArtTypeWriter(RenderingSystem renderingSystem, ArtPiece piece, int x, int y, int frame)
     {
         var style = Style.Default.WithForegroundColor(piece.PrimaryColor);
         int charsToShow = Math.Max(0, frame - 10); // Delay start
@@ -383,12 +401,12 @@ public class AsciiArtGalleryExample
                 currentChar++;
             }
 
-            renderer.DrawText(x, y + lineIndex, visiblePart, style);
+            renderingSystem.WriteText(x, y + lineIndex, visiblePart, style);
             currentChar++; // Count newline
         }
     }
 
-    private static void DrawArtFadeIn(TerminalRenderer renderer, ArtPiece piece, int x, int y, int frame)
+    private static void DrawArtFadeIn(RenderingSystem renderingSystem, ArtPiece piece, int x, int y, int frame)
     {
         double intensity = Math.Min(1.0, frame / 100.0);
         var rgb = piece.PrimaryColor.Rgb ?? (255, 255, 255);
@@ -400,22 +418,22 @@ public class AsciiArtGalleryExample
         
         for (int i = 0; i < piece.Lines.Length; i++)
         {
-            renderer.DrawText(x, y + i, piece.Lines[i], style);
+            renderingSystem.WriteText(x, y + i, piece.Lines[i], style);
         }
     }
 
-    private static void DrawArtSlideIn(TerminalRenderer renderer, ArtPiece piece, int x, int y, int frame)
+    private static void DrawArtSlideIn(RenderingSystem renderingSystem, ArtPiece piece, int x, int y, int frame)
     {
         var style = Style.Default.WithForegroundColor(piece.PrimaryColor);
         int slideOffset = Math.Max(0, 50 - frame);
         
         for (int i = 0; i < piece.Lines.Length; i++)
         {
-            renderer.DrawText(x + slideOffset, y + i, piece.Lines[i], style);
+            renderingSystem.WriteText(x + slideOffset, y + i, piece.Lines[i], style);
         }
     }
 
-    private static void DrawArtRainbow(TerminalRenderer renderer, ArtPiece piece, int x, int y, int frame)
+    private static void DrawArtRainbow(RenderingSystem renderingSystem, ArtPiece piece, int x, int y, int frame)
     {
         for (int lineIndex = 0; lineIndex < piece.Lines.Length; lineIndex++)
         {
@@ -427,13 +445,13 @@ public class AsciiArtGalleryExample
                     double hue = ((charIndex + lineIndex + frame * 0.1) % 360) / 360.0;
                     var color = HsvToRgb(hue, 1.0, 1.0);
                     var style = Style.Default.WithForegroundColor(color);
-                    renderer.DrawChar(x + charIndex, y + lineIndex, line[charIndex], style);
+                    renderingSystem.Buffer.SetCell(x + charIndex, y + lineIndex, line[charIndex], style);
                 }
             }
         }
     }
 
-    private static void DrawArtGlitch(TerminalRenderer renderer, ArtPiece piece, int x, int y, int frame)
+    private static void DrawArtGlitch(RenderingSystem renderingSystem, ArtPiece piece, int x, int y, int frame)
     {
         var random = new Random(frame / 5); // Change every few frames
         var baseStyle = Style.Default.WithForegroundColor(piece.PrimaryColor);
@@ -452,19 +470,19 @@ public class AsciiArtGalleryExample
                 var glitchStyle = Style.Default.WithForegroundColor(glitchColor);
                 
                 // Draw glitched version
-                renderer.DrawText(x + glitchOffset, y + lineIndex, line, glitchStyle);
+                renderingSystem.WriteText(x + glitchOffset, y + lineIndex, line, glitchStyle);
                 
                 // Sometimes overlay with different colors
                 if (random.NextDouble() < 0.5)
                 {
                     var overlay = glitchColors[random.Next(glitchColors.Length)];
                     var overlayStyle = Style.Default.WithForegroundColor(overlay);
-                    renderer.DrawText(x + glitchOffset + 1, y + lineIndex, line, overlayStyle);
+                    renderingSystem.WriteText(x + glitchOffset + 1, y + lineIndex, line, overlayStyle);
                 }
             }
             else
             {
-                renderer.DrawText(x, y + lineIndex, line, baseStyle);
+                renderingSystem.WriteText(x, y + lineIndex, line, baseStyle);
             }
         }
     }

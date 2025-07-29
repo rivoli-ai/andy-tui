@@ -16,63 +16,65 @@ public class SystemBannerExample
         Console.WriteLine("Press any key to continue...");
         Console.ReadKey(true);
         
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
-        renderer.BeginFrame();
-        renderer.Clear();
+        renderingSystem.Clear();
         
-        DrawBanner(renderer);
+        DrawBanner(renderingSystem);
         
         // Draw exit instruction at the bottom
-        renderer.DrawText(2, renderer.Height - 2, "Press any key to exit...", 
+        renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 2, "Press any key to exit...", 
             Style.Default.WithForegroundColor(Color.DarkGray));
         
-        renderer.EndFrame();
+        renderingSystem.Render();
         
         Console.ReadKey(true);
+        
+        renderingSystem.Shutdown();
     }
     
-    private static void DrawBanner(TerminalRenderer renderer)
+    private static void DrawBanner(RenderingSystem renderingSystem)
     {
         var y = 2;
         
         // Welcome header with ASCII art
-        DrawAsciiLogo(renderer, 2, y);
+        DrawAsciiLogo(renderingSystem, 2, y);
         y += 6;
         
         // System information box
-        renderer.DrawBox(2, y, renderer.Width - 4, 12, BorderStyle.Rounded,
-            Style.Default.WithForegroundColor(Color.DarkGray));
+        renderingSystem.DrawBox(2, y, renderingSystem.Terminal.Width - 4, 12,
+            Style.Default.WithForegroundColor(Color.DarkGray), BoxStyle.Rounded);
         
         y += 1;
         
         // Welcome message
         var hostname = Environment.MachineName;
         var welcomeMsg = $"Welcome to {hostname}";
-        renderer.DrawText(4, y, welcomeMsg, 
+        renderingSystem.WriteText(4, y, welcomeMsg, 
             Style.Default.WithForegroundColor(Color.Green).WithBold());
         
         y += 2;
         
         // System information
-        DrawSystemInfo(renderer, 4, y);
+        DrawSystemInfo(renderingSystem, 4, y);
         y += 5;
         
         // System usage
-        DrawSystemUsage(renderer, 4, y);
+        DrawSystemUsage(renderingSystem, 4, y);
         y += 3;
         
         // Updates and security
         y += 1;
-        DrawUpdatesInfo(renderer, 2, y);
+        DrawUpdatesInfo(renderingSystem, 2, y);
         y += 4;
         
         // Last login
-        DrawLastLogin(renderer, 2, y);
+        DrawLastLogin(renderingSystem, 2, y);
     }
     
-    private static void DrawAsciiLogo(TerminalRenderer renderer, int x, int y)
+    private static void DrawAsciiLogo(RenderingSystem renderingSystem, int x, int y)
     {
         var logo = new[]
         {
@@ -87,56 +89,56 @@ public class SystemBannerExample
         var logoStyle = Style.Default.WithForegroundColor(Color.Cyan);
         for (int i = 0; i < logo.Length; i++)
         {
-            renderer.DrawText(x, y + i, logo[i], logoStyle);
+            renderingSystem.WriteText(x, y + i, logo[i], logoStyle);
         }
     }
     
-    private static void DrawSystemInfo(TerminalRenderer renderer, int x, int y)
+    private static void DrawSystemInfo(RenderingSystem renderingSystem, int x, int y)
     {
         var labelStyle = Style.Default.WithForegroundColor(Color.DarkGray);
         var valueStyle = Style.Default.WithForegroundColor(Color.White);
         
         // OS Information
         var os = RuntimeInformation.OSDescription;
-        renderer.DrawText(x, y, "System: ", labelStyle);
-        renderer.DrawText(x + 10, y, os, valueStyle);
+        renderingSystem.WriteText(x, y, "System: ", labelStyle);
+        renderingSystem.WriteText(x + 10, y, os, valueStyle);
         
         // Kernel/Runtime
         y++;
-        renderer.DrawText(x, y, "Runtime: ", labelStyle);
-        renderer.DrawText(x + 10, y, $".NET {Environment.Version}", valueStyle);
+        renderingSystem.WriteText(x, y, "Runtime: ", labelStyle);
+        renderingSystem.WriteText(x + 10, y, $".NET {Environment.Version}", valueStyle);
         
         // Architecture
         y++;
-        renderer.DrawText(x, y, "Arch: ", labelStyle);
-        renderer.DrawText(x + 10, y, RuntimeInformation.ProcessArchitecture.ToString(), valueStyle);
+        renderingSystem.WriteText(x, y, "Arch: ", labelStyle);
+        renderingSystem.WriteText(x + 10, y, RuntimeInformation.ProcessArchitecture.ToString(), valueStyle);
         
         // Uptime
         y++;
         var uptime = GetSystemUptime();
-        renderer.DrawText(x, y, "Uptime: ", labelStyle);
-        renderer.DrawText(x + 10, y, uptime, valueStyle);
+        renderingSystem.WriteText(x, y, "Uptime: ", labelStyle);
+        renderingSystem.WriteText(x + 10, y, uptime, valueStyle);
     }
     
-    private static void DrawSystemUsage(TerminalRenderer renderer, int x, int y)
+    private static void DrawSystemUsage(RenderingSystem renderingSystem, int x, int y)
     {
         var labelStyle = Style.Default.WithForegroundColor(Color.DarkGray);
         
         // CPU usage
         var cpuUsage = GetCpuUsage();
-        renderer.DrawText(x, y, "CPU: ", labelStyle);
-        DrawUsageBar(renderer, x + 10, y, 20, cpuUsage, "cpu");
+        renderingSystem.WriteText(x, y, "CPU: ", labelStyle);
+        DrawUsageBar(renderingSystem, x + 10, y, 20, cpuUsage, "cpu");
         
         // Memory usage
         y++;
         var (memUsed, memTotal, memPercent) = GetMemoryUsage();
-        renderer.DrawText(x, y, "Memory: ", labelStyle);
-        DrawUsageBar(renderer, x + 10, y, 20, memPercent, "memory");
-        renderer.DrawText(x + 32, y, $"{memUsed:F1}G / {memTotal:F1}G", 
+        renderingSystem.WriteText(x, y, "Memory: ", labelStyle);
+        DrawUsageBar(renderingSystem, x + 10, y, 20, memPercent, "memory");
+        renderingSystem.WriteText(x + 32, y, $"{memUsed:F1}G / {memTotal:F1}G", 
             Style.Default.WithForegroundColor(Color.DarkGray));
     }
     
-    private static void DrawUsageBar(TerminalRenderer renderer, int x, int y, int width, 
+    private static void DrawUsageBar(RenderingSystem renderingSystem, int x, int y, int width, 
         double percentage, string type)
     {
         var filled = (int)(width * percentage / 100.0);
@@ -151,43 +153,43 @@ public class SystemBannerExample
             barColor = Color.Green;
         
         // Draw the bar
-        renderer.DrawText(x, y, "[", Style.Default.WithForegroundColor(Color.DarkGray));
+        renderingSystem.WriteText(x, y, "[", Style.Default.WithForegroundColor(Color.DarkGray));
         
         for (int i = 0; i < width; i++)
         {
             if (i < filled)
             {
-                renderer.DrawChar(x + 1 + i, y, '=', 
+                renderingSystem.Buffer.SetCell(x + 1 + i, y, '=', 
                     Style.Default.WithForegroundColor(barColor));
             }
             else
             {
-                renderer.DrawChar(x + 1 + i, y, '-', 
+                renderingSystem.Buffer.SetCell(x + 1 + i, y, '-', 
                     Style.Default.WithForegroundColor(Color.DarkGray));
             }
         }
         
-        renderer.DrawText(x + width + 1, y, $"] {percentage:F0}%", 
+        renderingSystem.WriteText(x + width + 1, y, $"] {percentage:F0}%", 
             Style.Default.WithForegroundColor(Color.DarkGray));
     }
     
-    private static void DrawUpdatesInfo(TerminalRenderer renderer, int x, int y)
+    private static void DrawUpdatesInfo(RenderingSystem renderingSystem, int x, int y)
     {
         // Simulated update information
-        renderer.DrawBox(x, y, renderer.Width - 4, 3, BorderStyle.Single,
-            Style.Default.WithForegroundColor(Color.Yellow));
+        renderingSystem.DrawBox(x, y, renderingSystem.Terminal.Width - 4, 3,
+            Style.Default.WithForegroundColor(Color.Yellow), BoxStyle.Single);
         
-        renderer.DrawText(x + 2, y + 1, "💡 ", Style.Default);
-        renderer.DrawText(x + 5, y + 1, "System is up to date. No updates available.", 
+        renderingSystem.WriteText(x + 2, y + 1, "💡 ", Style.Default);
+        renderingSystem.WriteText(x + 5, y + 1, "System is up to date. No updates available.", 
             Style.Default.WithForegroundColor(Color.Yellow));
     }
     
-    private static void DrawLastLogin(TerminalRenderer renderer, int x, int y)
+    private static void DrawLastLogin(RenderingSystem renderingSystem, int x, int y)
     {
         var lastLogin = DateTime.Now.AddHours(-2.5); // Simulated
         var loginInfo = $"Last login: {lastLogin:ddd MMM dd HH:mm:ss yyyy} from console";
         
-        renderer.DrawText(x, y, loginInfo, 
+        renderingSystem.WriteText(x, y, loginInfo, 
             Style.Default.WithForegroundColor(Color.DarkGray));
     }
     

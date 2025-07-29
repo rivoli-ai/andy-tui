@@ -60,17 +60,6 @@ public interface IRenderer
     void FillRect(int x, int y, int width, int height, char ch, Style style = default);
     
     /// <summary>
-    /// Draws a box with the specified border style.
-    /// </summary>
-    /// <param name="x">The starting column.</param>
-    /// <param name="y">The starting row.</param>
-    /// <param name="width">The width of the box.</param>
-    /// <param name="height">The height of the box.</param>
-    /// <param name="borderStyle">The border style to use.</param>
-    /// <param name="style">The style to apply.</param>
-    void DrawBox(int x, int y, int width, int height, BorderStyle borderStyle, Style style = default);
-    
-    /// <summary>
     /// Clears the entire render area.
     /// </summary>
     void Clear();
@@ -97,59 +86,4 @@ public interface IRenderer
     /// Resets the clipping region to the full render area.
     /// </summary>
     void ResetClipRegion();
-}
-
-/// <summary>
-/// Defines border styles for drawing boxes.
-/// </summary>
-public enum BorderStyle
-{
-    /// <summary>
-    /// No border.
-    /// </summary>
-    None,
-    
-    /// <summary>
-    /// Single line border: ┌─┐│ │└─┘
-    /// </summary>
-    Single,
-    
-    /// <summary>
-    /// Double line border: ╔═╗║ ║╚═╝
-    /// </summary>
-    Double,
-    
-    /// <summary>
-    /// Rounded border: ╭─╮│ │╰─╯
-    /// </summary>
-    Rounded,
-    
-    /// <summary>
-    /// Heavy border: ┏━┓┃ ┃┗━┛
-    /// </summary>
-    Heavy,
-    
-    /// <summary>
-    /// ASCII border: +-+| |+-+
-    /// </summary>
-    Ascii
-}
-
-/// <summary>
-/// Contains the characters used for different border styles.
-/// </summary>
-public static class BorderChars
-{
-    public static (char TopLeft, char Top, char TopRight, char Left, char Right, char BottomLeft, char Bottom, char BottomRight) GetBorderChars(BorderStyle style)
-    {
-        return style switch
-        {
-            BorderStyle.Single => ('┌', '─', '┐', '│', '│', '└', '─', '┘'),
-            BorderStyle.Double => ('╔', '═', '╗', '║', '║', '╚', '═', '╝'),
-            BorderStyle.Rounded => ('╭', '─', '╮', '│', '│', '╰', '─', '╯'),
-            BorderStyle.Heavy => ('┏', '━', '┓', '┃', '┃', '┗', '━', '┛'),
-            BorderStyle.Ascii => ('+', '-', '+', '|', '|', '+', '-', '+'),
-            _ => (' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
-        };
-    }
 }

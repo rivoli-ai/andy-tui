@@ -167,7 +167,8 @@ using Andy.TUI.Terminal;
 
 // Create a terminal with double buffering
 var terminal = new AnsiTerminal();
-var renderer = new TerminalRenderer(terminal);
+using var renderingSystem = new RenderingSystem(terminal);
+renderingSystem.Initialize();
 
 // Apply styles and colors
 var style = Style.Default
@@ -175,10 +176,9 @@ var style = Style.Default
     .WithBackgroundColor(Color.White)
     .WithBold();
 
-renderer.BeginFrame();
-renderer.DrawText(10, 5, "Hello, TUI!", style);
-renderer.DrawBox(0, 0, 80, 24, BorderStyle.Double);
-renderer.EndFrame();
+renderingSystem.WriteText(10, 5, "Hello, TUI!", style);
+renderingSystem.DrawBox(0, 0, 80, 24, style, BoxStyle.Double);
+renderingSystem.Render();
 
 // Handle input
 var inputHandler = new ConsoleInputHandler();

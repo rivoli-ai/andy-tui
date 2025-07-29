@@ -18,8 +18,9 @@ public class PacManExample
         // First show a static display of all characters
         ShowCharacterGallery();
         
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
         // Create input handler for exit
         var inputHandler = new ConsoleInputHandler();
@@ -36,9 +37,9 @@ public class PacManExample
         var startTime = DateTime.Now;
         const int animationY = 10;
         const int trackLength = 60;
-        const double targetFps = 60.0;
-        var targetFrameTime = TimeSpan.FromMilliseconds(1000.0 / targetFps);
-        var nextFrameTime = DateTime.Now;
+        
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 60;
         
         // Game state
         var score = 0;
@@ -67,14 +68,18 @@ public class PacManExample
         var pelletStyle = Style.Default.WithForegroundColor(Color.White);
         var powerPelletStyle = Style.Default.WithForegroundColor(Color.White).WithBold();
         
-        while (!exit && frameCount < 600) // Run for ~10 seconds at 60 FPS
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
-            renderer.BeginFrame();
-            renderer.Clear();
+            if (exit || frameCount >= 600) // Run for ~10 seconds at 60 FPS
+                return;
+                
+            renderingSystem.Clear();
             
             // Draw title
             var title = " 🟡 PAC-MAN CHASE 👻 ";
-            renderer.DrawText((renderer.Width - title.Length) / 2, 2, title, 
+            renderingSystem.WriteText((renderingSystem.Terminal.Width - title.Length) / 2, 2, title, 
                 Style.Default.WithForegroundColor(Color.Yellow).WithBold());
             
             // Draw track with pellets
@@ -83,7 +88,7 @@ public class PacManExample
                 if (x % 3 == 0)
                 {
                     var isPowerPellet = x % 15 == 0;
-                    renderer.DrawChar(x, animationY, isPowerPellet ? '●' : '·', 
+                    renderingSystem.Buffer.SetCell(x, animationY, isPowerPellet ? '●' : '·', 
                         isPowerPellet ? powerPelletStyle : pelletStyle);
                 }
             }
@@ -107,13 +112,13 @@ public class PacManExample
             score += CheckGhostCollision(pacmanX, animationY, clydeX, animationY, "Clyde", clydeStyle, starBursts, random, ghostsEaten);
             
             // Draw ghosts (behind Pac-Man if at same position)
-            DrawGhost(renderer, blinkyX, animationY, 'ᗣ', blinkyStyle);
-            DrawGhost(renderer, pinkyX, animationY, 'ᗣ', pinkyStyle);
-            DrawGhost(renderer, inkyX, animationY, 'ᗣ', inkyStyle);
-            DrawGhost(renderer, clydeX, animationY, 'ᗣ', clydeStyle);
+            DrawGhost(renderingSystem, blinkyX, animationY, 'ᗣ', blinkyStyle);
+            DrawGhost(renderingSystem, pinkyX, animationY, 'ᗣ', pinkyStyle);
+            DrawGhost(renderingSystem, inkyX, animationY, 'ᗣ', inkyStyle);
+            DrawGhost(renderingSystem, clydeX, animationY, 'ᗣ', clydeStyle);
             
             // Draw Pac-Man (on top)
-            renderer.DrawChar(pacmanX, animationY, pacmanChar, pacmanStyle);
+            renderingSystem.Buffer.SetCell(pacmanX, animationY, pacmanChar, pacmanStyle);
             
             // Update and draw star bursts
             for (int i = starBursts.Count - 1; i >= 0; i--)
@@ -123,7 +128,7 @@ public class PacManExample
                 
                 if (burst.IsAlive)
                 {
-                    burst.Draw(renderer);
+                    burst.Draw(renderingSystem);
                 }
                 else
                 {
@@ -134,18 +139,18 @@ public class PacManExample
             // Draw score and info
             var baseScore = frameCount * 10;
             var totalScore = baseScore + score;
-            renderer.DrawText(5, animationY + 3, $"Score: {totalScore:D6} (Ghosts eaten: {ghostsEaten.Values.Sum()})", 
+            renderingSystem.WriteText(5, animationY + 3, $"Score: {totalScore:D6} (Ghosts eaten: {ghostsEaten.Values.Sum()})", 
                 Style.Default.WithForegroundColor(Color.White));
             
-            renderer.DrawText(5, animationY + 4, "Ghosts: ", 
+            renderingSystem.WriteText(5, animationY + 4, "Ghosts: ", 
                 Style.Default.WithForegroundColor(Color.White));
-            renderer.DrawText(13, animationY + 4, "Blinky ", blinkyStyle);
-            renderer.DrawText(20, animationY + 4, "Pinky ", pinkyStyle);
-            renderer.DrawText(26, animationY + 4, "Inky ", inkyStyle);
-            renderer.DrawText(31, animationY + 4, "Clyde", clydeStyle);
+            renderingSystem.WriteText(13, animationY + 4, "Blinky ", blinkyStyle);
+            renderingSystem.WriteText(20, animationY + 4, "Pinky ", pinkyStyle);
+            renderingSystem.WriteText(26, animationY + 4, "Inky ", inkyStyle);
+            renderingSystem.WriteText(31, animationY + 4, "Clyde", clydeStyle);
             
             // Draw legend
-            renderer.DrawText(5, animationY + 6, "· = Pellet (10 pts)   ● = Power Pellet (50 pts)", 
+            renderingSystem.WriteText(5, animationY + 6, "· = Pellet (10 pts)   ● = Power Pellet (50 pts)", 
                 Style.Default.WithForegroundColor(Color.DarkGray));
             
             // Calculate and draw performance stats
@@ -161,31 +166,32 @@ public class PacManExample
             var gen2 = GC.CollectionCount(2);
             
             // Draw stats at the bottom
-            var statsY = renderer.Height - 5;
-            renderer.DrawBox(0, statsY - 1, renderer.Width, 6, BorderStyle.Single, 
-                Style.Default.WithForegroundColor(Color.DarkGray));
+            var statsY = renderingSystem.Terminal.Height - 5;
+            renderingSystem.DrawBox(0, statsY - 1, renderingSystem.Terminal.Width, 6, 
+                Style.Default.WithForegroundColor(Color.DarkGray), BoxStyle.Single);
             
-            renderer.DrawText(2, statsY, $"Performance: FPS: {fps:F1} / {targetFps} | Frame: {frameCount} | Time: {elapsed:F1}s",
+            renderingSystem.WriteText(2, statsY, $"Performance: FPS: {fps:F1} / 60 | Frame: {frameCount} | Time: {elapsed:F1}s",
                 Style.Default.WithForegroundColor(Color.Yellow));
-            renderer.DrawText(2, statsY + 1, $"Memory: {gcMemory:F1} MB (Working Set: {workingSet:F1} MB)",
+            renderingSystem.WriteText(2, statsY + 1, $"Memory: {gcMemory:F1} MB (Working Set: {workingSet:F1} MB)",
                 Style.Default.WithForegroundColor(Color.Cyan));
-            renderer.DrawText(2, statsY + 2, $"GC Gen 0: {gen0} | Gen 1: {gen1} | Gen 2: {gen2}",
+            renderingSystem.WriteText(2, statsY + 2, $"GC Gen 0: {gen0} | Gen 1: {gen1} | Gen 2: {gen2}",
                 Style.Default.WithForegroundColor(Color.Green));
-            renderer.DrawText(2, statsY + 3, "Press ESC or Q to exit",
+            renderingSystem.WriteText(2, statsY + 3, "Press ESC or Q to exit",
                 Style.Default.WithForegroundColor(Color.White).WithDim());
-            
-            renderer.EndFrame();
             
             frameCount++;
             
-            // Precise frame rate control
-            var now = DateTime.Now;
-            var sleepTime = nextFrameTime - now;
-            if (sleepTime > TimeSpan.Zero)
-            {
-                Thread.Sleep(sleepTime);
-            }
-            nextFrameTime += targetFrameTime;
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit or animation completion
+        while (!exit && frameCount < 600)
+        {
+            Thread.Sleep(50);
         }
         
         inputHandler.Stop();
@@ -197,87 +203,87 @@ public class PacManExample
         Console.WriteLine($"Ghosts Eaten: Blinky: {ghostsEaten["Blinky"]}, Pinky: {ghostsEaten["Pinky"]}, Inky: {ghostsEaten["Inky"]}, Clyde: {ghostsEaten["Clyde"]}");
     }
     
-    private static void DrawGhost(TerminalRenderer renderer, int x, int y, char ghostChar, Style style)
+    private static void DrawGhost(RenderingSystem renderingSystem, int x, int y, char ghostChar, Style style)
     {
         // Draw ghost with wavy bottom using Unicode
-        renderer.DrawChar(x, y, ghostChar, style);
+        renderingSystem.Buffer.SetCell(x, y, ghostChar, style);
     }
     
     private static void ShowCharacterGallery()
     {
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
-        renderer.BeginFrame();
-        renderer.Clear();
+        renderingSystem.Clear();
         
         // Title
-        renderer.DrawText(5, 2, "PAC-MAN CHARACTER GALLERY", 
+        renderingSystem.WriteText(5, 2, "PAC-MAN CHARACTER GALLERY", 
             Style.Default.WithForegroundColor(Color.Yellow).WithBold());
         
         // Draw Pac-Man variations
         var y = 5;
-        renderer.DrawText(5, y, "Pac-Man: ", Style.Default.WithForegroundColor(Color.White));
-        renderer.DrawChar(15, y, 'C', Style.Default.WithForegroundColor(Color.Yellow));
-        renderer.DrawText(17, y, "(mouth open)  ", Style.Default.WithForegroundColor(Color.DarkGray));
-        renderer.DrawChar(32, y, 'O', Style.Default.WithForegroundColor(Color.Yellow));
-        renderer.DrawText(34, y, "(mouth closed)", Style.Default.WithForegroundColor(Color.DarkGray));
+        renderingSystem.WriteText(5, y, "Pac-Man: ", Style.Default.WithForegroundColor(Color.White));
+        renderingSystem.Buffer.SetCell(15, y, 'C', Style.Default.WithForegroundColor(Color.Yellow));
+        renderingSystem.WriteText(17, y, "(mouth open)  ", Style.Default.WithForegroundColor(Color.DarkGray));
+        renderingSystem.Buffer.SetCell(32, y, 'O', Style.Default.WithForegroundColor(Color.Yellow));
+        renderingSystem.WriteText(34, y, "(mouth closed)", Style.Default.WithForegroundColor(Color.DarkGray));
         
         // Draw all ghosts on one line
         y += 2;
-        renderer.DrawText(5, y, "Ghosts:  ", Style.Default.WithForegroundColor(Color.White));
+        renderingSystem.WriteText(5, y, "Ghosts:  ", Style.Default.WithForegroundColor(Color.White));
         
         // Blinky (Red)
-        renderer.DrawChar(15, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Red));
-        renderer.DrawText(17, y, "Blinky  ", Style.Default.WithForegroundColor(Color.Red));
+        renderingSystem.Buffer.SetCell(15, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Red));
+        renderingSystem.WriteText(17, y, "Blinky  ", Style.Default.WithForegroundColor(Color.Red));
         
         // Pinky (Pink/Magenta)
-        renderer.DrawChar(26, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Magenta));
-        renderer.DrawText(28, y, "Pinky  ", Style.Default.WithForegroundColor(Color.Magenta));
+        renderingSystem.Buffer.SetCell(26, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Magenta));
+        renderingSystem.WriteText(28, y, "Pinky  ", Style.Default.WithForegroundColor(Color.Magenta));
         
         // Inky (Cyan)
-        renderer.DrawChar(36, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Cyan));
-        renderer.DrawText(38, y, "Inky  ", Style.Default.WithForegroundColor(Color.Cyan));
+        renderingSystem.Buffer.SetCell(36, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Cyan));
+        renderingSystem.WriteText(38, y, "Inky  ", Style.Default.WithForegroundColor(Color.Cyan));
         
         // Clyde (Orange)
-        renderer.DrawChar(45, y, 'ᗣ', Style.Default.WithForegroundColor(Color.FromRgb(255, 165, 0)));
-        renderer.DrawText(47, y, "Clyde", Style.Default.WithForegroundColor(Color.FromRgb(255, 165, 0)));
+        renderingSystem.Buffer.SetCell(45, y, 'ᗣ', Style.Default.WithForegroundColor(Color.FromRgb(255, 165, 0)));
+        renderingSystem.WriteText(47, y, "Clyde", Style.Default.WithForegroundColor(Color.FromRgb(255, 165, 0)));
         
         // Draw pellets
         y += 2;
-        renderer.DrawText(5, y, "Items:   ", Style.Default.WithForegroundColor(Color.White));
-        renderer.DrawChar(15, y, '·', Style.Default.WithForegroundColor(Color.White));
-        renderer.DrawText(17, y, "Pellet     ", Style.Default.WithForegroundColor(Color.DarkGray));
-        renderer.DrawChar(29, y, '●', Style.Default.WithForegroundColor(Color.White).WithBold());
-        renderer.DrawText(31, y, "Power Pellet", Style.Default.WithForegroundColor(Color.DarkGray));
+        renderingSystem.WriteText(5, y, "Items:   ", Style.Default.WithForegroundColor(Color.White));
+        renderingSystem.Buffer.SetCell(15, y, '·', Style.Default.WithForegroundColor(Color.White));
+        renderingSystem.WriteText(17, y, "Pellet     ", Style.Default.WithForegroundColor(Color.DarkGray));
+        renderingSystem.Buffer.SetCell(29, y, '●', Style.Default.WithForegroundColor(Color.White).WithBold());
+        renderingSystem.WriteText(31, y, "Power Pellet", Style.Default.WithForegroundColor(Color.DarkGray));
         
         // Draw a sample game line
         y += 3;
-        renderer.DrawText(5, y, "Sample Game Line:", Style.Default.WithForegroundColor(Color.White));
+        renderingSystem.WriteText(5, y, "Sample Game Line:", Style.Default.WithForegroundColor(Color.White));
         y += 1;
         
         // Draw pellets
         for (int x = 5; x < 55; x += 2)
         {
-            renderer.DrawChar(x, y, '·', Style.Default.WithForegroundColor(Color.White).WithDim());
+            renderingSystem.Buffer.SetCell(x, y, '·', Style.Default.WithForegroundColor(Color.White).WithDim());
         }
         
         // Draw power pellet
-        renderer.DrawChar(10, y, '●', Style.Default.WithForegroundColor(Color.White).WithBold());
+        renderingSystem.Buffer.SetCell(10, y, '●', Style.Default.WithForegroundColor(Color.White).WithBold());
         
         // Draw Pac-Man
-        renderer.DrawChar(20, y, 'C', Style.Default.WithForegroundColor(Color.Yellow));
+        renderingSystem.Buffer.SetCell(20, y, 'C', Style.Default.WithForegroundColor(Color.Yellow));
         
         // Draw ghosts
-        renderer.DrawChar(30, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Red));
-        renderer.DrawChar(35, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Magenta));
-        renderer.DrawChar(40, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Cyan));
-        renderer.DrawChar(45, y, 'ᗣ', Style.Default.WithForegroundColor(Color.FromRgb(255, 165, 0)));
+        renderingSystem.Buffer.SetCell(30, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Red));
+        renderingSystem.Buffer.SetCell(35, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Magenta));
+        renderingSystem.Buffer.SetCell(40, y, 'ᗣ', Style.Default.WithForegroundColor(Color.Cyan));
+        renderingSystem.Buffer.SetCell(45, y, 'ᗣ', Style.Default.WithForegroundColor(Color.FromRgb(255, 165, 0)));
         
-        renderer.DrawText(5, y + 3, "Press any key to start the animation...", 
+        renderingSystem.WriteText(5, y + 3, "Press any key to start the animation...", 
             Style.Default.WithForegroundColor(Color.DarkGray));
         
-        renderer.EndFrame();
+        renderingSystem.Render();
         
         Console.ReadKey(true);
     }
@@ -355,7 +361,7 @@ public class PacManExample
             _age++;
         }
         
-        public void Draw(TerminalRenderer renderer)
+        public void Draw(RenderingSystem renderingSystem)
         {
             var fadeAlpha = 1.0 - (_age / 15.0);
             var style = Style.Default.WithForegroundColor(_color);
@@ -374,9 +380,9 @@ public class PacManExample
                 var y = (int)Math.Round(_y + star.DY * distance);
                 
                 // Only draw if within bounds
-                if (x >= 0 && x < renderer.Width && y >= 0 && y < renderer.Height - 6)
+                if (x >= 0 && x < renderingSystem.Terminal.Width && y >= 0 && y < renderingSystem.Terminal.Height - 6)
                 {
-                    renderer.DrawChar(x, y, star.Character, style);
+                    renderingSystem.Buffer.SetCell(x, y, star.Character, style);
                 }
             }
         }

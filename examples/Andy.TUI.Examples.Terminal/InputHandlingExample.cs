@@ -16,15 +16,19 @@ public class InputHandlingExample
         Console.ReadKey(true);
         
         var terminal = new AnsiTerminal();
-        using var renderer = new TerminalRenderer(terminal);
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         using var inputHandler = new ConsoleInputHandler();
         
         // State
         var keyLog = new List<string>();
-        var cursorX = renderer.Width / 2;
-        var cursorY = renderer.Height / 2;
+        var cursorX = renderingSystem.Terminal.Width / 2;
+        var cursorY = renderingSystem.Terminal.Height / 2;
         var inputBuffer = new StringBuilder();
         var exit = false;
+        
+        // Declare redrawUI action before using it
+        Action? redrawUI = null;
         
         // Setup input handlers
         inputHandler.KeyPressed += (_, e) =>
@@ -51,7 +55,7 @@ public class InputHandlingExample
                     break;
                     
                 case ConsoleKey.DownArrow:
-                    cursorY = Math.Min(renderer.Height - 4, cursorY + 1);
+                    cursorY = Math.Min(renderingSystem.Terminal.Height - 4, cursorY + 1);
                     break;
                     
                 case ConsoleKey.LeftArrow:
@@ -59,7 +63,7 @@ public class InputHandlingExample
                     break;
                     
                 case ConsoleKey.RightArrow:
-                    cursorX = Math.Min(renderer.Width - 2, cursorX + 1);
+                    cursorX = Math.Min(renderingSystem.Terminal.Width - 2, cursorX + 1);
                     break;
                     
                 case ConsoleKey.Backspace:
@@ -81,51 +85,57 @@ public class InputHandlingExample
                     }
                     break;
             }
+            
+            // Queue a redraw after handling the key
+            if (redrawUI != null)
+                renderingSystem.Scheduler.QueueRender(redrawUI);
         };
         
         inputHandler.Start();
         
-        // Main loop
-        while (!exit)
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 30; // Lower FPS for input-driven app
+        
+        // Define redrawUI action
+        redrawUI = () =>
         {
-            renderer.BeginFrame();
-            renderer.Clear();
+            renderingSystem.Clear();
             
             // Draw UI
-            renderer.DrawBox(0, 0, renderer.Width, renderer.Height, BorderStyle.Single,
-                Style.WithForeground(Color.DarkCyan));
+            renderingSystem.DrawBox(0, 0, renderingSystem.Terminal.Width, renderingSystem.Terminal.Height, 
+                Style.WithForeground(Color.DarkCyan), BoxStyle.Single);
             
             // Title
             var title = " Keyboard Input Demo ";
-            renderer.DrawText((renderer.Width - title.Length) / 2, 0, title,
+            renderingSystem.WriteText((renderingSystem.Terminal.Width - title.Length) / 2, 0, title,
                 Style.WithForeground(Color.White).WithBold());
             
             // Instructions
-            renderer.DrawText(2, 2, "Use arrow keys to move cursor", Style.WithForeground(Color.Gray));
-            renderer.DrawText(2, 3, "Type to add text to buffer", Style.WithForeground(Color.Gray));
-            renderer.DrawText(2, 4, "Press ENTER to clear buffer", Style.WithForeground(Color.Gray));
-            renderer.DrawText(2, 5, "Press ESC to exit", Style.WithForeground(Color.Gray));
+            renderingSystem.WriteText(2, 2, "Use arrow keys to move cursor", Style.WithForeground(Color.Gray));
+            renderingSystem.WriteText(2, 3, "Type to add text to buffer", Style.WithForeground(Color.Gray));
+            renderingSystem.WriteText(2, 4, "Press ENTER to clear buffer", Style.WithForeground(Color.Gray));
+            renderingSystem.WriteText(2, 5, "Press ESC to exit", Style.WithForeground(Color.Gray));
             
             // Draw movable cursor
-            renderer.DrawChar(cursorX, cursorY, '⊕', 
+            renderingSystem.Buffer.SetCell(cursorX, cursorY, '⊕', 
                 Style.WithForeground(Color.Yellow).WithBold());
             
             // Draw cursor position
             var posText = $"Position: ({cursorX}, {cursorY})";
-            renderer.DrawText(2, renderer.Height - 3, posText, 
+            renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 3, posText, 
                 Style.WithForeground(Color.Green));
-            
+    
             // Draw input buffer
             var bufferLabel = "Input Buffer: ";
-            renderer.DrawText(2, renderer.Height - 5, bufferLabel,
+            renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 5, bufferLabel,
                 Style.WithForeground(Color.White));
-            renderer.DrawText(2 + bufferLabel.Length, renderer.Height - 5, inputBuffer.ToString(),
+            renderingSystem.WriteText(2 + bufferLabel.Length, renderingSystem.Terminal.Height - 5, inputBuffer.ToString(),
                 Style.WithForeground(Color.Cyan));
             
             // Draw key log
-            renderer.DrawBox(renderer.Width - 52, 2, 50, 13, BorderStyle.Rounded,
-                Style.WithForeground(Color.DarkGray));
-            renderer.DrawText(renderer.Width - 51 + 18, 2, " Key Log ",
+            renderingSystem.DrawBox(renderingSystem.Terminal.Width - 52, 2, 50, 13,
+                Style.WithForeground(Color.DarkGray), BoxStyle.Rounded);
+            renderingSystem.WriteText(renderingSystem.Terminal.Width - 51 + 18, 2, " Key Log ",
                 Style.WithForeground(Color.White));
             
             for (int i = 0; i < keyLog.Count; i++)
@@ -134,18 +144,23 @@ public class InputHandlingExample
                 if (logEntry.Length > 46)
                     logEntry = logEntry.Substring(0, 46) + "...";
                     
-                renderer.DrawText(renderer.Width - 50, 4 + i, logEntry,
+                renderingSystem.WriteText(renderingSystem.Terminal.Width - 50, 4 + i, logEntry,
                     Style.WithForeground(Color.DarkGray));
             }
-            
-            renderer.EndFrame();
-            
-            // Small delay to reduce CPU usage
-            Thread.Sleep(16); // ~60 FPS
-            
-            // Poll for input
+        };
+        
+        // Initial draw
+        redrawUI();
+        renderingSystem.Render();
+        
+        // Main loop just polls for input
+        while (!exit)
+        {
             inputHandler.Poll();
+            Thread.Sleep(10);
         }
+        
+        renderingSystem.Shutdown();
         
         Console.Clear();
         Console.WriteLine("\nInput handling example complete!");

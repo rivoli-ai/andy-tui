@@ -1,3 +1,4 @@
+using Xunit;
 using Andy.TUI.Terminal;
 
 namespace Andy.TUI.Terminal.Tests;

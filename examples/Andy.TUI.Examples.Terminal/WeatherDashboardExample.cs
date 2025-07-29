@@ -48,8 +48,9 @@ public class WeatherDashboardExample
         Console.WriteLine("Loading weather data...");
         Thread.Sleep(1500);
 
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
 
         // Hide cursor
         terminal.CursorVisible = false;
@@ -78,11 +79,18 @@ public class WeatherDashboardExample
 
         var frameCount = 0;
         var startTime = DateTime.Now;
-
-        while (!exit)
+        
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 20;
+        
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
-            renderer.BeginFrame();
-            renderer.Clear();
+            if (exit)
+                return;
+                
+            renderingSystem.Clear();
 
             // Handle input
             if (pressedKeys.Contains(ConsoleKey.LeftArrow))
@@ -108,12 +116,22 @@ public class WeatherDashboardExample
             }
 
             // Draw dashboard
-            DrawWeatherDashboard(renderer, currentWeather, forecast, temperatureHistory, 
+            DrawWeatherDashboard(renderingSystem, currentWeather, forecast, temperatureHistory, 
                                frameCount, startTime, selectedCity, cities.Length);
 
-            renderer.EndFrame();
             frameCount++;
-            Thread.Sleep(50); // ~20 FPS
+            
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit
+        while (!exit)
+        {
+            Thread.Sleep(50);
         }
 
         inputHandler.Stop();
@@ -126,66 +144,66 @@ public class WeatherDashboardExample
         Console.WriteLine("\nWeather dashboard closed. Stay safe out there!");
     }
 
-    private static void DrawWeatherDashboard(TerminalRenderer renderer, WeatherData weather, 
+    private static void DrawWeatherDashboard(RenderingSystem renderingSystem, WeatherData weather, 
                                            List<ForecastDay> forecast, List<int> temperatureHistory,
                                            int frameCount, DateTime startTime, int selectedCity, int totalCities)
     {
         // Draw title
         var titleStyle = Style.Default.WithForegroundColor(Color.Yellow).WithBold();
-        renderer.DrawText(2, 1, "🌤️  Weather Dashboard", titleStyle);
+        renderingSystem.WriteText(2, 1, "🌤️  Weather Dashboard", titleStyle);
 
         // Draw city navigation
         var navStyle = Style.Default.WithForegroundColor(Color.Cyan);
-        renderer.DrawText(2, 2, $"City {selectedCity + 1}/{totalCities}: {weather.City}", navStyle);
+        renderingSystem.WriteText(2, 2, $"City {selectedCity + 1}/{totalCities}: {weather.City}", navStyle);
 
         // Draw current weather section
-        DrawCurrentWeather(renderer, weather, frameCount, 2, 4);
+        DrawCurrentWeather(renderingSystem, weather, frameCount, 2, 4);
 
         // Draw forecast section
-        DrawForecast(renderer, forecast, 2, 15);
+        DrawForecast(renderingSystem, forecast, 2, 15);
 
         // Draw temperature graph
-        DrawTemperatureGraph(renderer, temperatureHistory, renderer.Width - 40, 4);
+        DrawTemperatureGraph(renderingSystem, temperatureHistory, renderingSystem.Terminal.Width - 40, 4);
 
         // Draw additional info
-        DrawAdditionalInfo(renderer, weather, renderer.Width - 25, 15);
+        DrawAdditionalInfo(renderingSystem, weather, renderingSystem.Terminal.Width - 25, 15);
 
         // Draw controls
         var controlsStyle = Style.Default.WithForegroundColor(Color.DarkGray);
-        renderer.DrawText(2, renderer.Height - 2, "← → Change City | ESC/Q Exit", controlsStyle);
+        renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 2, "← → Change City | ESC/Q Exit", controlsStyle);
 
         // Draw performance stats and last updated
         var elapsed = (DateTime.Now - startTime).TotalSeconds;
         var fps = frameCount / elapsed;
         var statsStyle = Style.Default.WithForegroundColor(Color.Green);
-        renderer.DrawText(renderer.Width - 15, 1, $"FPS: {fps:F1}", statsStyle);
+        renderingSystem.WriteText(renderingSystem.Terminal.Width - 15, 1, $"FPS: {fps:F1}", statsStyle);
 
         var updateStyle = Style.Default.WithForegroundColor(Color.Gray);
-        renderer.DrawText(renderer.Width - 30, 2, $"Updated: {weather.LastUpdated:HH:mm:ss}", updateStyle);
+        renderingSystem.WriteText(renderingSystem.Terminal.Width - 30, 2, $"Updated: {weather.LastUpdated:HH:mm:ss}", updateStyle);
     }
 
-    private static void DrawCurrentWeather(TerminalRenderer renderer, WeatherData weather, int frameCount, int x, int y)
+    private static void DrawCurrentWeather(RenderingSystem renderingSystem, WeatherData weather, int frameCount, int x, int y)
     {
         // Draw weather icon (animated)
-        DrawWeatherIcon(renderer, weather.Condition, x, y, frameCount);
+        DrawWeatherIcon(renderingSystem, weather.Condition, x, y, frameCount);
 
         // Draw temperature
         var tempStyle = Style.Default.WithForegroundColor(GetTemperatureColor(weather.Temperature)).WithBold();
-        renderer.DrawText(x + 12, y, $"{weather.Temperature}°C", tempStyle);
+        renderingSystem.WriteText(x + 12, y, $"{weather.Temperature}°C", tempStyle);
 
         // Draw condition
         var conditionStyle = Style.Default.WithForegroundColor(Color.White);
-        renderer.DrawText(x + 12, y + 1, GetConditionText(weather.Condition), conditionStyle);
+        renderingSystem.WriteText(x + 12, y + 1, GetConditionText(weather.Condition), conditionStyle);
 
         // Draw additional metrics
         var metricStyle = Style.Default.WithForegroundColor(Color.Cyan);
-        renderer.DrawText(x, y + 8, $"Humidity: {weather.Humidity}%", metricStyle);
-        renderer.DrawText(x, y + 9, $"Wind: {weather.WindSpeed} km/h {weather.WindDirection}", metricStyle);
-        renderer.DrawText(x + 25, y + 8, $"Pressure: {weather.Pressure} hPa", metricStyle);
-        renderer.DrawText(x + 25, y + 9, $"UV Index: {weather.UVIndex}", metricStyle);
+        renderingSystem.WriteText(x, y + 8, $"Humidity: {weather.Humidity}%", metricStyle);
+        renderingSystem.WriteText(x, y + 9, $"Wind: {weather.WindSpeed} km/h {weather.WindDirection}", metricStyle);
+        renderingSystem.WriteText(x + 25, y + 8, $"Pressure: {weather.Pressure} hPa", metricStyle);
+        renderingSystem.WriteText(x + 25, y + 9, $"UV Index: {weather.UVIndex}", metricStyle);
     }
 
-    private static void DrawWeatherIcon(TerminalRenderer renderer, WeatherCondition condition, int x, int y, int frame)
+    private static void DrawWeatherIcon(RenderingSystem renderingSystem, WeatherCondition condition, int x, int y, int frame)
     {
         var iconStyle = Style.Default.WithForegroundColor(GetConditionColor(condition));
         var secondaryStyle = Style.Default.WithForegroundColor(Color.White);
@@ -193,30 +211,30 @@ public class WeatherDashboardExample
         switch (condition)
         {
             case WeatherCondition.Sunny:
-                DrawSunIcon(renderer, x, y, frame, iconStyle);
+                DrawSunIcon(renderingSystem, x, y, frame, iconStyle);
                 break;
             case WeatherCondition.PartlyCloudy:
-                DrawPartlyCloudyIcon(renderer, x, y, frame, iconStyle, secondaryStyle);
+                DrawPartlyCloudyIcon(renderingSystem, x, y, frame, iconStyle, secondaryStyle);
                 break;
             case WeatherCondition.Cloudy:
-                DrawCloudIcon(renderer, x, y, frame, iconStyle);
+                DrawCloudIcon(renderingSystem, x, y, frame, iconStyle);
                 break;
             case WeatherCondition.Rainy:
-                DrawRainIcon(renderer, x, y, frame, iconStyle, secondaryStyle);
+                DrawRainIcon(renderingSystem, x, y, frame, iconStyle, secondaryStyle);
                 break;
             case WeatherCondition.Stormy:
-                DrawStormIcon(renderer, x, y, frame, iconStyle, secondaryStyle);
+                DrawStormIcon(renderingSystem, x, y, frame, iconStyle, secondaryStyle);
                 break;
             case WeatherCondition.Snowy:
-                DrawSnowIcon(renderer, x, y, frame, iconStyle);
+                DrawSnowIcon(renderingSystem, x, y, frame, iconStyle);
                 break;
             case WeatherCondition.Foggy:
-                DrawFogIcon(renderer, x, y, frame, iconStyle);
+                DrawFogIcon(renderingSystem, x, y, frame, iconStyle);
                 break;
         }
     }
 
-    private static void DrawSunIcon(TerminalRenderer renderer, int x, int y, int frame, Style style)
+    private static void DrawSunIcon(RenderingSystem renderingSystem, int x, int y, int frame, Style style)
     {
         // Sun rays (animated)
         var rayPositions = new[]
@@ -232,66 +250,66 @@ public class WeatherDashboardExample
             var intensity = i == rayIndex ? 1.0 : 0.5;
             var rayColor = Color.FromRgb((byte)(255 * intensity), (byte)(255 * intensity), 0);
             var rayStyle = Style.Default.WithForegroundColor(rayColor);
-            renderer.DrawChar(rayPositions[i].Item1, rayPositions[i].Item2, '*', rayStyle);
+            renderingSystem.Buffer.SetCell(rayPositions[i].Item1, rayPositions[i].Item2, '*', rayStyle);
         }
 
         // Sun body
-        renderer.DrawText(x + 3, y + 1, "┌───┐", style);
-        renderer.DrawText(x + 3, y + 2, "│ ☀ │", style);
-        renderer.DrawText(x + 3, y + 3, "└───┘", style);
+        renderingSystem.WriteText(x + 3, y + 1, "┌───┐", style);
+        renderingSystem.WriteText(x + 3, y + 2, "│ ☀ │", style);
+        renderingSystem.WriteText(x + 3, y + 3, "└───┘", style);
     }
 
-    private static void DrawPartlyCloudyIcon(TerminalRenderer renderer, int x, int y, int frame, Style sunStyle, Style cloudStyle)
+    private static void DrawPartlyCloudyIcon(RenderingSystem renderingSystem, int x, int y, int frame, Style sunStyle, Style cloudStyle)
     {
         // Sun (smaller)
-        renderer.DrawText(x, y, "☀", sunStyle);
+        renderingSystem.WriteText(x, y, "☀", sunStyle);
 
         // Cloud
-        renderer.DrawText(x + 2, y + 1, "☁☁☁", cloudStyle);
-        renderer.DrawText(x + 1, y + 2, "☁☁☁☁", cloudStyle);
+        renderingSystem.WriteText(x + 2, y + 1, "☁☁☁", cloudStyle);
+        renderingSystem.WriteText(x + 1, y + 2, "☁☁☁☁", cloudStyle);
     }
 
-    private static void DrawCloudIcon(TerminalRenderer renderer, int x, int y, int frame, Style style)
+    private static void DrawCloudIcon(RenderingSystem renderingSystem, int x, int y, int frame, Style style)
     {
-        renderer.DrawText(x + 1, y, "☁☁☁", style);
-        renderer.DrawText(x, y + 1, "☁☁☁☁☁", style);
-        renderer.DrawText(x, y + 2, "☁☁☁☁☁", style);
+        renderingSystem.WriteText(x + 1, y, "☁☁☁", style);
+        renderingSystem.WriteText(x, y + 1, "☁☁☁☁☁", style);
+        renderingSystem.WriteText(x, y + 2, "☁☁☁☁☁", style);
     }
 
-    private static void DrawRainIcon(TerminalRenderer renderer, int x, int y, int frame, Style cloudStyle, Style rainStyle)
+    private static void DrawRainIcon(RenderingSystem renderingSystem, int x, int y, int frame, Style cloudStyle, Style rainStyle)
     {
         // Cloud
-        renderer.DrawText(x + 1, y, "☁☁☁", cloudStyle);
-        renderer.DrawText(x, y + 1, "☁☁☁☁☁", cloudStyle);
+        renderingSystem.WriteText(x + 1, y, "☁☁☁", cloudStyle);
+        renderingSystem.WriteText(x, y + 1, "☁☁☁☁☁", cloudStyle);
 
         // Animated rain drops
         var rainY = y + 2 + (frame / 5) % 3;
         for (int i = 0; i < 5; i++)
         {
             if (rainY + i < y + 6)
-                renderer.DrawChar(x + i + 1, rainY + (i % 2), '|', rainStyle);
+                renderingSystem.Buffer.SetCell(x + i + 1, rainY + (i % 2), '|', rainStyle);
         }
     }
 
-    private static void DrawStormIcon(TerminalRenderer renderer, int x, int y, int frame, Style cloudStyle, Style lightningStyle)
+    private static void DrawStormIcon(RenderingSystem renderingSystem, int x, int y, int frame, Style cloudStyle, Style lightningStyle)
     {
         // Dark cloud
         var darkStyle = Style.Default.WithForegroundColor(Color.DarkGray);
-        renderer.DrawText(x + 1, y, "☁☁☁", darkStyle);
-        renderer.DrawText(x, y + 1, "☁☁☁☁☁", darkStyle);
+        renderingSystem.WriteText(x + 1, y, "☁☁☁", darkStyle);
+        renderingSystem.WriteText(x, y + 1, "☁☁☁☁☁", darkStyle);
 
         // Lightning (flashing)
         if ((frame / 8) % 4 == 0)
         {
-            renderer.DrawText(x + 2, y + 2, "⚡", lightningStyle);
+            renderingSystem.WriteText(x + 2, y + 2, "⚡", lightningStyle);
         }
     }
 
-    private static void DrawSnowIcon(TerminalRenderer renderer, int x, int y, int frame, Style style)
+    private static void DrawSnowIcon(RenderingSystem renderingSystem, int x, int y, int frame, Style style)
     {
         // Cloud
-        renderer.DrawText(x + 1, y, "☁☁☁", style);
-        renderer.DrawText(x, y + 1, "☁☁☁☁☁", style);
+        renderingSystem.WriteText(x + 1, y, "☁☁☁", style);
+        renderingSystem.WriteText(x, y + 1, "☁☁☁☁☁", style);
 
         // Animated snowflakes
         var snowflakes = new[] { '❄', '❅', '✻' };
@@ -299,11 +317,11 @@ public class WeatherDashboardExample
         {
             var snowY = y + 2 + ((frame + i * 7) / 8) % 4;
             var flakeIndex = (frame + i) % snowflakes.Length;
-            renderer.DrawChar(x + i, snowY, snowflakes[flakeIndex], style);
+            renderingSystem.Buffer.SetCell(x + i, snowY, snowflakes[flakeIndex], style);
         }
     }
 
-    private static void DrawFogIcon(TerminalRenderer renderer, int x, int y, int frame, Style style)
+    private static void DrawFogIcon(RenderingSystem renderingSystem, int x, int y, int frame, Style style)
     {
         var fogStyle = Style.Default.WithForegroundColor(Color.Gray);
         for (int i = 0; i < 4; i++)
@@ -311,14 +329,14 @@ public class WeatherDashboardExample
             var opacity = (Math.Sin((frame * 0.1) + i) + 1) / 2;
             var alpha = (byte)(opacity * 150 + 50);
             var dynamicStyle = Style.Default.WithForegroundColor(Color.FromRgb(alpha, alpha, alpha));
-            renderer.DrawText(x, y + i, "≈≈≈≈≈≈", dynamicStyle);
+            renderingSystem.WriteText(x, y + i, "≈≈≈≈≈≈", dynamicStyle);
         }
     }
 
-    private static void DrawForecast(TerminalRenderer renderer, List<ForecastDay> forecast, int x, int y)
+    private static void DrawForecast(RenderingSystem renderingSystem, List<ForecastDay> forecast, int x, int y)
     {
         var headerStyle = Style.Default.WithForegroundColor(Color.Yellow).WithBold();
-        renderer.DrawText(x, y, "5-Day Forecast", headerStyle);
+        renderingSystem.WriteText(x, y, "5-Day Forecast", headerStyle);
 
         for (int i = 0; i < forecast.Count; i++)
         {
@@ -328,17 +346,17 @@ public class WeatherDashboardExample
             var rainStyle = Style.Default.WithForegroundColor(Color.Blue);
 
             int dayX = x + i * 15;
-            renderer.DrawText(dayX, y + 2, day.Day, dayStyle);
-            renderer.DrawText(dayX, y + 3, GetConditionIcon(day.Condition), Style.Default.WithForegroundColor(GetConditionColor(day.Condition)));
-            renderer.DrawText(dayX, y + 4, $"{day.HighTemp}°/{day.LowTemp}°", tempStyle);
-            renderer.DrawText(dayX, y + 5, $"{day.ChanceOfRain}% rain", rainStyle);
+            renderingSystem.WriteText(dayX, y + 2, day.Day, dayStyle);
+            renderingSystem.WriteText(dayX, y + 3, GetConditionIcon(day.Condition), Style.Default.WithForegroundColor(GetConditionColor(day.Condition)));
+            renderingSystem.WriteText(dayX, y + 4, $"{day.HighTemp}°/{day.LowTemp}°", tempStyle);
+            renderingSystem.WriteText(dayX, y + 5, $"{day.ChanceOfRain}% rain", rainStyle);
         }
     }
 
-    private static void DrawTemperatureGraph(TerminalRenderer renderer, List<int> temperatures, int x, int y)
+    private static void DrawTemperatureGraph(RenderingSystem renderingSystem, List<int> temperatures, int x, int y)
     {
         var headerStyle = Style.Default.WithForegroundColor(Color.Yellow).WithBold();
-        renderer.DrawText(x, y, "24h Temperature", headerStyle);
+        renderingSystem.WriteText(x, y, "24h Temperature", headerStyle);
 
         var graphHeight = 8;
         var graphWidth = Math.Min(temperatures.Count, 30);
@@ -358,13 +376,13 @@ public class WeatherDashboardExample
             // Draw bar
             for (int h = 0; h <= normalizedHeight; h++)
             {
-                renderer.DrawChar(x + i, y + graphHeight + 2 - h, '█', style);
+                renderingSystem.Buffer.SetCell(x + i, y + graphHeight + 2 - h, '█', style);
             }
 
             // Draw temperature value at top
             if (i % 4 == 0)
             {
-                renderer.DrawText(x + i, y + 1, $"{temp}°", Style.Default.WithForegroundColor(Color.Cyan));
+                renderingSystem.WriteText(x + i, y + 1, $"{temp}°", Style.Default.WithForegroundColor(Color.Cyan));
             }
         }
 
@@ -372,30 +390,30 @@ public class WeatherDashboardExample
         var axisStyle = Style.Default.WithForegroundColor(Color.DarkGray);
         for (int i = 0; i < graphWidth; i++)
         {
-            renderer.DrawChar(x + i, y + graphHeight + 3, '─', axisStyle);
+            renderingSystem.Buffer.SetCell(x + i, y + graphHeight + 3, '─', axisStyle);
         }
     }
 
-    private static void DrawAdditionalInfo(TerminalRenderer renderer, WeatherData weather, int x, int y)
+    private static void DrawAdditionalInfo(RenderingSystem renderingSystem, WeatherData weather, int x, int y)
     {
         var headerStyle = Style.Default.WithForegroundColor(Color.Yellow).WithBold();
         var infoStyle = Style.Default.WithForegroundColor(Color.White);
 
-        renderer.DrawText(x, y, "Details", headerStyle);
+        renderingSystem.WriteText(x, y, "Details", headerStyle);
         
         // Air quality indicator
         var aqiColor = weather.UVIndex < 3 ? Color.Green : weather.UVIndex < 6 ? Color.Yellow : Color.Red;
         var aqiStyle = Style.Default.WithForegroundColor(aqiColor);
-        renderer.DrawText(x, y + 2, "Air Quality:", infoStyle);
+        renderingSystem.WriteText(x, y + 2, "Air Quality:", infoStyle);
         var aqiText = weather.UVIndex < 3 ? "Good" : weather.UVIndex < 6 ? "Moderate" : "Poor";
-        renderer.DrawText(x, y + 3, aqiText, aqiStyle);
+        renderingSystem.WriteText(x, y + 3, aqiText, aqiStyle);
 
         // Comfort index
         var comfort = CalculateComfortIndex(weather.Temperature, weather.Humidity);
         var comfortColor = comfort > 70 ? Color.Green : comfort > 40 ? Color.Yellow : Color.Red;
         var comfortStyle = Style.Default.WithForegroundColor(comfortColor);
-        renderer.DrawText(x, y + 5, "Comfort:", infoStyle);
-        renderer.DrawText(x, y + 6, $"{comfort}%", comfortStyle);
+        renderingSystem.WriteText(x, y + 5, "Comfort:", infoStyle);
+        renderingSystem.WriteText(x, y + 6, $"{comfort}%", comfortStyle);
     }
 
     private static WeatherData GenerateCurrentWeather()

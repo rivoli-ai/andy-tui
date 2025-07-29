@@ -189,8 +189,9 @@ public class FireEffectExample
         Console.WriteLine("Press any key to start...");
         Console.ReadKey(true);
         
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
         // Hide cursor
         terminal.CursorVisible = false;
@@ -214,8 +215,8 @@ public class FireEffectExample
         var particles = new List<Particle>();
         var fireSource = new FireSource
         {
-            X = renderer.Width / 2,
-            Y = renderer.Height - 5,
+            X = renderingSystem.Terminal.Width / 2,
+            Y = renderingSystem.Terminal.Height - 5,
             Intensity = 1.0,
             Width = 10
         };
@@ -223,14 +224,18 @@ public class FireEffectExample
         // Animation parameters
         var frameCount = 0;
         var startTime = DateTime.Now;
-        var targetFps = 30.0;
-        var targetFrameTime = TimeSpan.FromMilliseconds(1000.0 / targetFps);
-        var nextFrameTime = DateTime.Now;
         
-        while (!exit)
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 30;
+        
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
-            renderer.BeginFrame();
-            renderer.Clear();
+            if (exit)
+                return;
+                
+            renderingSystem.Clear();
             
             // Handle input for moving fire source
             if (pressedKeys.Contains(ConsoleKey.LeftArrow))
@@ -240,7 +245,7 @@ public class FireEffectExample
             }
             if (pressedKeys.Contains(ConsoleKey.RightArrow))
             {
-                fireSource.X = Math.Min(renderer.Width - 5, fireSource.X + 2);
+                fireSource.X = Math.Min(renderingSystem.Terminal.Width - 5, fireSource.X + 2);
                 pressedKeys.Remove(ConsoleKey.RightArrow);
             }
             if (pressedKeys.Contains(ConsoleKey.UpArrow))
@@ -266,17 +271,17 @@ public class FireEffectExample
                 particle.Update();
                 
                 if (!particle.IsAlive || particle.Y < 0 || 
-                    particle.X < 0 || particle.X >= renderer.Width)
+                    particle.X < 0 || particle.X >= renderingSystem.Terminal.Width)
                 {
                     particles.RemoveAt(i);
                 }
             }
             
             // Draw ground/base
-            DrawGround(renderer);
+            DrawGround(renderingSystem);
             
             // Draw fire source
-            DrawFireSource(renderer, fireSource);
+            DrawFireSource(renderingSystem, fireSource);
             
             // Sort particles by Y coordinate (back to front)
             var sortedParticles = particles.OrderBy(p => p.Y).ToList();
@@ -287,31 +292,32 @@ public class FireEffectExample
                 var x = (int)Math.Round(particle.X);
                 var y = (int)Math.Round(particle.Y);
                 
-                if (x >= 0 && x < renderer.Width && y >= 0 && y < renderer.Height)
+                if (x >= 0 && x < renderingSystem.Terminal.Width && y >= 0 && y < renderingSystem.Terminal.Height)
                 {
                     var color = particle.GetColor();
                     var character = particle.GetCharacter();
                     var style = Style.Default.WithForegroundColor(color);
                     
-                    renderer.DrawChar(x, y, character, style);
+                    renderingSystem.Buffer.SetCell(x, y, character, style);
                 }
             }
             
             // Draw UI
-            DrawUI(renderer, fireSource, particles.Count, frameCount, startTime);
-            
-            renderer.EndFrame();
+            DrawUI(renderingSystem, fireSource, particles.Count, frameCount, startTime);
             
             frameCount++;
             
-            // Frame rate control
-            var now = DateTime.Now;
-            var sleepTime = nextFrameTime - now;
-            if (sleepTime > TimeSpan.Zero)
-            {
-                Thread.Sleep(sleepTime);
-            }
-            nextFrameTime += targetFrameTime;
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit
+        while (!exit)
+        {
+            Thread.Sleep(50);
         }
         
         inputHandler.Stop();
@@ -319,31 +325,32 @@ public class FireEffectExample
         
         // Restore cursor
         terminal.CursorVisible = true;
+        renderingSystem.Shutdown();
         
         Console.Clear();
         Console.WriteLine("\nFire extinguished!");
     }
     
-    private static void DrawGround(TerminalRenderer renderer)
+    private static void DrawGround(RenderingSystem renderingSystem)
     {
         var groundColor = Color.FromRgb(100, 50, 0);
         var style = Style.Default.WithBackgroundColor(groundColor);
         
-        for (int x = 0; x < renderer.Width; x++)
+        for (int x = 0; x < renderingSystem.Terminal.Width; x++)
         {
-            renderer.DrawChar(x, renderer.Height - 1, ' ', style);
-            renderer.DrawChar(x, renderer.Height - 2, ' ', style);
+            renderingSystem.Buffer.SetCell(x, renderingSystem.Terminal.Height - 1, ' ', style);
+            renderingSystem.Buffer.SetCell(x, renderingSystem.Terminal.Height - 2, ' ', style);
         }
         
         // Add some texture
         var textureStyle = Style.Default.WithForegroundColor(Color.FromRgb(80, 40, 0));
-        for (int x = 0; x < renderer.Width; x += 3)
+        for (int x = 0; x < renderingSystem.Terminal.Width; x += 3)
         {
-            renderer.DrawChar(x, renderer.Height - 2, '▄', textureStyle);
+            renderingSystem.Buffer.SetCell(x, renderingSystem.Terminal.Height - 2, '▄', textureStyle);
         }
     }
     
-    private static void DrawFireSource(TerminalRenderer renderer, FireSource source)
+    private static void DrawFireSource(RenderingSystem renderingSystem, FireSource source)
     {
         var sourceColor = Color.FromRgb(200, 0, 0);
         var style = Style.Default.WithForegroundColor(sourceColor);
@@ -352,46 +359,46 @@ public class FireEffectExample
         for (int i = 0; i < source.Width; i++)
         {
             var x = (int)(source.X - source.Width / 2 + i);
-            if (x >= 0 && x < renderer.Width)
+            if (x >= 0 && x < renderingSystem.Terminal.Width)
             {
                 var intensity = 1.0 - Math.Abs(i - source.Width / 2.0) / (source.Width / 2.0);
                 var glowIntensity = intensity * source.Intensity;
                 
                 if (glowIntensity > 0.8)
-                    renderer.DrawChar(x, (int)source.Y, '█', style);
+                    renderingSystem.Buffer.SetCell(x, (int)source.Y, '█', style);
                 else if (glowIntensity > 0.5)
-                    renderer.DrawChar(x, (int)source.Y, '▓', style);
+                    renderingSystem.Buffer.SetCell(x, (int)source.Y, '▓', style);
                 else if (glowIntensity > 0.2)
-                    renderer.DrawChar(x, (int)source.Y, '▒', style);
+                    renderingSystem.Buffer.SetCell(x, (int)source.Y, '▒', style);
             }
         }
     }
     
-    private static void DrawUI(TerminalRenderer renderer, FireSource source, int particleCount, 
+    private static void DrawUI(RenderingSystem renderingSystem, FireSource source, int particleCount, 
         int frameCount, DateTime startTime)
     {
         var uiStyle = Style.Default.WithForegroundColor(Color.White);
         var highlightStyle = Style.Default.WithForegroundColor(Color.Yellow);
         
         // Title
-        renderer.DrawText(2, 1, "🔥 ASCII Fire Effect", highlightStyle);
+        renderingSystem.WriteText(2, 1, "🔥 ASCII Fire Effect", highlightStyle);
         
         // Controls
-        renderer.DrawText(2, 3, "Controls:", uiStyle);
-        renderer.DrawText(2, 4, "← → Move fire source", Style.Default.WithForegroundColor(Color.Green));
-        renderer.DrawText(2, 5, "↑ ↓ Adjust intensity", Style.Default.WithForegroundColor(Color.Green));
-        renderer.DrawText(2, 6, "ESC/Q Exit", Style.Default.WithForegroundColor(Color.Red));
+        renderingSystem.WriteText(2, 3, "Controls:", uiStyle);
+        renderingSystem.WriteText(2, 4, "← → Move fire source", Style.Default.WithForegroundColor(Color.Green));
+        renderingSystem.WriteText(2, 5, "↑ ↓ Adjust intensity", Style.Default.WithForegroundColor(Color.Green));
+        renderingSystem.WriteText(2, 6, "ESC/Q Exit", Style.Default.WithForegroundColor(Color.Red));
         
         // Stats
         var elapsed = (DateTime.Now - startTime).TotalSeconds;
         var fps = frameCount / elapsed;
         
-        renderer.DrawText(2, 8, $"Fire Intensity: {source.Intensity:F1}", uiStyle);
-        renderer.DrawText(2, 9, $"Particles: {particleCount}", uiStyle);
-        renderer.DrawText(2, 10, $"FPS: {fps:F1}", uiStyle);
+        renderingSystem.WriteText(2, 8, $"Fire Intensity: {source.Intensity:F1}", uiStyle);
+        renderingSystem.WriteText(2, 9, $"Particles: {particleCount}", uiStyle);
+        renderingSystem.WriteText(2, 10, $"FPS: {fps:F1}", uiStyle);
         
         // Heat scale legend
-        renderer.DrawText(renderer.Width - 20, 3, "Heat Scale:", uiStyle);
+        renderingSystem.WriteText(renderingSystem.Terminal.Width - 20, 3, "Heat Scale:", uiStyle);
         
         var heatColors = new[]
         {
@@ -406,7 +413,7 @@ public class FireEffectExample
         {
             var (color, text) = heatColors[i];
             var style = Style.Default.WithForegroundColor(color);
-            renderer.DrawText(renderer.Width - 20, 4 + i, text, style);
+            renderingSystem.WriteText(renderingSystem.Terminal.Width - 20, 4 + i, text, style);
         }
     }
 }

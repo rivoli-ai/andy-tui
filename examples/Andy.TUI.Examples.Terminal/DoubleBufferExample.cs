@@ -4,7 +4,7 @@ using System.Diagnostics;
 namespace Andy.TUI.Examples.Terminal;
 
 /// <summary>
-/// Demonstrates double buffering with the TerminalRenderer for smooth animations.
+/// Demonstrates double buffering with the RenderingSystem for smooth animations.
 /// </summary>
 public class DoubleBufferExample
 {
@@ -16,7 +16,8 @@ public class DoubleBufferExample
         Console.ReadKey(true);
         
         var terminal = new AnsiTerminal();
-        using var renderer = new TerminalRenderer(terminal);
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
         // Animation parameters
         const int ballCount = 5;
@@ -29,8 +30,8 @@ public class DoubleBufferExample
         {
             balls[i] = new Ball
             {
-                X = random.Next(10, renderer.Width - 10),
-                Y = random.Next(5, renderer.Height - 10), // Account for stats area
+                X = random.Next(10, renderingSystem.Terminal.Width - 10),
+                Y = random.Next(5, renderingSystem.Terminal.Height - 10), // Account for stats area
                 VX = random.Next(-2, 3),
                 VY = random.Next(-1, 2),
                 Symbol = '●',
@@ -48,27 +49,30 @@ public class DoubleBufferExample
         };
         inputHandler.Start();
         
-        // Animation loop
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 60;
+        
+        // Animation state
         var frameCount = 0;
         var startTime = DateTime.Now;
-        var targetFps = 60.0; // Target 60 FPS
-        var targetFrameTime = TimeSpan.FromMilliseconds(1000.0 / targetFps);
-        var nextFrameTime = DateTime.Now;
         
-        while (!exit && frameCount < 600) // Run for ~10 seconds at 60 FPS
+        // Animation function that will be called by the scheduler
+        Action? animateFrame = null;
+        animateFrame = () =>
         {
-            renderer.BeginFrame();
-            
+            if (exit || frameCount >= 600) // Run for ~10 seconds at 60 FPS
+                return;
+                
             // Clear the screen
-            renderer.Clear();
+            renderingSystem.Clear();
             
             // Draw border (leave room for stats at bottom)
-            renderer.DrawBox(0, 0, renderer.Width, renderer.Height - 4, BorderStyle.Double, 
-                Style.WithForeground(Color.DarkGray));
+            renderingSystem.DrawBox(0, 0, renderingSystem.Terminal.Width, renderingSystem.Terminal.Height - 4, 
+                Style.WithForeground(Color.DarkGray), BoxStyle.Double);
             
             // Draw title
             var title = " Double Buffer Animation ";
-            renderer.DrawText((renderer.Width - title.Length) / 2, 0, title, 
+            renderingSystem.WriteText((renderingSystem.Terminal.Width - title.Length) / 2, 0, title, 
                 Style.WithForeground(Color.White).WithBold());
             
             // Update and draw balls
@@ -79,15 +83,15 @@ public class DoubleBufferExample
                 ball.Y += ball.VY;
                 
                 // Bounce off walls
-                if (ball.X <= 1 || ball.X >= renderer.Width - 2)
+                if (ball.X <= 1 || ball.X >= renderingSystem.Terminal.Width - 2)
                 {
                     ball.VX = -ball.VX;
-                    ball.X = Math.Clamp(ball.X, 1, renderer.Width - 2);
+                    ball.X = Math.Clamp(ball.X, 1, renderingSystem.Terminal.Width - 2);
                 }
-                if (ball.Y <= 1 || ball.Y >= renderer.Height - 6) // Account for stats area
+                if (ball.Y <= 1 || ball.Y >= renderingSystem.Terminal.Height - 6) // Account for stats area
                 {
                     ball.VY = -ball.VY;
-                    ball.Y = Math.Clamp(ball.Y, 1, renderer.Height - 6);
+                    ball.Y = Math.Clamp(ball.Y, 1, renderingSystem.Terminal.Height - 6);
                 }
                 
                 // Draw ball with trail effect
@@ -95,11 +99,11 @@ public class DoubleBufferExample
                 {
                     // Draw fading trail
                     var trailStyle = ball.Style.WithDim();
-                    renderer.DrawChar(ball.PrevX, ball.PrevY, '·', trailStyle);
+                    renderingSystem.Buffer.SetCell(ball.PrevX, ball.PrevY, '·', trailStyle);
                 }
                 
                 // Draw ball
-                renderer.DrawChar(ball.X, ball.Y, ball.Symbol, ball.Style);
+                renderingSystem.Buffer.SetCell(ball.X, ball.Y, ball.Symbol, ball.Style);
                 
                 // Store previous position
                 ball.PrevX = ball.X;
@@ -119,32 +123,35 @@ public class DoubleBufferExample
             var gen2 = GC.CollectionCount(2);
             
             // Draw multiple stat lines
-            var statsY = renderer.Height - 4;
-            renderer.DrawText(2, statsY, $"FPS: {fps:F1} | Frame: {frameCount} | Target: {targetFps} FPS",
+            var statsY = renderingSystem.Terminal.Height - 4;
+            renderingSystem.WriteText(2, statsY, $"FPS: {fps:F1} | Frame: {frameCount} | Target: {renderingSystem.Scheduler.TargetFps} FPS",
                 Style.WithForeground(Color.Yellow));
-            renderer.DrawText(2, statsY + 1, $"Memory: {gcMemory:F1} MB (Working Set: {workingSet:F1} MB)",
+            renderingSystem.WriteText(2, statsY + 1, $"Memory: {gcMemory:F1} MB (Working Set: {workingSet:F1} MB)",
                 Style.WithForeground(Color.Cyan));
-            renderer.DrawText(2, statsY + 2, $"GC Gen 0: {gen0} | Gen 1: {gen1} | Gen 2: {gen2}",
+            renderingSystem.WriteText(2, statsY + 2, $"GC Gen 0: {gen0} | Gen 1: {gen1} | Gen 2: {gen2}",
                 Style.WithForeground(Color.Green));
-            renderer.DrawText(2, statsY + 3, "Press ESC or Q to exit",
+            renderingSystem.WriteText(2, statsY + 3, "Press ESC or Q to exit",
                 Style.WithForeground(Color.White).WithDim());
-            
-            renderer.EndFrame();
             
             frameCount++;
             
-            // Precise frame rate control
-            var now = DateTime.Now;
-            var sleepTime = nextFrameTime - now;
-            if (sleepTime > TimeSpan.Zero)
-            {
-                Thread.Sleep(sleepTime);
-            }
-            nextFrameTime += targetFrameTime;
+            // Queue the next frame
+            renderingSystem.Scheduler.QueueRender(animateFrame);
+        };
+        
+        // Start the animation
+        renderingSystem.Scheduler.QueueRender(animateFrame);
+        
+        // Main thread waits for exit
+        while (!exit && frameCount < 600)
+        {
+            inputHandler.Poll();
+            Thread.Sleep(10);
         }
         
         inputHandler.Stop();
         inputHandler.Dispose();
+        renderingSystem.Shutdown();
         
         Console.Clear();
         Console.WriteLine("\nAnimation complete!");

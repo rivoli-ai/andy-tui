@@ -110,36 +110,35 @@ var redText = Style.WithForeground(Color.Red);
 
 ## Rendering System
 
-### TerminalRenderer
+### RenderingSystem
 
-Double-buffered renderer for smooth animations:
+High-level rendering API with automatic double buffering and frame rate control:
 
 ```csharp
-var renderer = new TerminalRenderer(terminal);
+using var renderingSystem = new RenderingSystem(terminal);
+renderingSystem.Initialize();
 
-// Begin a new frame
-renderer.BeginFrame();
+// Drawing operations (no need for explicit frame management)
+renderingSystem.Clear();
+renderingSystem.WriteText(10, 5, "Hello", style);
+renderingSystem.DrawChar(20, 10, '█', style);
+renderingSystem.DrawLine(0, 15, 80, 15, '─', style);
+renderingSystem.DrawBox(0, 0, 80, 24, style, BoxStyle.Double);
 
-// Drawing operations
-renderer.Clear();
-renderer.DrawText(10, 5, "Hello", style);
-renderer.DrawChar(20, 10, '█', style);
-renderer.DrawLine(0, 15, 80, 15, '─', style);
-renderer.DrawBox(0, 0, 80, 24, BorderStyle.Double, style);
-
-// Commit the frame (only changes are rendered)
-renderer.EndFrame();
+// Automatic rendering happens through the scheduler
+renderingSystem.Render();
 ```
 
-### Border Styles
+### Box Styles
 
 ```csharp
-public enum BorderStyle
+public enum BoxStyle
 {
     Single,    // ┌─┐│└┘
     Double,    // ╔═╗║╚╝
     Rounded,   // ╭─╮│╰╯
-    Thick      // ┏━┓┃┗┛
+    Heavy,     // ┏━┓┃┗┛
+    Ascii      // +-+|+-+
 }
 ```
 
@@ -218,32 +217,36 @@ terminal.Write("Status bar");
 terminal.RestoreCursorPosition();
 ```
 
-### Animation with Double Buffering
+### Animation with RenderingSystem
 
 ```csharp
 var terminal = new AnsiTerminal();
-var renderer = new TerminalRenderer(terminal);
+using var renderingSystem = new RenderingSystem(terminal);
+renderingSystem.Initialize();
 
-for (int frame = 0; frame < 100; frame++)
-{
-    renderer.BeginFrame();
-    renderer.Clear();
+int frame = 0;
+Action renderFrame = null;
+renderFrame = () => {
+    if (frame >= 100) return;
+    
+    renderingSystem.Clear();
     
     // Animate a moving box
-    int x = frame % (renderer.Width - 10);
-    renderer.DrawBox(x, 5, 10, 5, BorderStyle.Single);
+    int x = frame % (renderingSystem.Terminal.Width - 10);
+    renderingSystem.DrawBox(x, 5, 10, 5, BoxStyle.Single);
     
-    renderer.EndFrame();
-    Thread.Sleep(50);
-}
+    frame++;
+    renderingSystem.Scheduler.QueueRender(renderFrame);
+};
+
+renderingSystem.Scheduler.QueueRender(renderFrame);
 ```
 
 ### Styled Text Gallery
 
 ```csharp
-var renderer = new TerminalRenderer(terminal);
-
-renderer.BeginFrame();
+var renderingSystem = new RenderingSystem(terminal);
+renderingSystem.Initialize();
 
 // Rainbow gradient
 for (int i = 0; i < 40; i++)
@@ -254,21 +257,19 @@ for (int i = 0; i < 40; i++)
         (byte)(128 + 127 * Math.Sin((hue + 120) * Math.PI / 180)),
         (byte)(128 + 127 * Math.Sin((hue + 240) * Math.PI / 180))
     );
-    renderer.DrawChar(i, 10, '█', Style.WithForeground(color));
+    renderingSystem.Buffer.SetCell(i, 10, '█', Style.Default.WithForegroundColor(color));
 }
 
 // Text attributes
-renderer.DrawText(0, 12, "Bold", Style.WithBold());
-renderer.DrawText(10, 12, "Italic", Style.WithItalic());
-renderer.DrawText(20, 12, "Underline", Style.WithUnderline());
-
-renderer.EndFrame();
+renderingSystem.WriteText(0, 12, "Bold", Style.Default.WithBold());
+renderingSystem.WriteText(10, 12, "Italic", Style.Default.WithItalic());
+renderingSystem.WriteText(20, 12, "Underline", Style.Default.WithUnderline());
 ```
 
 ## Performance Considerations
 
-1. **Double Buffering**: The TerminalRenderer only sends changes between frames, minimizing terminal I/O
-2. **Batch Operations**: Group multiple drawing operations between BeginFrame/EndFrame
+1. **Double Buffering**: The RenderingSystem automatically handles double buffering and only sends changes between frames
+2. **Batch Operations**: Use QueueRender callbacks to batch multiple drawing operations
 3. **String Building**: AnsiTerminal uses StringBuilder for efficient string concatenation
 4. **Platform Checks**: Platform-specific code paths are checked once and cached
 

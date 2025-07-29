@@ -172,8 +172,9 @@ public class SnakeGameExample
         Console.WriteLine("Eat food to grow and increase your score!");
         Console.WriteLine("Starting game...");
         
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
         // Hide cursor
         terminal.CursorVisible = false;
@@ -194,8 +195,8 @@ public class SnakeGameExample
         
         // Game initialization
         var random = new Random();
-        var gameWidth = renderer.Width;
-        var gameHeight = renderer.Height - 5; // Leave space for UI
+        var gameWidth = renderingSystem.Terminal.Width;
+        var gameHeight = renderingSystem.Terminal.Height - 5; // Leave space for UI
         
         var snake = new Snake(gameWidth / 2, gameHeight / 2);
         var foods = new List<Food>();
@@ -211,13 +212,16 @@ public class SnakeGameExample
         var lastMoveTime = DateTime.Now;
         var frameCount = 0;
         var startTime = DateTime.Now;
-        var targetFps = 60.0;
-        var targetFrameTime = TimeSpan.FromMilliseconds(1000.0 / targetFps);
-        var nextFrameTime = DateTime.Now;
         
-        while (!exit && !gameOver)
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 60;
+        
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
-            renderer.BeginFrame();
+            if (exit || gameOver)
+                return;
             
             if (!paused)
             {
@@ -307,20 +311,21 @@ public class SnakeGameExample
             }
             
             // Draw game
-            DrawGame(renderer, snake, foods, gameWidth, gameHeight, score, level, paused, frameCount, startTime);
-            
-            renderer.EndFrame();
+            DrawGame(renderingSystem, snake, foods, gameWidth, gameHeight, score, level, paused, frameCount, startTime);
             
             frameCount++;
             
-            // Precise frame timing for consistent 60 FPS
-            var now = DateTime.Now;
-            var sleepTime = nextFrameTime - now;
-            if (sleepTime > TimeSpan.Zero)
-            {
-                Thread.Sleep(sleepTime);
-            }
-            nextFrameTime += targetFrameTime;
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit or game over
+        while (!exit && !gameOver)
+        {
+            Thread.Sleep(50);
         }
         
         inputHandler.Stop();
@@ -329,7 +334,7 @@ public class SnakeGameExample
         // Game over screen
         if (gameOver)
         {
-            ShowGameOver(renderer, score, level);
+            ShowGameOver(renderingSystem, score, level);
             Console.ReadKey(true);
         }
         
@@ -404,7 +409,7 @@ public class SnakeGameExample
         return attempts < 50 ? Food.CreateBonus(position, random) : null;
     }
     
-    private static void DrawGame(TerminalRenderer renderer, Snake snake, List<Food> foods, 
+    private static void DrawGame(RenderingSystem renderingSystem, Snake snake, List<Food> foods, 
         int gameWidth, int gameHeight, int score, int level, bool paused, int frameCount, DateTime startTime)
     {
         // Clear game area with dark background
@@ -413,52 +418,52 @@ public class SnakeGameExample
         {
             for (int x = 0; x < gameWidth; x++)
             {
-                renderer.DrawChar(x, y, ' ', bgStyle);
+                renderingSystem.Buffer.SetCell(x, y, ' ', bgStyle);
             }
         }
         
         // Draw walls
-        DrawWalls(renderer, gameWidth, gameHeight);
+        DrawWalls(renderingSystem, gameWidth, gameHeight);
         
         // Draw snake
-        DrawSnake(renderer, snake);
+        DrawSnake(renderingSystem, snake);
         
         // Draw food
         foreach (var food in foods)
         {
-            DrawFood(renderer, food);
+            DrawFood(renderingSystem, food);
         }
         
         // Draw UI
-        DrawUI(renderer, gameWidth, gameHeight, score, level, paused, frameCount, startTime);
+        DrawUI(renderingSystem, gameWidth, gameHeight, score, level, paused, frameCount, startTime);
         
         // Draw pause overlay
         if (paused)
         {
-            DrawPauseOverlay(renderer, gameWidth, gameHeight);
+            DrawPauseOverlay(renderingSystem, gameWidth, gameHeight);
         }
     }
     
-    private static void DrawWalls(TerminalRenderer renderer, int width, int height)
+    private static void DrawWalls(RenderingSystem renderingSystem, int width, int height)
     {
         var wallStyle = Style.Default.WithForegroundColor(Color.FromRgb(100, 100, 100));
         
         // Horizontal walls
         for (int x = 0; x < width; x++)
         {
-            renderer.DrawChar(x, 0, '█', wallStyle);
-            renderer.DrawChar(x, height - 1, '█', wallStyle);
+            renderingSystem.Buffer.SetCell(x, 0, '█', wallStyle);
+            renderingSystem.Buffer.SetCell(x, height - 1, '█', wallStyle);
         }
         
         // Vertical walls
         for (int y = 0; y < height; y++)
         {
-            renderer.DrawChar(0, y, '█', wallStyle);
-            renderer.DrawChar(width - 1, y, '█', wallStyle);
+            renderingSystem.Buffer.SetCell(0, y, '█', wallStyle);
+            renderingSystem.Buffer.SetCell(width - 1, y, '█', wallStyle);
         }
     }
     
-    private static void DrawSnake(TerminalRenderer renderer, Snake snake)
+    private static void DrawSnake(RenderingSystem renderingSystem, Snake snake)
     {
         var headStyle = Style.Default.WithForegroundColor(Color.FromRgb(0, 255, 0));
         var bodyStyle = Style.Default.WithForegroundColor(Color.FromRgb(0, 200, 0));
@@ -479,22 +484,22 @@ public class SnakeGameExample
                     Direction.Right => '►',
                     _ => '●'
                 };
-                renderer.DrawChar(segment.X, segment.Y, headChar, headStyle);
+                renderingSystem.Buffer.SetCell(segment.X, segment.Y, headChar, headStyle);
             }
             else if (i == snake.Body.Count - 1)
             {
                 // Tail
-                renderer.DrawChar(segment.X, segment.Y, '○', tailStyle);
+                renderingSystem.Buffer.SetCell(segment.X, segment.Y, '○', tailStyle);
             }
             else
             {
                 // Body
-                renderer.DrawChar(segment.X, segment.Y, '●', bodyStyle);
+                renderingSystem.Buffer.SetCell(segment.X, segment.Y, '●', bodyStyle);
             }
         }
     }
     
-    private static void DrawFood(TerminalRenderer renderer, Food food)
+    private static void DrawFood(RenderingSystem renderingSystem, Food food)
     {
         var style = Style.Default.WithForegroundColor(food.Color);
         
@@ -504,10 +509,10 @@ public class SnakeGameExample
             style = style.WithBold();
         }
         
-        renderer.DrawChar(food.Position.X, food.Position.Y, food.Character, style);
+        renderingSystem.Buffer.SetCell(food.Position.X, food.Position.Y, food.Character, style);
     }
     
-    private static void DrawUI(TerminalRenderer renderer, int gameWidth, int gameHeight, 
+    private static void DrawUI(RenderingSystem renderingSystem, int gameWidth, int gameHeight, 
         int score, int level, bool paused, int frameCount, DateTime startTime)
     {
         var uiY = gameHeight + 1;
@@ -515,16 +520,16 @@ public class SnakeGameExample
         var highlightStyle = Style.Default.WithForegroundColor(Color.Yellow);
         
         // Score and level
-        renderer.DrawText(2, uiY, $"Score: {score}", highlightStyle);
-        renderer.DrawText(15, uiY, $"Level: {level}", highlightStyle);
+        renderingSystem.WriteText(2, uiY, $"Score: {score}", highlightStyle);
+        renderingSystem.WriteText(15, uiY, $"Level: {level}", highlightStyle);
         
         // FPS
         var elapsed = (DateTime.Now - startTime).TotalSeconds;
         var fps = frameCount / elapsed;
-        renderer.DrawText(25, uiY, $"FPS: {fps:F1}", uiStyle);
+        renderingSystem.WriteText(25, uiY, $"FPS: {fps:F1}", uiStyle);
         
         // Controls
-        renderer.DrawText(2, uiY + 1, "Controls: ← → ↑ ↓ Move | SPACE Pause | ESC/Q Quit", uiStyle);
+        renderingSystem.WriteText(2, uiY + 1, "Controls: ← → ↑ ↓ Move | SPACE Pause | ESC/Q Quit", uiStyle);
         
         // Game info
         var speedText = level switch
@@ -535,10 +540,10 @@ public class SnakeGameExample
             <= 10 => "Very Fast",
             _ => "Lightning"
         };
-        renderer.DrawText(gameWidth - 20, uiY, $"Speed: {speedText}", uiStyle);
+        renderingSystem.WriteText(gameWidth - 20, uiY, $"Speed: {speedText}", uiStyle);
     }
     
-    private static void DrawPauseOverlay(TerminalRenderer renderer, int gameWidth, int gameHeight)
+    private static void DrawPauseOverlay(RenderingSystem renderingSystem, int gameWidth, int gameHeight)
     {
         var overlayStyle = Style.Default
             .WithForegroundColor(Color.White)
@@ -552,23 +557,23 @@ public class SnakeGameExample
         {
             for (int x = centerX - 10; x <= centerX + 10; x++)
             {
-                renderer.DrawChar(x, y, ' ', overlayStyle);
+                renderingSystem.Buffer.SetCell(x, y, ' ', overlayStyle);
             }
         }
         
         // Draw pause text
         var pauseStyle = Style.Default.WithForegroundColor(Color.Yellow).WithBold();
-        renderer.DrawText(centerX - 4, centerY - 1, "PAUSED", pauseStyle);
-        renderer.DrawText(centerX - 9, centerY + 1, "Press SPACE to continue", 
+        renderingSystem.WriteText(centerX - 4, centerY - 1, "PAUSED", pauseStyle);
+        renderingSystem.WriteText(centerX - 9, centerY + 1, "Press SPACE to continue", 
             Style.Default.WithForegroundColor(Color.White));
     }
     
-    private static void ShowGameOver(TerminalRenderer renderer, int score, int level)
+    private static void ShowGameOver(RenderingSystem renderingSystem, int score, int level)
     {
-        renderer.BeginFrame();
+        renderingSystem.Clear();
         
-        var centerX = renderer.Width / 2;
-        var centerY = renderer.Height / 2;
+        var centerX = renderingSystem.Terminal.Width / 2;
+        var centerY = renderingSystem.Terminal.Height / 2;
         
         // Draw game over box
         var boxStyle = Style.Default.WithBackgroundColor(Color.FromRgb(50, 0, 0));
@@ -576,7 +581,7 @@ public class SnakeGameExample
         {
             for (int x = centerX - 20; x <= centerX + 20; x++)
             {
-                renderer.DrawChar(x, y, ' ', boxStyle);
+                renderingSystem.Buffer.SetCell(x, y, ' ', boxStyle);
             }
         }
         
@@ -584,11 +589,11 @@ public class SnakeGameExample
         var titleStyle = Style.Default.WithForegroundColor(Color.Red).WithBold();
         var textStyle = Style.Default.WithForegroundColor(Color.White);
         
-        renderer.DrawText(centerX - 5, centerY - 3, "GAME OVER", titleStyle);
-        renderer.DrawText(centerX - 8, centerY - 1, $"Final Score: {score}", textStyle);
-        renderer.DrawText(centerX - 8, centerY, $"Level Reached: {level}", textStyle);
-        renderer.DrawText(centerX - 10, centerY + 2, "Press any key to exit", textStyle);
+        renderingSystem.WriteText(centerX - 5, centerY - 3, "GAME OVER", titleStyle);
+        renderingSystem.WriteText(centerX - 8, centerY - 1, $"Final Score: {score}", textStyle);
+        renderingSystem.WriteText(centerX - 8, centerY, $"Level Reached: {level}", textStyle);
+        renderingSystem.WriteText(centerX - 10, centerY + 2, "Press any key to exit", textStyle);
         
-        renderer.EndFrame();
+        renderingSystem.Render();
     }
 }

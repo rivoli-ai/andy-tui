@@ -1,3 +1,4 @@
+using Xunit;
 using Andy.TUI.Terminal;
 
 namespace Andy.TUI.Terminal.Tests;
@@ -33,7 +34,10 @@ public class ColorTests
         
         Assert.Equal(ColorType.Rgb, color.Type);
         Assert.Null(color.ConsoleColor);
-        Assert.Equal((255, 128, 64), color.Rgb);
+        Assert.True(color.Rgb.HasValue);
+        Assert.Equal(255, color.Rgb.Value.R);
+        Assert.Equal(128, color.Rgb.Value.G);
+        Assert.Equal(64, color.Rgb.Value.B);
         Assert.Null(color.ColorIndex);
     }
     
@@ -45,7 +49,8 @@ public class ColorTests
         Assert.Equal(ColorType.EightBit, color.Type);
         Assert.Null(color.ConsoleColor);
         Assert.Null(color.Rgb);
-        Assert.Equal(196, color.ColorIndex);
+        Assert.True(color.ColorIndex.HasValue);
+        Assert.Equal(196, color.ColorIndex.Value);
     }
     
     [Fact]
@@ -75,7 +80,10 @@ public class ColorTests
         var color = Color.FromRgb(100, 150, 200);
         
         Assert.Equal(ColorType.Rgb, color.Type);
-        Assert.Equal((100, 150, 200), color.Rgb);
+        Assert.True(color.Rgb.HasValue);
+        Assert.Equal(100, color.Rgb.Value.R);
+        Assert.Equal(150, color.Rgb.Value.G);
+        Assert.Equal(200, color.Rgb.Value.B);
     }
     
     [Fact]
@@ -84,7 +92,10 @@ public class ColorTests
         var color = Color.FromHex("#FF8040");
         
         Assert.Equal(ColorType.Rgb, color.Type);
-        Assert.Equal((255, 128, 64), color.Rgb);
+        Assert.True(color.Rgb.HasValue);
+        Assert.Equal(255, color.Rgb.Value.R);
+        Assert.Equal(128, color.Rgb.Value.G);
+        Assert.Equal(64, color.Rgb.Value.B);
     }
     
     [Fact]
@@ -93,7 +104,10 @@ public class ColorTests
         var color = Color.FromHex("00FF00");
         
         Assert.Equal(ColorType.Rgb, color.Type);
-        Assert.Equal((0, 255, 0), color.Rgb);
+        Assert.True(color.Rgb.HasValue);
+        Assert.Equal(0, color.Rgb.Value.R);
+        Assert.Equal(255, color.Rgb.Value.G);
+        Assert.Equal(0, color.Rgb.Value.B);
     }
     
     [Fact]
@@ -121,7 +135,8 @@ public class ColorTests
         var color = Color.FromEightBit(42);
         
         Assert.Equal(ColorType.EightBit, color.Type);
-        Assert.Equal(42, color.ColorIndex);
+        Assert.True(color.ColorIndex.HasValue);
+        Assert.Equal(42, color.ColorIndex.Value);
     }
     
     [Fact]

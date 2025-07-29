@@ -1,5 +1,6 @@
 using Andy.TUI.Terminal;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Andy.TUI.Examples.Terminal;
 
@@ -8,6 +9,7 @@ namespace Andy.TUI.Examples.Terminal;
 /// </summary>
 public class SystemMonitorExample
 {
+    private static readonly CpuUsageTracker _cpuTracker = new();
     public static void Run()
     {
         Console.WriteLine("=== System Monitor Example ===");
@@ -15,8 +17,9 @@ public class SystemMonitorExample
         Console.WriteLine("Press any key to start...");
         Console.ReadKey(true);
         
-        using var terminal = new AnsiTerminal();
-        var renderer = new TerminalRenderer(terminal);
+        var terminal = new AnsiTerminal();
+        using var renderingSystem = new RenderingSystem(terminal);
+        renderingSystem.Initialize();
         
         // Create input handler for exit
         var inputHandler = new ConsoleInputHandler();
@@ -32,25 +35,46 @@ public class SystemMonitorExample
         var lastUpdate = DateTime.Now;
         var updateInterval = TimeSpan.FromSeconds(1);
         
-        while (!exit)
+        // Initial CPU tracking update
+        _cpuTracker.Update();
+        
+        // Configure render scheduler
+        renderingSystem.Scheduler.TargetFps = 10; // Low FPS for system monitor
+        
+        // Animation render function
+        Action? renderFrame = null;
+        renderFrame = () =>
         {
+            if (exit)
+                return;
+                
             var now = DateTime.Now;
             if (now - lastUpdate >= updateInterval)
             {
                 lastUpdate = now;
                 
-                renderer.BeginFrame();
-                renderer.Clear();
+                // Update CPU tracking
+                _cpuTracker.Update();
                 
-                DrawHeader(renderer, now);
-                DrawSystemInfo(renderer);
-                DrawProcessList(renderer);
-                DrawFooter(renderer);
+                renderingSystem.Clear();
                 
-                renderer.EndFrame();
+                DrawHeader(renderingSystem, now);
+                DrawSystemInfo(renderingSystem);
+                DrawProcessList(renderingSystem);
+                DrawFooter(renderingSystem);
             }
             
-            Thread.Sleep(100); // Small delay to reduce CPU usage
+            // Queue next frame
+            renderingSystem.Scheduler.QueueRender(renderFrame);
+        };
+        
+        // Start animation
+        renderingSystem.Scheduler.QueueRender(renderFrame);
+        
+        // Wait for exit
+        while (!exit)
+        {
+            Thread.Sleep(100);
         }
         
         inputHandler.Stop();
@@ -60,77 +84,77 @@ public class SystemMonitorExample
         Console.WriteLine("\nSystem Monitor closed.");
     }
     
-    private static void DrawHeader(TerminalRenderer renderer, DateTime now)
+    private static void DrawHeader(RenderingSystem renderingSystem, DateTime now)
     {
         // Title bar
-        renderer.DrawBox(0, 0, renderer.Width, 3, BorderStyle.Double, 
-            Style.Default.WithForegroundColor(Color.Cyan));
+        renderingSystem.DrawBox(0, 0, renderingSystem.Terminal.Width, 3, 
+            Style.Default.WithForegroundColor(Color.Cyan), BoxStyle.Double);
         
         var title = " SYSTEM MONITOR ";
-        renderer.DrawText((renderer.Width - title.Length) / 2, 0, title, 
+        renderingSystem.WriteText((renderingSystem.Terminal.Width - title.Length) / 2, 0, title, 
             Style.Default.WithForegroundColor(Color.White).WithBold());
         
         // Current time
         var timeStr = now.ToString("HH:mm:ss");
-        renderer.DrawText(renderer.Width - timeStr.Length - 2, 1, timeStr, 
+        renderingSystem.WriteText(renderingSystem.Terminal.Width - timeStr.Length - 2, 1, timeStr, 
             Style.Default.WithForegroundColor(Color.Yellow));
         
         // Uptime
         var uptime = GetUptime();
-        renderer.DrawText(2, 1, $"Uptime: {uptime}", 
+        renderingSystem.WriteText(2, 1, $"Uptime: {uptime}", 
             Style.Default.WithForegroundColor(Color.Green));
     }
     
-    private static void DrawSystemInfo(TerminalRenderer renderer)
+    private static void DrawSystemInfo(RenderingSystem renderingSystem)
     {
         var y = 4;
         
         // CPU Usage
         var cpuUsage = GetCpuUsage();
-        renderer.DrawText(2, y, "CPU Usage: ", Style.Default.WithForegroundColor(Color.White));
-        DrawProgressBar(renderer, 14, y, 30, cpuUsage, GetCpuColor(cpuUsage));
-        renderer.DrawText(46, y, $"{cpuUsage:F1}%", Style.Default.WithForegroundColor(GetCpuColor(cpuUsage)));
+        renderingSystem.WriteText(2, y, "CPU Usage: ", Style.Default.WithForegroundColor(Color.White));
+        DrawProgressBar(renderingSystem, 14, y, 30, cpuUsage, GetCpuColor(cpuUsage));
+        renderingSystem.WriteText(46, y, $"{cpuUsage:F1}%", Style.Default.WithForegroundColor(GetCpuColor(cpuUsage)));
         
         // Memory Usage
         y++;
         var (memUsed, memTotal, memPercent) = GetMemoryUsage();
-        renderer.DrawText(2, y, "Memory:    ", Style.Default.WithForegroundColor(Color.White));
-        DrawProgressBar(renderer, 14, y, 30, memPercent, GetMemoryColor(memPercent));
-        renderer.DrawText(46, y, $"{memUsed:F1}/{memTotal:F1} GB ({memPercent:F1}%)", 
+        renderingSystem.WriteText(2, y, "Memory:    ", Style.Default.WithForegroundColor(Color.White));
+        DrawProgressBar(renderingSystem, 14, y, 30, memPercent, GetMemoryColor(memPercent));
+        renderingSystem.WriteText(46, y, $"{memUsed:F1}/{memTotal:F1} GB ({memPercent:F1}%)", 
             Style.Default.WithForegroundColor(GetMemoryColor(memPercent)));
         
         // Process Count
         y++;
         var processCount = Process.GetProcesses().Length;
-        renderer.DrawText(2, y, $"Processes: {processCount}", 
+        renderingSystem.WriteText(2, y, $"Processes: {processCount}", 
             Style.Default.WithForegroundColor(Color.Cyan));
         
         // Thread Count
         var threadCount = Process.GetCurrentProcess().Threads.Count;
-        renderer.DrawText(25, y, $"Threads: {threadCount}", 
+        renderingSystem.WriteText(25, y, $"Threads: {threadCount}", 
             Style.Default.WithForegroundColor(Color.Cyan));
     }
     
-    private static void DrawProcessList(TerminalRenderer renderer)
+    private static void DrawProcessList(RenderingSystem renderingSystem)
     {
         var y = 9;
         
         // Header
-        renderer.DrawBox(0, y - 1, renderer.Width, renderer.Height - y - 2, BorderStyle.Single,
-            Style.Default.WithForegroundColor(Color.DarkGray));
+        renderingSystem.DrawBox(0, y - 1, renderingSystem.Terminal.Width, renderingSystem.Terminal.Height - y - 2,
+            Style.Default.WithForegroundColor(Color.DarkGray), BoxStyle.Single);
         
-        renderer.DrawText(2, y, " TOP PROCESSES BY CPU ", 
+        renderingSystem.WriteText(2, y, " TOP PROCESSES BY CPU ", 
             Style.Default.WithForegroundColor(Color.White).WithBold());
         
         y += 2;
         
         // Column headers
         var headerStyle = Style.Default.WithForegroundColor(Color.Yellow).WithUnderline();
-        renderer.DrawText(2, y, "PID", headerStyle);
-        renderer.DrawText(10, y, "Process Name", headerStyle);
-        renderer.DrawText(40, y, "CPU %", headerStyle);
-        renderer.DrawText(50, y, "Memory MB", headerStyle);
-        renderer.DrawText(62, y, "Status", headerStyle);
+        renderingSystem.WriteText(2, y, "PID", headerStyle);
+        renderingSystem.WriteText(10, y, "Process Name", headerStyle);
+        renderingSystem.WriteText(40, y, "CPU %", headerStyle);
+        renderingSystem.WriteText(50, y, "Memory MB", headerStyle);
+        renderingSystem.WriteText(62, y, "Status", headerStyle);
         
         y++;
         
@@ -139,67 +163,67 @@ public class SystemMonitorExample
         
         foreach (var proc in processes)
         {
-            if (y >= renderer.Height - 4) break;
+            if (y >= renderingSystem.Terminal.Height - 4) break;
             
             // PID
-            renderer.DrawText(2, y, proc.Id.ToString().PadRight(7), 
+            renderingSystem.WriteText(2, y, proc.Id.ToString().PadRight(7), 
                 Style.Default.WithForegroundColor(Color.DarkGray));
             
             // Process name
             var name = proc.ProcessName.Length > 28 ? proc.ProcessName.Substring(0, 25) + "..." : proc.ProcessName;
-            renderer.DrawText(10, y, name.PadRight(29), 
+            renderingSystem.WriteText(10, y, name.PadRight(29), 
                 Style.Default.WithForegroundColor(Color.White));
             
             // CPU (simulated)
             var cpu = GetProcessCpu(proc);
             var cpuColor = GetCpuColor(cpu);
-            renderer.DrawText(40, y, cpu.ToString("F1").PadLeft(5), 
+            renderingSystem.WriteText(40, y, cpu.ToString("F1").PadLeft(5), 
                 Style.Default.WithForegroundColor(cpuColor));
             
             // Memory
             var memory = proc.WorkingSet64 / (1024.0 * 1024.0);
             var memColor = memory > 1000 ? Color.Red : memory > 500 ? Color.Yellow : Color.Green;
-            renderer.DrawText(50, y, memory.ToString("F0").PadLeft(9), 
+            renderingSystem.WriteText(50, y, memory.ToString("F0").PadLeft(9), 
                 Style.Default.WithForegroundColor(memColor));
             
             // Status
             var status = proc.Responding ? "Running" : "Not Resp";
             var statusColor = proc.Responding ? Color.Green : Color.Red;
-            renderer.DrawText(62, y, status, 
+            renderingSystem.WriteText(62, y, status, 
                 Style.Default.WithForegroundColor(statusColor));
             
             y++;
         }
     }
     
-    private static void DrawFooter(TerminalRenderer renderer)
+    private static void DrawFooter(RenderingSystem renderingSystem)
     {
-        var y = renderer.Height - 2;
-        renderer.DrawText(2, y, "Press ESC or Q to exit | Updates every 1 second", 
+        var y = renderingSystem.Terminal.Height - 2;
+        renderingSystem.WriteText(2, y, "Press ESC or Q to exit | Updates every 1 second", 
             Style.Default.WithForegroundColor(Color.DarkGray));
     }
     
-    private static void DrawProgressBar(TerminalRenderer renderer, int x, int y, int width, 
+    private static void DrawProgressBar(RenderingSystem renderingSystem, int x, int y, int width, 
         double percentage, Color color)
     {
         var filled = (int)(width * percentage / 100.0);
         var style = Style.Default.WithForegroundColor(color);
         
-        renderer.DrawChar(x, y, '[', Style.Default.WithForegroundColor(Color.DarkGray));
+        renderingSystem.Buffer.SetCell(x, y, '[', Style.Default.WithForegroundColor(Color.DarkGray));
         
         for (int i = 0; i < width; i++)
         {
             if (i < filled)
             {
-                renderer.DrawChar(x + 1 + i, y, '█', style);
+                renderingSystem.Buffer.SetCell(x + 1 + i, y, '█', style);
             }
             else
             {
-                renderer.DrawChar(x + 1 + i, y, '░', Style.Default.WithForegroundColor(Color.DarkGray));
+                renderingSystem.Buffer.SetCell(x + 1 + i, y, '░', Style.Default.WithForegroundColor(Color.DarkGray));
             }
         }
         
-        renderer.DrawChar(x + width + 1, y, ']', Style.Default.WithForegroundColor(Color.DarkGray));
+        renderingSystem.Buffer.SetCell(x + width + 1, y, ']', Style.Default.WithForegroundColor(Color.DarkGray));
     }
     
     private static Color GetCpuColor(double cpu)
@@ -220,7 +244,28 @@ public class SystemMonitorExample
     {
         try
         {
-            var uptime = DateTime.Now - Process.GetCurrentProcess().StartTime;
+            TimeSpan uptime;
+            
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // On Windows, use system uptime
+                uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                // On Linux, read from /proc/uptime
+                var uptimeStr = File.ReadAllText("/proc/uptime").Split(' ')[0];
+                if (double.TryParse(uptimeStr, out var seconds))
+                    uptime = TimeSpan.FromSeconds(seconds);
+                else
+                    uptime = DateTime.Now - Process.GetCurrentProcess().StartTime;
+            }
+            else
+            {
+                // On macOS and others, use process uptime as fallback
+                uptime = DateTime.Now - Process.GetCurrentProcess().StartTime;
+            }
+            
             if (uptime.TotalDays >= 1)
                 return $"{(int)uptime.TotalDays}d {uptime.Hours}h {uptime.Minutes}m";
             else if (uptime.TotalHours >= 1)
@@ -236,32 +281,34 @@ public class SystemMonitorExample
     
     private static double GetCpuUsage()
     {
-        // Simplified CPU usage - in real implementation you'd track over time
-        var process = Process.GetCurrentProcess();
-        var startTime = DateTime.UtcNow;
-        var startCpuUsage = process.TotalProcessorTime;
-        
-        Thread.Sleep(100);
-        
-        var endTime = DateTime.UtcNow;
-        var endCpuUsage = process.TotalProcessorTime;
-        var cpuUsedMs = (endCpuUsage - startCpuUsage).TotalMilliseconds;
-        var totalMsPassed = (endTime - startTime).TotalMilliseconds;
-        var cpuUsageTotal = cpuUsedMs / (Environment.ProcessorCount * totalMsPassed);
-        
-        return Math.Min(100, cpuUsageTotal * 100);
+        return _cpuTracker.GetTotalCpuUsage();
     }
     
     private static (double used, double total, double percent) GetMemoryUsage()
     {
+        // Get total system memory
+        var totalBytes = SystemInfo.GetTotalPhysicalMemory();
+        var total = totalBytes / (1024.0 * 1024.0 * 1024.0); // GB
+        
+        // Calculate used memory (this is still an approximation)
+        var availableMemory = GC.GetTotalMemory(false);
         var process = Process.GetCurrentProcess();
-        var used = process.WorkingSet64 / (1024.0 * 1024.0 * 1024.0); // GB
+        var processMemory = process.WorkingSet64;
         
-        // Get total system memory (approximation)
-        var total = Environment.WorkingSet / (1024.0 * 1024.0 * 1024.0) * 4; // Rough estimate
-        if (total < used) total = used * 2; // Ensure total is reasonable
+        // Get all processes memory usage for better approximation
+        long totalUsed = 0;
+        try
+        {
+            foreach (var p in Process.GetProcesses())
+            {
+                try { totalUsed += p.WorkingSet64; } catch { }
+            }
+        }
+        catch { totalUsed = processMemory * 10; } // Fallback
         
+        var used = totalUsed / (1024.0 * 1024.0 * 1024.0); // GB
         var percent = (used / total) * 100;
+        
         return (used, total, percent);
     }
     
@@ -271,8 +318,11 @@ public class SystemMonitorExample
         {
             var processes = Process.GetProcesses()
                 .Where(p => !string.IsNullOrEmpty(p.ProcessName))
-                .OrderByDescending(p => p.WorkingSet64)
+                .Select(p => new { Process = p, Cpu = _cpuTracker.GetProcessCpuUsage(p.Id) })
+                .OrderByDescending(p => p.Cpu)
+                .ThenByDescending(p => p.Process.WorkingSet64)
                 .Take(count)
+                .Select(p => p.Process)
                 .ToList();
             
             return processes;
@@ -285,9 +335,6 @@ public class SystemMonitorExample
     
     private static double GetProcessCpu(Process process)
     {
-        // Simulated CPU usage per process
-        // In a real implementation, you'd track CPU time over intervals
-        Random rand = new Random(process.Id);
-        return rand.NextDouble() * 20; // 0-20% simulated
+        return _cpuTracker.GetProcessCpuUsage(process.Id);
     }
 }
