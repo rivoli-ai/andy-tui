@@ -1,12 +1,61 @@
 using Andy.TUI.Components;
+using Andy.TUI.Core.VirtualDom;
 
 namespace Andy.TUI.Components.Tests;
 
 public static class TestHelpers
 {
+    public static MockComponentContext CreateMockContext(IComponent? component = null)
+    {
+        return new MockComponentContext(component);
+    }
+    
+    public static List<string> FindTextNodes(VirtualNode node)
+    {
+        var texts = new List<string>();
+        FindTextNodesRecursive(node, texts);
+        return texts;
+    }
+    
+    private static void FindTextNodesRecursive(VirtualNode node, List<string> texts)
+    {
+        switch (node)
+        {
+            case TextNode textNode:
+                texts.Add(textNode.Content);
+                break;
+                
+            case ElementNode elementNode:
+                foreach (var child in elementNode.Children)
+                {
+                    FindTextNodesRecursive(child, texts);
+                }
+                break;
+                
+            case ComponentNode componentNode:
+                if (componentNode.ComponentInstance is IComponent component)
+                {
+                    var rendered = component.Render();
+                    if (rendered != null)
+                    {
+                        FindTextNodesRecursive(rendered, texts);
+                    }
+                }
+                break;
+                
+            case FragmentNode fragmentNode:
+                foreach (var child in fragmentNode.Children)
+                {
+                    FindTextNodesRecursive(child, texts);
+                }
+                break;
+        }
+    }
+    
     public class MockComponentContext : IComponentContext
     {
         private readonly List<IComponentContext> _children = new();
+        private IComponent? _focusedComponent;
         
         public string Id { get; } = Guid.NewGuid().ToString();
         public IComponent Component { get; }
@@ -63,6 +112,43 @@ public static class TestHelpers
         public bool TryGetSharedValue<T>(string key, out T? value)
         {
             return SharedState.TryGetValue(key, out value);
+        }
+        
+        public void SetFocus(IComponent component)
+        {
+            if (_focusedComponent != component)
+            {
+                // Blur previous component
+                if (_focusedComponent is Andy.TUI.Components.Input.InputComponent oldInput)
+                {
+                    oldInput.IsFocused = false;
+                }
+                
+                _focusedComponent = component;
+                
+                // Focus new component
+                if (component is Andy.TUI.Components.Input.InputComponent newInput)
+                {
+                    newInput.IsFocused = true;
+                }
+            }
+        }
+        
+        public void ClearFocus()
+        {
+            if (_focusedComponent != null)
+            {
+                if (_focusedComponent is Andy.TUI.Components.Input.InputComponent input)
+                {
+                    input.IsFocused = false;
+                }
+                _focusedComponent = null;
+            }
+        }
+        
+        public IComponent? GetFocusedComponent()
+        {
+            return _focusedComponent;
         }
     }
     

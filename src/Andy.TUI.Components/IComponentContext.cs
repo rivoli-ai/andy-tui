@@ -100,6 +100,22 @@ public interface IComponentContext
     /// <param name="value">The value if found.</param>
     /// <returns>True if the value was found, false otherwise.</returns>
     bool TryGetSharedValue<T>(string key, out T? value);
+    
+    /// <summary>
+    /// Sets the focused component.
+    /// </summary>
+    /// <param name="component">The component to focus.</param>
+    void SetFocus(IComponent component);
+    
+    /// <summary>
+    /// Clears the current focus.
+    /// </summary>
+    void ClearFocus();
+    
+    /// <summary>
+    /// Gets the currently focused component.
+    /// </summary>
+    IComponent? GetFocusedComponent();
 }
 
 /// <summary>

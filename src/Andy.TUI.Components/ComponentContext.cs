@@ -9,6 +9,7 @@ public class ComponentContext : IComponentContext
     private readonly IServiceProvider _services;
     private readonly IThemeProvider _theme;
     private readonly ISharedStateManager _sharedState;
+    private IComponent? _focusedComponent;
     
     /// <summary>
     /// Gets the unique identifier for this context.
@@ -166,5 +167,52 @@ public class ComponentContext : IComponentContext
     public bool TryGetSharedValue<T>(string key, out T? value)
     {
         return _sharedState.TryGetValue(key, out value);
+    }
+    
+    /// <summary>
+    /// Sets the focused component.
+    /// </summary>
+    /// <param name="component">The component to focus.</param>
+    public void SetFocus(IComponent component)
+    {
+        if (_focusedComponent != component)
+        {
+            // Blur previous component
+            if (_focusedComponent is Input.InputComponent oldInput)
+            {
+                oldInput.IsFocused = false;
+            }
+            
+            _focusedComponent = component;
+            
+            // Focus new component
+            if (component is Input.InputComponent newInput)
+            {
+                newInput.IsFocused = true;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Clears the current focus.
+    /// </summary>
+    public void ClearFocus()
+    {
+        if (_focusedComponent != null)
+        {
+            if (_focusedComponent is Input.InputComponent input)
+            {
+                input.IsFocused = false;
+            }
+            _focusedComponent = null;
+        }
+    }
+    
+    /// <summary>
+    /// Gets the currently focused component.
+    /// </summary>
+    public IComponent? GetFocusedComponent()
+    {
+        return _focusedComponent;
     }
 }

@@ -1,10 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using Andy.TUI.Components;
 using Andy.TUI.Components.Layout;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Terminal;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Andy.TUI.Examples.Layout;
 
@@ -12,218 +12,227 @@ class Program
 {
     static void Main(string[] args)
     {
-        Console.Clear();
-        Console.WriteLine("Andy.TUI Layout Components Examples");
-        Console.WriteLine("===================================");
-        Console.WriteLine();
-        
-        // Demonstrate each layout component with actual rendering
-        DemonstrateBox();
-        DemonstrateStack();
-        DemonstrateGrid();
-        DemonstrateScrollView();
-        DemonstrateComplexLayout();
-        
-        Console.WriteLine("\n\nAll demonstrations completed.");
-    }
-    
-    static void DemonstrateBox()
-    {
-        Console.WriteLine("1. Box Component Demo");
-        Console.WriteLine("---------------------\n");
-        
-        // Simple box with border
-        Console.WriteLine("Simple Box with Single Border:");
-        Console.WriteLine();
-        DrawBox(2, 20, 5, BorderStyle.Single, "Hello Box!");
-        
-        // Box with double border
-        Console.WriteLine("\n\nBox with Double Border and Padding:");
-        Console.WriteLine();
-        DrawBox(2, 25, 7, BorderStyle.Double, "Padded Content", 2);
-        
-        // Box with rounded border  
-        Console.WriteLine("\n\n\nBox with Rounded Border:");
-        Console.WriteLine();
-        DrawBox(2, 30, 5, BorderStyle.Rounded, "Rounded corners!");
-        Console.WriteLine();
-    }
-    
-    static void DemonstrateStack()
-    {
-        Console.WriteLine("\n\n2. Stack Component Demo");
-        Console.WriteLine("-----------------------\n");
-        
-        // Vertical stack
-        Console.WriteLine("Vertical Stack (spacing=1):");
-        Console.WriteLine("  • Item 1");
-        Console.WriteLine();
-        Console.WriteLine("  • Item 2");
-        Console.WriteLine();
-        Console.WriteLine("  • Item 3");
-        
-        // Horizontal stack
-        Console.WriteLine("\nHorizontal Stack (spacing=2):");
-        Console.WriteLine("  [Button1]  [Button2]  [Button3]");
-        
-        // Show alignment
-        Console.WriteLine("\nStack with Center Alignment:");
-        Console.WriteLine();
-        DrawBox(2, 40, 7, BorderStyle.Single, "Centered");
-        Console.WriteLine();
-    }
-    
-    static void DemonstrateGrid()
-    {
-        Console.WriteLine("\n\n3. Grid Component Demo");
-        Console.WriteLine("----------------------\n");
-        
-        Console.WriteLine("Grid with 3x3 cells:");
-        Console.WriteLine();
-        
-        // Draw grid structure - simplified for inline display
-        Console.WriteLine("  ┌─────────────┐  ┌──────────────────┐  ┌────────┐");
-        Console.WriteLine("  │ R0,C0       │  │ R0,C1            │  │ R0,C2  │");
-        Console.WriteLine("  └─────────────┘  └──────────────────┘  └────────┘");
-        Console.WriteLine();
-        Console.WriteLine("  ┌─────────────┐  ┌──────────────────┐  ┌────────┐");
-        Console.WriteLine("  │ R1,C0       │  │ R1,C1            │  │ R1,C2  │");
-        Console.WriteLine("  └─────────────┘  └──────────────────┘  └────────┘");
-        Console.WriteLine();
-        Console.WriteLine("  ┌─────────────┐  ┌──────────────────┐  ┌────────┐");
-        Console.WriteLine("  │ R2,C0       │  │ R2,C1            │  │ R2,C2  │");
-        Console.WriteLine("  └─────────────┘  └──────────────────┘  └────────┘");
-        
-        Console.WriteLine("\nGrid features shown:");
-        Console.WriteLine("- Column widths: Absolute(15), Star(~20), Absolute(10)");
-        Console.WriteLine("- Row/column gaps");
-        Console.WriteLine("- Cell positioning");
-    }
-    
-    static void DemonstrateScrollView()
-    {
-        Console.WriteLine("\n\n4. ScrollView Component Demo");
-        Console.WriteLine("----------------------------\n");
-        
-        Console.WriteLine("ScrollView with viewport and scrollbars:");
-        Console.WriteLine();
-        
-        // Draw a simple representation
-        Console.WriteLine("  ┌──────────────────────────────────────┐");
-        Console.WriteLine("  │ Line 1: Long content that extends... │▲");
-        Console.WriteLine("  │ Line 2: Long content that extends... │║");
-        Console.WriteLine("  │ Line 3: Long content that extends... │█");
-        Console.WriteLine("  │ Line 4: Long content that extends... │█");
-        Console.WriteLine("  │ Line 5: Long content that extends... │║");
-        Console.WriteLine("  │ Line 6: Long content that extends... │║");
-        Console.WriteLine("  │ Line 7: Long content that extends... │║");
-        Console.WriteLine("  │ Line 8: Long content that extends... │▼");
-        Console.WriteLine("  │◄═══════════════════════════════════►│");
-        Console.WriteLine("  └──────────────────────────────────────┘");
-        
-        Console.WriteLine("\nScrollView features:");
-        Console.WriteLine("- Viewport clipping");
-        Console.WriteLine("- Vertical and horizontal scrollbars");
-        Console.WriteLine("- Content larger than viewport");
-    }
-    
-    static void DemonstrateComplexLayout()
-    {
-        Console.WriteLine("\n\n5. Complex Layout Demo");
-        Console.WriteLine("----------------------\n");
-        
-        Console.WriteLine("Application layout using Grid, Box, and Stack:");
-        Console.WriteLine();
-        
-        // Draw the layout
-        Console.WriteLine("  ╔════════════════════════════════════════════════════════════════════╗");
-        Console.WriteLine("  ║                          APPLICATION HEADER                        ║");
-        Console.WriteLine("  ╚════════════════════════════════════════════════════════════════════╝");
-        Console.WriteLine("  ┌───────────────────────────────────────────┐┌───────────────────────┐");
-        Console.WriteLine("  │                                           ││                       │");
-        Console.WriteLine("  │ Main Content Area                         ││ ═══ MENU ═══          │");
-        Console.WriteLine("  │                                           ││                       │");
-        Console.WriteLine("  │ This is where the main application        ││ ▸ Dashboard           │");
-        Console.WriteLine("  │ content would be displayed.               ││                       │");
-        Console.WriteLine("  │                                           ││ ▸ Settings            │");
-        Console.WriteLine("  │                                           ││                       │");
-        Console.WriteLine("  │                                           ││ ▸ Reports             │");
-        Console.WriteLine("  │                                           ││                       │");
-        Console.WriteLine("  │                                           ││ ▸ Help                │");
-        Console.WriteLine("  │                                           ││                       │");
-        Console.WriteLine("  │                                           ││                       │");
-        Console.WriteLine("  │                                           ││                       │");
-        Console.WriteLine("  │                                           ││                       │");
-        Console.WriteLine("  │                                           ││                       │");
-        Console.WriteLine("  └───────────────────────────────────────────┘└───────────────────────┘");
-        
-        Console.WriteLine("\n\nLayout composition shown:");
-        Console.WriteLine("- Grid for overall structure");
-        Console.WriteLine("- Box components for panels");
-        Console.WriteLine("- Stack for menu items");
-    }
-    
-    static void DrawBox(int leftPadding, int width, int height, BorderStyle style, string content, int padding = 0)
-    {
-        var chars = GetBorderChars(style);
-        var padStr = new string(' ', leftPadding);
-        
-        // Top border
-        Console.Write(padStr + chars.TopLeft);
-        for (int i = 1; i < width - 1; i++)
-            Console.Write(chars.Horizontal);
-        Console.WriteLine(chars.TopRight);
-        
-        // Side borders and content
-        for (int i = 1; i < height - 1; i++)
+        try
         {
-            Console.Write(padStr + chars.Vertical);
+            var terminal = new AnsiTerminal();
+            using var renderingSystem = new RenderingSystem(terminal);
             
-            if (i == height / 2 && !string.IsNullOrEmpty(content))
+            // Setup services
+            var services = new ServiceCollection()
+                .AddSingleton<IThemeProvider, ThemeProvider>()
+                .AddSingleton<ISharedStateManager, SharedStateManager>()
+                .BuildServiceProvider();
+            
+            var themeProvider = services.GetRequiredService<IThemeProvider>();
+            var sharedStateManager = services.GetRequiredService<ISharedStateManager>();
+            
+            // Initialize rendering
+            renderingSystem.Initialize();
+            renderingSystem.Clear();
+            
+            // Title
+            renderingSystem.WriteText(2, 1, "Andy.TUI Layout Components Demo", 
+                Style.Default.WithForegroundColor(Color.Cyan).WithBold());
+            renderingSystem.WriteText(2, 2, "===============================", 
+                Style.Default.WithForegroundColor(Color.Cyan));
+            
+            // Create Box examples
+            renderingSystem.WriteText(2, 4, "Box Components:", Style.Default.WithBold());
+            
+            // Simple box
+            var simpleBox = new Box
             {
-                // Center content
-                var totalPadding = (width - 2 - content.Length) / 2;
-                var paddedContent = content.PadLeft(content.Length + totalPadding + padding).PadRight(width - 2);
-                if (paddedContent.Length > width - 2)
-                    paddedContent = paddedContent.Substring(0, width - 2);
-                Console.Write(paddedContent);
-            }
-            else
+                Border = new Border(BorderStyle.Single),
+                Padding = new Spacing(1, 2),
+                Content = new TextNode("Simple Box with Border")
+            };
+            var simpleContext = new ComponentContext(simpleBox, services, themeProvider, sharedStateManager);
+            simpleBox.Initialize(simpleContext);
+            simpleBox.Arrange(new Rectangle(2, 6, 30, 5));
+            
+            // Colored box
+            var coloredBox = new Box
             {
-                // Empty space
-                Console.Write(new string(' ', width - 2));
+                Border = new Border(BorderStyle.Double),
+                Padding = new Spacing(1),
+                BorderColor = Color.Green,
+                BackgroundColor = Color.DarkBlue,
+                ForegroundColor = Color.White,
+                Content = new TextNode("Colored Box")
+            };
+            var coloredContext = new ComponentContext(coloredBox, services, themeProvider, sharedStateManager);
+            coloredBox.Initialize(coloredContext);
+            coloredBox.Arrange(new Rectangle(35, 6, 25, 5));
+            
+            // Stack example
+            renderingSystem.WriteText(2, 12, "Stack Component:", Style.Default.WithBold());
+            
+            var stack = new Stack
+            {
+                Orientation = Orientation.Vertical,
+                Spacing = 1
+            };
+            var stackContext = new ComponentContext(stack, services, themeProvider, sharedStateManager);
+            stack.Initialize(stackContext);
+            stack.Arrange(new Rectangle(2, 14, 30, 10));
+            
+            // Grid example - simplified
+            renderingSystem.WriteText(35, 12, "Grid Component:", Style.Default.WithBold());
+            
+            var grid = new Grid();
+            
+            // Add columns
+            grid.AddColumn(new ColumnDefinition { Width = GridLength.Absolute(15) });
+            grid.AddColumn(new ColumnDefinition { Width = GridLength.Star(1) });
+            
+            // Add rows
+            grid.AddRow(new RowDefinition { Height = GridLength.Auto });
+            grid.AddRow(new RowDefinition { Height = GridLength.Star(1) });
+            
+            var gridContext = new ComponentContext(grid, services, themeProvider, sharedStateManager);
+            grid.Initialize(gridContext);
+            grid.Arrange(new Rectangle(35, 14, 35, 10));
+            
+            // Instructions
+            renderingSystem.WriteText(2, 25, "Press Q to quit", 
+                Style.Default.WithForegroundColor(Color.Gray));
+            
+            var running = true;
+            
+            // Input handling
+            var inputHandler = new ConsoleInputHandler();
+            inputHandler.KeyPressed += (sender, args) =>
+            {
+                if (args.Key == ConsoleKey.Q)
+                {
+                    running = false;
+                }
+            };
+            
+            inputHandler.Start();
+            
+            // Render components
+            void RenderComponents()
+            {
+                RenderNode(simpleBox.Render(), 0, 0);
+                RenderNode(coloredBox.Render(), 0, 0);
+                
+                // For stack, we'll just show a placeholder since it needs children
+                renderingSystem.DrawBox(2, 14, 30, 8, Style.Default, BoxStyle.Single);
+                renderingSystem.WriteText(3, 15, "Stack Item 1", Style.Default);
+                renderingSystem.WriteText(3, 17, "Stack Item 2", Style.Default);
+                renderingSystem.WriteText(3, 19, "Stack Item 3", Style.Default);
+                
+                // For grid, show a simple layout
+                renderingSystem.DrawBox(35, 14, 35, 8, Style.Default, BoxStyle.Single);
+                renderingSystem.WriteText(36, 15, "Header (colspan=2)", Style.Default);
+                renderingSystem.WriteText(36, 17, "Left | Right Content", Style.Default);
             }
             
-            Console.WriteLine(chars.Vertical);
+            void RenderNode(VirtualNode node, int baseX, int baseY)
+            {
+                if (node is ElementNode element)
+                {
+                    // Handle different element types
+                    if (element.TagName == "box" || element.TagName == "stack" || element.TagName == "grid")
+                    {
+                        baseX = element.Props.TryGetValue("x", out var xObj) && xObj is int xVal ? xVal : 0;
+                        baseY = element.Props.TryGetValue("y", out var yObj) && yObj is int yVal ? yVal : 0;
+                        
+                        // Render all children
+                        foreach (var child in element.Children)
+                        {
+                            RenderNode(child, baseX, baseY);
+                        }
+                    }
+                    else if (element.TagName == "rect")
+                    {
+                        // Handle background fill
+                        var x = element.Props.TryGetValue("x", out var xObj) && xObj is int xVal ? xVal : 0;
+                        var y = element.Props.TryGetValue("y", out var yObj) && yObj is int yVal ? yVal : 0;
+                        var width = element.Props.TryGetValue("width", out var wObj) && wObj is int w ? w : 0;
+                        var height = element.Props.TryGetValue("height", out var hObj) && hObj is int h ? h : 0;
+                        var fill = element.Props.TryGetValue("fill", out var fillObj) && fillObj is Color fillColor ? fillColor : (Color?)null;
+                        
+                        if (fill.HasValue)
+                        {
+                            var bgStyle = Style.Default.WithBackgroundColor(fill.Value);
+                            renderingSystem.FillRect(x, y, width, height, ' ', bgStyle);
+                        }
+                    }
+                    else if (element.TagName == "text")
+                    {
+                        // Text nodes from box already have absolute positioning
+                        var x = element.Props.TryGetValue("x", out var xObj) && xObj is int xVal ? xVal : 0;
+                        var y = element.Props.TryGetValue("y", out var yObj) && yObj is int yVal ? yVal : 0;
+                        var style = element.Props.TryGetValue("style", out var styleObj) && styleObj is Style s ? s : Style.Default;
+                        
+                        foreach (var child in element.Children)
+                        {
+                            if (child is TextNode text)
+                            {
+                                renderingSystem.WriteText(x, y, text.Content, style);
+                            }
+                        }
+                    }
+                    else if (element.TagName == "content")
+                    {
+                        // Content wrapper also has absolute positioning from the box
+                        var x = element.Props.TryGetValue("x", out var xObj) && xObj is int xVal ? xVal : 0;
+                        var y = element.Props.TryGetValue("y", out var yObj) && yObj is int yVal ? yVal : 0;
+                        var color = element.Props.TryGetValue("color", out var colorObj) && colorObj is Color c ? c : (Color?)null;
+                        
+                        foreach (var child in element.Children)
+                        {
+                            if (child is TextNode text)
+                            {
+                                var style = color.HasValue ? Style.Default.WithForegroundColor(color.Value) : Style.Default;
+                                renderingSystem.WriteText(x, y, text.Content, style);
+                            }
+                            else
+                            {
+                                RenderNode(child, x, y);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // For other elements, recursively render children
+                        foreach (var child in element.Children)
+                        {
+                            RenderNode(child, baseX, baseY);
+                        }
+                    }
+                }
+                else if (node is TextNode text)
+                {
+                    // Direct text node
+                    renderingSystem.WriteText(baseX, baseY, text.Content, Style.Default);
+                }
+                else if (node is FragmentNode fragment)
+                {
+                    // Handle fragment nodes - render all children
+                    foreach (var child in fragment.Children)
+                    {
+                        RenderNode(child, baseX, baseY);
+                    }
+                }
+            }
+            
+            RenderComponents();
+            
+            // Main loop
+            while (running)
+            {
+                Thread.Sleep(100);
+            }
+            
+            inputHandler.Stop();
         }
-        
-        // Bottom border
-        Console.Write(padStr + chars.BottomLeft);
-        for (int i = 1; i < width - 1; i++)
-            Console.Write(chars.Horizontal);
-        Console.WriteLine(chars.BottomRight);
-    }
-    
-    static (char TopLeft, char TopRight, char BottomLeft, char BottomRight, char Horizontal, char Vertical) GetBorderChars(BorderStyle style)
-    {
-        return style switch
+        catch (Exception ex)
         {
-            BorderStyle.Single => ('┌', '┐', '└', '┘', '─', '│'),
-            BorderStyle.Double => ('╔', '╗', '╚', '╝', '═', '║'),
-            BorderStyle.Rounded => ('╭', '╮', '╰', '╯', '─', '│'),
-            BorderStyle.Heavy => ('┏', '┓', '┗', '┛', '━', '┃'),
-            BorderStyle.Dashed => ('┌', '┐', '└', '┘', '╌', '╎'),
-            _ => ('+', '+', '+', '+', '-', '|')
-        };
+            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+        }
     }
-}
-
-// Minimal BorderStyle enum for the example
-public enum BorderStyle
-{
-    Single,
-    Double,
-    Rounded,
-    Heavy,
-    Dashed
 }

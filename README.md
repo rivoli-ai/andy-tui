@@ -74,6 +74,17 @@ Andy.TUI is a modern terminal user interface library that brings reactive progra
   - Full test coverage (41 tests, all passing)
   - Visual examples demonstrating all layout components
 
+### Phase 3.3 - Input Components (Completed)
+
+- **Input System** (100% implemented)
+  - `InputComponent` base class with focus management and validation
+  - `TextInput` component - single-line text entry with cursor and selection
+  - `TextArea` component - multi-line editor with scrolling and line numbers
+  - `Button` component - clickable buttons with multiple styles
+  - `Select<T>` component - dropdown selection with filtering and search
+  - Full test coverage (112 tests, all passing)
+  - Comprehensive examples demonstrating all input components
+
 ## Getting Started
 
 ### Prerequisites
@@ -265,6 +276,62 @@ sidebar.AddChild(new TextNode("Menu Item 3"));
 grid.AddChild(sidebar, row: 1, column: 2);
 ```
 
+### Input Components
+
+```csharp
+using Andy.TUI.Components.Input;
+
+// TextInput for single-line text entry
+var nameInput = new TextInput
+{
+    Placeholder = "Enter your name...",
+    MaxLength = 50,
+    ValidationFunc = value => !string.IsNullOrWhiteSpace(value)
+};
+
+// TextArea for multi-line text
+var commentArea = new TextArea
+{
+    MinHeight = 5,
+    MaxHeight = 10,
+    WordWrap = true,
+    ShowLineNumbers = true
+};
+
+// Button with different styles
+var saveButton = new Button
+{
+    Text = "Save Changes",
+    Style = ButtonStyle.Primary,
+    MinWidth = 15
+};
+saveButton.Click += (s, e) => SaveData();
+
+// Select dropdown with custom items
+var countrySelect = new Select<string>
+{
+    Placeholder = "Select a country...",
+    AllowFiltering = true,
+    MaxDisplayItems = 10
+};
+countrySelect.Items = new[]
+{
+    new SelectItem<string>("United States"),
+    new SelectItem<string>("Canada"),
+    new SelectItem<string>("United Kingdom")
+};
+
+// Form example combining all input types
+var form = new Stack { Orientation = Orientation.Vertical, Spacing = 2 };
+form.AddChild(new TextNode("Name:"));
+form.AddChild(nameInput);
+form.AddChild(new TextNode("Comments:"));
+form.AddChild(commentArea);
+form.AddChild(new TextNode("Country:"));
+form.AddChild(countrySelect);
+form.AddChild(saveButton);
+```
+
 ## Architecture
 
 The library is organized into several key components:
@@ -284,7 +351,7 @@ The library is organized into several key components:
   - High-level rendering system with animation support
 - **Andy.TUI.Components** - Built-in UI components
   - Layout components (Box, Stack, Grid, ScrollView)
-  - Input components (planned)
+  - Input components (TextInput, TextArea, Button, Select)
   - Display components (planned)
 - **Andy.TUI.Framework** - Application framework (planned)
 
