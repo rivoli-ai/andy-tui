@@ -26,6 +26,7 @@ class Program
             Console.WriteLine("  dotnet run terminal-snake - Classic Snake game");
             Console.WriteLine("  dotnet run terminal-loading - Loading animations showcase");
             Console.WriteLine("  dotnet run terminal-art - ASCII art gallery with effects");
+            Console.WriteLine("  dotnet run terminal-weather - Weather dashboard with animations");
             Console.WriteLine("\nOther:");
             Console.WriteLine("  dotnet run all            - Run all terminal examples");
             return;
@@ -77,6 +78,9 @@ class Program
                 break;
             case "terminal-art":
                 AsciiArtGalleryExample.Run();
+                break;
+            case "terminal-weather":
+                WeatherDashboardExample.Run();
                 break;
             case "all":
                 BasicTerminalExample.Run();
