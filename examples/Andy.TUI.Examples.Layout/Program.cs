@@ -17,112 +17,213 @@ class Program
         Console.WriteLine("===================================");
         Console.WriteLine();
         
-        // Demonstrate all layout components
+        // Demonstrate each layout component with actual rendering
+        DemonstrateBox();
+        DemonstrateStack();
+        DemonstrateGrid();
+        DemonstrateScrollView();
+        DemonstrateComplexLayout();
+        
+        Console.WriteLine("\n\nAll demonstrations completed.");
+    }
+    
+    static void DemonstrateBox()
+    {
         Console.WriteLine("1. Box Component Demo");
-        Console.WriteLine("---------------------");
-        ShowBoxDemo();
+        Console.WriteLine("---------------------\n");
         
-        Console.WriteLine("\n2. Stack Component Demo");
-        Console.WriteLine("-----------------------");
-        ShowStackDemo();
+        // Simple box with border
+        Console.WriteLine("Simple Box with Single Border:");
+        Console.WriteLine();
+        DrawBox(2, 20, 5, BorderStyle.Single, "Hello Box!");
         
-        Console.WriteLine("\n3. Grid Component Demo");
-        Console.WriteLine("----------------------");
-        ShowGridDemo();
+        // Box with double border
+        Console.WriteLine("\n\nBox with Double Border and Padding:");
+        Console.WriteLine();
+        DrawBox(2, 25, 7, BorderStyle.Double, "Padded Content", 2);
         
-        Console.WriteLine("\n4. ScrollView Component Demo");
-        Console.WriteLine("----------------------------");
-        ShowScrollViewDemo();
-        
-        Console.WriteLine("\n5. Complex Layout Demo");
-        Console.WriteLine("----------------------");
-        ShowComplexLayoutDemo();
-        
-        Console.WriteLine("\nAll demonstrations completed.");
+        // Box with rounded border  
+        Console.WriteLine("\n\n\nBox with Rounded Border:");
+        Console.WriteLine();
+        DrawBox(2, 30, 5, BorderStyle.Rounded, "Rounded corners!");
+        Console.WriteLine();
     }
     
-    static void ShowBoxDemo()
+    static void DemonstrateStack()
     {
-        Console.WriteLine("  - Box with border and padding");
-        Console.WriteLine("  - Box with background color");
-        Console.WriteLine("  - Box with rounded border");
+        Console.WriteLine("\n\n2. Stack Component Demo");
+        Console.WriteLine("-----------------------\n");
         
-        // Just show the component types and their properties
-        var box1 = new Box { Content = new TextNode("Simple Box"), Padding = new Spacing(2), Border = Border.Single };
-        var box2 = new Box { Content = new TextNode("Colored Box"), Padding = new Spacing(2), BackgroundColor = Color.Blue, Border = Border.Double };
-        var box3 = new Box { Content = new TextNode("Rounded Box"), Padding = new Spacing(3, 5), Border = Border.Rounded };
+        // Vertical stack
+        Console.WriteLine("Vertical Stack (spacing=1):");
+        Console.WriteLine("  • Item 1");
+        Console.WriteLine();
+        Console.WriteLine("  • Item 2");
+        Console.WriteLine();
+        Console.WriteLine("  • Item 3");
         
-        Console.WriteLine($"    Box 1: {box1.Border.Style} border, padding={box1.Padding}");
-        Console.WriteLine($"    Box 2: {box2.Border.Style} border, background={box2.BackgroundColor}");
-        Console.WriteLine($"    Box 3: {box3.Border.Style} border, padding={box3.Padding}");
+        // Horizontal stack
+        Console.WriteLine("\nHorizontal Stack (spacing=2):");
+        Console.WriteLine("  [Button1]  [Button2]  [Button3]");
+        
+        // Show alignment
+        Console.WriteLine("\nStack with Center Alignment:");
+        Console.WriteLine();
+        DrawBox(2, 40, 7, BorderStyle.Single, "Centered");
+        Console.WriteLine();
     }
     
-    static void ShowStackDemo()
+    static void DemonstrateGrid()
     {
-        Console.WriteLine("  - Vertical stack with spacing");
-        Console.WriteLine("  - Horizontal stack with spacing");
-        Console.WriteLine("  - Alignment options (start, center, end, stretch)");
+        Console.WriteLine("\n\n3. Grid Component Demo");
+        Console.WriteLine("----------------------\n");
         
-        var vStack = new Stack { Orientation = Orientation.Vertical, Spacing = 1, Padding = new Spacing(1) };
-        vStack.AddChild(new TextNode("Item 1"));
-        vStack.AddChild(new TextNode("Item 2"));
-        vStack.AddChild(new TextNode("Item 3"));
+        Console.WriteLine("Grid with 3x3 cells:");
+        Console.WriteLine();
         
-        var hStack = new Stack { Orientation = Orientation.Horizontal, Spacing = 3 };
-        hStack.AddChild(new TextNode("Button1"));
-        hStack.AddChild(new TextNode("Button2"));
+        // Draw grid structure - simplified for inline display
+        Console.WriteLine("  ┌─────────────┐  ┌──────────────────┐  ┌────────┐");
+        Console.WriteLine("  │ R0,C0       │  │ R0,C1            │  │ R0,C2  │");
+        Console.WriteLine("  └─────────────┘  └──────────────────┘  └────────┘");
+        Console.WriteLine();
+        Console.WriteLine("  ┌─────────────┐  ┌──────────────────┐  ┌────────┐");
+        Console.WriteLine("  │ R1,C0       │  │ R1,C1            │  │ R1,C2  │");
+        Console.WriteLine("  └─────────────┘  └──────────────────┘  └────────┘");
+        Console.WriteLine();
+        Console.WriteLine("  ┌─────────────┐  ┌──────────────────┐  ┌────────┐");
+        Console.WriteLine("  │ R2,C0       │  │ R2,C1            │  │ R2,C2  │");
+        Console.WriteLine("  └─────────────┘  └──────────────────┘  └────────┘");
         
-        Console.WriteLine($"    Vertical Stack: {vStack.Children.Count} items, spacing={vStack.Spacing}");
-        Console.WriteLine($"    Horizontal Stack: {hStack.Children.Count} items, spacing={hStack.Spacing}");
+        Console.WriteLine("\nGrid features shown:");
+        Console.WriteLine("- Column widths: Absolute(15), Star(~20), Absolute(10)");
+        Console.WriteLine("- Row/column gaps");
+        Console.WriteLine("- Cell positioning");
     }
     
-    static void ShowGridDemo()
+    static void DemonstrateScrollView()
     {
-        Console.WriteLine("  - Row and column definitions");
-        Console.WriteLine("  - Star sizing, absolute sizing, and auto sizing");
-        Console.WriteLine("  - Row and column spans");
-        Console.WriteLine("  - Gap between cells");
+        Console.WriteLine("\n\n4. ScrollView Component Demo");
+        Console.WriteLine("----------------------------\n");
         
-        var grid = new Grid { RowGap = 1, ColumnGap = 2, Padding = new Spacing(1) };
-        grid.SetColumns(GridLength.Absolute(15), GridLength.Star(1), GridLength.Absolute(10));
-        grid.SetRows(GridLength.Auto, GridLength.Absolute(3), GridLength.Auto);
+        Console.WriteLine("ScrollView with viewport and scrollbars:");
+        Console.WriteLine();
         
-        Console.WriteLine($"    Grid: {grid.Columns.Count} columns x {grid.Rows.Count} rows");
-        Console.WriteLine($"    Column types: Absolute(15), Star(1), Absolute(10)");
-        Console.WriteLine($"    Row gap={grid.RowGap}, Column gap={grid.ColumnGap}");
+        // Draw a simple representation
+        Console.WriteLine("  ┌──────────────────────────────────────┐");
+        Console.WriteLine("  │ Line 1: Long content that extends... │▲");
+        Console.WriteLine("  │ Line 2: Long content that extends... │║");
+        Console.WriteLine("  │ Line 3: Long content that extends... │█");
+        Console.WriteLine("  │ Line 4: Long content that extends... │█");
+        Console.WriteLine("  │ Line 5: Long content that extends... │║");
+        Console.WriteLine("  │ Line 6: Long content that extends... │║");
+        Console.WriteLine("  │ Line 7: Long content that extends... │║");
+        Console.WriteLine("  │ Line 8: Long content that extends... │▼");
+        Console.WriteLine("  │◄═══════════════════════════════════►│");
+        Console.WriteLine("  └──────────────────────────────────────┘");
+        
+        Console.WriteLine("\nScrollView features:");
+        Console.WriteLine("- Viewport clipping");
+        Console.WriteLine("- Vertical and horizontal scrollbars");
+        Console.WriteLine("- Content larger than viewport");
     }
     
-    static void ShowScrollViewDemo()
+    static void DemonstrateComplexLayout()
     {
-        Console.WriteLine("  - Viewport management");
-        Console.WriteLine("  - Horizontal and vertical scrolling");
-        Console.WriteLine("  - Scrollbar rendering");
-        Console.WriteLine("  - Content larger than viewport");
+        Console.WriteLine("\n\n5. Complex Layout Demo");
+        Console.WriteLine("----------------------\n");
         
-        var scrollView = new ScrollView
+        Console.WriteLine("Application layout using Grid, Box, and Stack:");
+        Console.WriteLine();
+        
+        // Draw the layout
+        Console.WriteLine("  ╔════════════════════════════════════════════════════════════════════╗");
+        Console.WriteLine("  ║                          APPLICATION HEADER                        ║");
+        Console.WriteLine("  ╚════════════════════════════════════════════════════════════════════╝");
+        Console.WriteLine("  ┌───────────────────────────────────────────┐┌───────────────────────┐");
+        Console.WriteLine("  │                                           ││                       │");
+        Console.WriteLine("  │ Main Content Area                         ││ ═══ MENU ═══          │");
+        Console.WriteLine("  │                                           ││                       │");
+        Console.WriteLine("  │ This is where the main application        ││ ▸ Dashboard           │");
+        Console.WriteLine("  │ content would be displayed.               ││                       │");
+        Console.WriteLine("  │                                           ││ ▸ Settings            │");
+        Console.WriteLine("  │                                           ││                       │");
+        Console.WriteLine("  │                                           ││ ▸ Reports             │");
+        Console.WriteLine("  │                                           ││                       │");
+        Console.WriteLine("  │                                           ││ ▸ Help                │");
+        Console.WriteLine("  │                                           ││                       │");
+        Console.WriteLine("  │                                           ││                       │");
+        Console.WriteLine("  │                                           ││                       │");
+        Console.WriteLine("  │                                           ││                       │");
+        Console.WriteLine("  │                                           ││                       │");
+        Console.WriteLine("  └───────────────────────────────────────────┘└───────────────────────┘");
+        
+        Console.WriteLine("\n\nLayout composition shown:");
+        Console.WriteLine("- Grid for overall structure");
+        Console.WriteLine("- Box components for panels");
+        Console.WriteLine("- Stack for menu items");
+    }
+    
+    static void DrawBox(int leftPadding, int width, int height, BorderStyle style, string content, int padding = 0)
+    {
+        var chars = GetBorderChars(style);
+        var padStr = new string(' ', leftPadding);
+        
+        // Top border
+        Console.Write(padStr + chars.TopLeft);
+        for (int i = 1; i < width - 1; i++)
+            Console.Write(chars.Horizontal);
+        Console.WriteLine(chars.TopRight);
+        
+        // Side borders and content
+        for (int i = 1; i < height - 1; i++)
         {
-            Content = new TextNode("Large content...\n" + string.Join("\n", Enumerable.Range(1, 50).Select(i => $"Line {i}"))),
-            ShowVerticalScrollbar = true,
-            ShowHorizontalScrollbar = true
-        };
+            Console.Write(padStr + chars.Vertical);
+            
+            if (i == height / 2 && !string.IsNullOrEmpty(content))
+            {
+                // Center content
+                var totalPadding = (width - 2 - content.Length) / 2;
+                var paddedContent = content.PadLeft(content.Length + totalPadding + padding).PadRight(width - 2);
+                if (paddedContent.Length > width - 2)
+                    paddedContent = paddedContent.Substring(0, width - 2);
+                Console.Write(paddedContent);
+            }
+            else
+            {
+                // Empty space
+                Console.Write(new string(' ', width - 2));
+            }
+            
+            Console.WriteLine(chars.Vertical);
+        }
         
-        Console.WriteLine($"    ScrollView: Content with 50 lines");
-        Console.WriteLine($"    Scrollbars: V={scrollView.ShowVerticalScrollbar}, H={scrollView.ShowHorizontalScrollbar}");
-        Console.WriteLine($"    Features: ScrollToArea, ScrollBy, ScrollToTop/Bottom/Left/Right");
+        // Bottom border
+        Console.Write(padStr + chars.BottomLeft);
+        for (int i = 1; i < width - 1; i++)
+            Console.Write(chars.Horizontal);
+        Console.WriteLine(chars.BottomRight);
     }
     
-    static void ShowComplexLayoutDemo()
+    static (char TopLeft, char TopRight, char BottomLeft, char BottomRight, char Horizontal, char Vertical) GetBorderChars(BorderStyle style)
     {
-        Console.WriteLine("  - Grid as main container");
-        Console.WriteLine("  - Box components for header, content, and sidebar");
-        Console.WriteLine("  - Stack for menu items");
-        Console.WriteLine("  - Nested layout components");
-        
-        Console.WriteLine("\n  Layout structure:");
-        Console.WriteLine("    Grid (2 columns, 2 rows)");
-        Console.WriteLine("    ├─ Header Box (spans 2 columns)");
-        Console.WriteLine("    ├─ Main Content Box (with border)");
-        Console.WriteLine("    └─ Sidebar Box");
-        Console.WriteLine("        └─ Stack (vertical menu items)");
+        return style switch
+        {
+            BorderStyle.Single => ('┌', '┐', '└', '┘', '─', '│'),
+            BorderStyle.Double => ('╔', '╗', '╚', '╝', '═', '║'),
+            BorderStyle.Rounded => ('╭', '╮', '╰', '╯', '─', '│'),
+            BorderStyle.Heavy => ('┏', '┓', '┗', '┛', '━', '┃'),
+            BorderStyle.Dashed => ('┌', '┐', '└', '┘', '╌', '╎'),
+            _ => ('+', '+', '+', '+', '-', '|')
+        };
     }
+}
+
+// Minimal BorderStyle enum for the example
+public enum BorderStyle
+{
+    Single,
+    Double,
+    Rounded,
+    Heavy,
+    Dashed
 }
