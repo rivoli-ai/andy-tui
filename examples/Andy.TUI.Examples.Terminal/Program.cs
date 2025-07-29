@@ -15,6 +15,8 @@ class Program
             Console.WriteLine("  dotnet run terminal-style  - Text styling and colors");
             Console.WriteLine("  dotnet run terminal-buffer - Double buffering animation");
             Console.WriteLine("  dotnet run terminal-input  - Keyboard input handling");
+            Console.WriteLine("  dotnet run terminal-pacman - Pac-Man animation demo");
+            Console.WriteLine("  dotnet run terminal-top    - System monitor (top-like)");
             Console.WriteLine("\nOther:");
             Console.WriteLine("  dotnet run all            - Run all terminal examples");
             return;
@@ -34,6 +36,12 @@ class Program
             case "terminal-input":
                 InputHandlingExample.Run();
                 break;
+            case "terminal-pacman":
+                PacManExample.Run();
+                break;
+            case "terminal-top":
+                SystemMonitorExample.Run();
+                break;
             case "all":
                 BasicTerminalExample.Run();
                 Console.WriteLine("\n" + new string('=', 50) + "\n");
@@ -42,6 +50,8 @@ class Program
                 DoubleBufferExample.Run();
                 Console.WriteLine("\n" + new string('=', 50) + "\n");
                 InputHandlingExample.Run();
+                Console.WriteLine("\n" + new string('=', 50) + "\n");
+                PacManExample.Run();
                 break;
             default:
                 Console.WriteLine($"Unknown example: {args[0]}");
