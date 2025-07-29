@@ -18,6 +18,7 @@ class Program
             Console.WriteLine("  dotnet run terminal-pacman - Pac-Man animation demo");
             Console.WriteLine("  dotnet run terminal-top    - System monitor (top-like)");
             Console.WriteLine("  dotnet run terminal-banner - Ubuntu-style system banner");
+            Console.WriteLine("  dotnet run terminal-matrix - Matrix digital rain screensaver");
             Console.WriteLine("\nOther:");
             Console.WriteLine("  dotnet run all            - Run all terminal examples");
             return;
@@ -45,6 +46,9 @@ class Program
                 break;
             case "terminal-banner":
                 SystemBannerExample.Run();
+                break;
+            case "terminal-matrix":
+                MatrixScreensaverExample.Run();
                 break;
             case "all":
                 BasicTerminalExample.Run();
