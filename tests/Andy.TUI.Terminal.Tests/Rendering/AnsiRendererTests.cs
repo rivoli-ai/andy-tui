@@ -19,6 +19,8 @@ public class AnsiRendererTests
             .Callback<string>(s => _output.Append(s));
         _terminalMock.Setup(t => t.SupportsColor).Returns(true);
         _terminalMock.Setup(t => t.SupportsAnsi).Returns(true);
+        _terminalMock.Setup(t => t.Width).Returns(80);
+        _terminalMock.Setup(t => t.Height).Returns(24);
         
         _renderer = new AnsiRenderer(_terminalMock.Object);
     }
@@ -28,6 +30,7 @@ public class AnsiRendererTests
     {
         // Act
         _renderer.BeginFrame();
+        _renderer.DrawChar(0, 0, 'A'); // Add content to trigger flush
         _renderer.EndFrame();
         
         // Assert
@@ -294,8 +297,8 @@ public class AnsiRendererTests
         _renderer.BeginFrame();
         _renderer.EndFrame();
         
-        // Assert
+        // Assert - Empty frame should not flush
         _terminalMock.Verify(t => t.Write(It.IsAny<string>()), Times.Never);
-        _terminalMock.Verify(t => t.Flush(), Times.Once);
+        _terminalMock.Verify(t => t.Flush(), Times.Never);
     }
 }

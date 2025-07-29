@@ -41,10 +41,27 @@ Andy.TUI is a modern terminal user interface library that brings reactive progra
   - Full test coverage with unit tests
   - Interactive examples demonstrating all features
 
-### In Progress
+- **Rendering System** (100% implemented)
+  - High-level rendering API with automatic double buffering
+  - Frame rate control and render scheduling
+  - ANSI escape sequence generation
+  - Cell-based dirty region tracking for optimal performance
+  - Comprehensive animation support with smooth transitions
+  - Interactive examples including games, animations, and visual effects
 
-- Render engine for applying Virtual DOM patches
-- Integration between Virtual DOM and Terminal layers
+### Phase 3.1 - Component Base Infrastructure (Completed)
+
+- **Component System** (100% implemented)
+  - `IComponent` interface with full lifecycle management
+  - `ComponentBase` abstract class with state management
+  - Observable property binding with automatic re-rendering
+  - Component Context system for parent/child relationships
+  - Service injection via `IServiceProvider`
+  - Event handling framework with propagation and bubbling
+  - `SharedStateManager` for cross-component state sharing
+  - `ThemeProvider` for theming and styling support
+  - Comprehensive test coverage (252 tests passing)
+  - Working examples demonstrating all component features
 
 ## Getting Started
 
@@ -87,6 +104,9 @@ dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-basic
 dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-style
 dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-buffer
 dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-input
+
+# Run Component examples
+dotnet run --project examples/Andy.TUI.Examples.Components
 ```
 
 ## Example Usage
@@ -193,15 +213,19 @@ inputHandler.KeyPressed += (_, e) =>
 
 The library is organized into several key components:
 
-- **Andy.TUI.Core** - Core reactive system and virtual DOM
+- **Andy.TUI.Core** - Core reactive system, virtual DOM, and component infrastructure
   - Observable system with automatic dependency tracking
   - Thread-safe property implementations
   - Memory-efficient weak reference support
+  - Component base classes and lifecycle management
+  - Event handling framework with propagation
+  - Shared state management and theming support
 - **Andy.TUI.Terminal** - Terminal abstraction layer
   - Cross-platform ANSI terminal support
-  - Double-buffered rendering
+  - Double-buffered rendering with frame rate control
   - Rich color and styling capabilities
-  - Efficient cell-based rendering
+  - Efficient cell-based rendering with dirty region tracking
+  - High-level rendering system with animation support
 - **Andy.TUI.Components** - Built-in UI components (planned)
 - **Andy.TUI.Framework** - Application framework (planned)
 

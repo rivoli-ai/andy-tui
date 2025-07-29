@@ -213,14 +213,23 @@ public class TerminalBuffer
         lock (_swapLock)
         {
             var oldFront = _frontBuffer;
-            var oldBack = _backBuffer;
             
+            // Create new buffers with new dimensions
             _frontBuffer = new Buffer(width, height);
             _backBuffer = new Buffer(width, height);
             
-            // Copy old content to new buffers
-            _frontBuffer.CopyFrom(oldFront);
-            _backBuffer.CopyFrom(oldBack);
+            // Copy old content to back buffer (what we want to display)
+            _backBuffer.CopyFrom(oldFront);
+            
+            // Force front buffer to have different content to ensure all cells are detected as changed
+            // We'll fill it with a special "invalid" cell that will never match normal content
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    _frontBuffer.TrySetCell(x, y, new Cell('\uffff', new Style { Foreground = Color.FromRgb(255, 255, 255) }));
+                }
+            }
             
             // Mark everything as dirty after resize
             lock (_dirtyLock)

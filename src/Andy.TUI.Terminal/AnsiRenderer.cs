@@ -298,14 +298,19 @@ public class AnsiRenderer : IRenderer
         // Handle 8-bit colors
         if (color.Type == ColorType.EightBit && color.ColorIndex.HasValue)
         {
-            if (Supports256Colors)
+            // For colors 0-15, prefer traditional 16-color codes over 256-color codes
+            if (color.ColorIndex.Value < 16)
+            {
+                return GetBasicColorCode(color.ColorIndex.Value, isForeground);
+            }
+            else if (Supports256Colors)
             {
                 return $"\x1b[{prefix};5;{color.ColorIndex.Value}m";
             }
             else
             {
                 // Fallback to 16-color
-                var index = color.ColorIndex.Value < 16 ? color.ColorIndex.Value : color.ColorIndex.Value % 16;
+                var index = color.ColorIndex.Value % 16;
                 return GetBasicColorCode(index, isForeground);
             }
         }
