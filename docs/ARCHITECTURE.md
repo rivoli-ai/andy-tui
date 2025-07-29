@@ -38,10 +38,22 @@ Andy.TUI.Core/
 │   ├── DependencyTracker.cs            # Automatic dependency tracking
 │   └── PropertyChangedEventArgs.cs     # Event args for property changes
 ├── VirtualDom/
-│   ├── VirtualNode.cs
-│   ├── VirtualElement.cs
-│   ├── DiffEngine.cs
-│   └── Patch.cs
+│   ├── VirtualNode.cs                   # Base class for all virtual nodes
+│   ├── TextNode.cs                      # Text content nodes
+│   ├── ElementNode.cs                   # UI element nodes with props/children
+│   ├── FragmentNode.cs                  # Grouping without wrapper element
+│   ├── ComponentNode.cs                 # Reusable component instances
+│   ├── VirtualDomBuilder.cs             # Fluent API for building trees
+│   ├── DiffEngine.cs                    # Tree comparison and patch generation
+│   ├── Patch.cs                         # Base patch class
+│   └── Patches/                         # Specific patch types
+│       ├── ReplacePatch.cs
+│       ├── UpdatePropsPatch.cs
+│       ├── UpdateTextPatch.cs
+│       ├── InsertPatch.cs
+│       ├── RemovePatch.cs
+│       ├── MovePatch.cs
+│       └── ReorderPatch.cs
 ├── Components/
 │   ├── IComponent.cs
 │   ├── ComponentBase.cs
@@ -233,6 +245,51 @@ using (property.Observe(value => ProcessValue(value)))
     // Callback invoked immediately with current value
     // and on all future changes until disposed
 }
+```
+
+## Virtual DOM System
+
+The Virtual DOM provides an efficient abstraction for terminal UI updates:
+
+### Virtual Node Types
+
+1. **TextNode**: Simple text content
+2. **ElementNode**: UI elements with properties and children
+3. **FragmentNode**: Groups nodes without adding wrapper elements
+4. **ComponentNode**: Reusable component instances
+
+### Diff Algorithm
+
+The diffing engine uses a sophisticated algorithm to minimize terminal updates:
+
+1. **Type Comparison**: Different node types trigger full replacement
+2. **Property Diffing**: Only changed properties are updated
+3. **Keyed Reconciliation**: Efficient list reordering using stable keys
+4. **Depth-First Traversal**: Generates patches in application order
+
+### Patch Types
+
+- **Replace**: Swap entire subtree
+- **UpdateProps**: Modify element properties
+- **UpdateText**: Change text content
+- **Insert/Remove**: Add or delete nodes
+- **Move**: Relocate node within parent
+- **Reorder**: Batch move operations for lists
+
+### Builder API
+
+The fluent builder API makes constructing virtual DOM trees intuitive:
+
+```csharp
+var ui = VBox()
+    .WithClass("container")
+    .WithChildren(
+        Label().WithText("Hello World"),
+        Button()
+            .WithText("Click Me")
+            .OnClick(() => HandleClick())
+    )
+    .Build();
 ```
 
 ## Key Features

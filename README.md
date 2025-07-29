@@ -18,11 +18,18 @@ Andy.TUI is a modern terminal user interface library that brings reactive progra
   - Comprehensive unit tests (67 tests, all passing)
   - Full API documentation and examples
 
+- **Virtual DOM System** (100% implemented)
+  - Virtual node types (Text, Element, Fragment, Component)
+  - Efficient diff algorithm with keyed reconciliation
+  - Fluent builder API for declarative UI construction
+  - Comprehensive patch generation for minimal updates
+  - Full test coverage (51 tests, all passing)
+  - Examples demonstrating basic, advanced, and reactive scenarios
+
 ### In Progress
 
-- Virtual DOM system for efficient terminal rendering
-- Diff engine for minimal terminal updates
 - Terminal abstraction layer
+- Render engine for applying Virtual DOM patches
 
 ## Getting Started
 
@@ -54,6 +61,11 @@ dotnet run --project examples/Andy.TUI.Examples collection
 
 # Run all examples
 dotnet run --project examples/Andy.TUI.Examples all
+
+# Run Virtual DOM examples
+dotnet run --project examples/VirtualDom basic
+dotnet run --project examples/VirtualDom advanced
+dotnet run --project examples/VirtualDom reactive
 ```
 
 ## Example Usage
@@ -99,6 +111,34 @@ using (tasks.SuspendNotifications())
 } // Single notification fired here
 ```
 
+### Virtual DOM
+
+```csharp
+using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
+
+// Build UI declaratively
+var ui = VBox()
+    .WithClass("app")
+    .WithChildren(
+        Label().WithText($"Count: {counter.Value}"),
+        HBox()
+            .WithChildren(
+                Button()
+                    .WithText("Increment")
+                    .OnClick(() => counter.Value++),
+                Button()
+                    .WithText("Reset")
+                    .OnClick(() => counter.Value = 0)
+            )
+    )
+    .Build();
+
+// Efficient updates with diffing
+var diffEngine = new DiffEngine();
+var patches = diffEngine.Diff(oldTree, newTree);
+// Apply only the minimal changes needed
+```
+
 ## Architecture
 
 The library is organized into several key components:
@@ -115,6 +155,7 @@ The library is organized into several key components:
 
 - [Architecture Overview](docs/ARCHITECTURE.md) - Detailed architecture and design decisions
 - [Observable API Reference](docs/OBSERVABLE_API.md) - Complete API documentation for the Observable system
+- [Virtual DOM API Reference](docs/VIRTUAL_DOM_API.md) - Complete API documentation for the Virtual DOM system
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Roadmap and development phases
 
 ## Contributing
