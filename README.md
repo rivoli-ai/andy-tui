@@ -63,11 +63,22 @@ Andy.TUI is a modern terminal user interface library that brings reactive progra
   - Comprehensive test coverage (252 tests passing)
   - Working examples demonstrating all component features
 
+### Phase 3.2 - Layout Components (Completed)
+
+- **Layout System** (100% implemented)
+  - `LayoutComponent` base class with measure/arrange pattern
+  - `Box` component with padding, margin, borders, and background styling
+  - `Stack` component with vertical/horizontal orientation and alignment
+  - `Grid` component with row/column definitions and star sizing
+  - `ScrollView` component with viewport management and scrollbars
+  - Full test coverage (41 tests, all passing)
+  - Visual examples demonstrating all layout components
+
 ## Getting Started
 
 ### Prerequisites
 
-- .NET 9.0 SDK or later
+- .NET 8.0 SDK or later
 
 ### Building
 
@@ -107,6 +118,9 @@ dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-input
 
 # Run Component examples
 dotnet run --project examples/Andy.TUI.Examples.Components
+
+# Run Layout examples
+dotnet run --project examples/Andy.TUI.Examples.Layout
 ```
 
 ## Example Usage
@@ -209,6 +223,48 @@ inputHandler.KeyPressed += (_, e) =>
 };
 ```
 
+### Layout Components
+
+```csharp
+using Andy.TUI.Components.Layout;
+
+// Create a grid layout
+var grid = new Grid();
+grid.SetColumns(GridLength.Absolute(200), GridLength.Star(1), GridLength.Absolute(150));
+grid.SetRows(GridLength.Auto, GridLength.Star(1));
+
+// Add header spanning all columns
+var header = new Box
+{
+    Content = new TextNode("Application Header"),
+    BackgroundColor = Color.DarkBlue,
+    ForegroundColor = Color.White,
+    Padding = new Spacing(1, 3),
+    ContentHorizontalAlignment = Alignment.Center
+};
+grid.AddChild(header, row: 0, column: 0, columnSpan: 3);
+
+// Add main content with scrolling
+var scrollView = new ScrollView
+{
+    Content = new TextNode(longContent),
+    ShowVerticalScrollbar = true
+};
+grid.AddChild(scrollView, row: 1, column: 1);
+
+// Add sidebar with menu items
+var sidebar = new Stack
+{
+    Orientation = Orientation.Vertical,
+    Spacing = 2,
+    Padding = new Spacing(2)
+};
+sidebar.AddChild(new TextNode("Menu Item 1"));
+sidebar.AddChild(new TextNode("Menu Item 2"));
+sidebar.AddChild(new TextNode("Menu Item 3"));
+grid.AddChild(sidebar, row: 1, column: 2);
+```
+
 ## Architecture
 
 The library is organized into several key components:
@@ -226,7 +282,10 @@ The library is organized into several key components:
   - Rich color and styling capabilities
   - Efficient cell-based rendering with dirty region tracking
   - High-level rendering system with animation support
-- **Andy.TUI.Components** - Built-in UI components (planned)
+- **Andy.TUI.Components** - Built-in UI components
+  - Layout components (Box, Stack, Grid, ScrollView)
+  - Input components (planned)
+  - Display components (planned)
 - **Andy.TUI.Framework** - Application framework (planned)
 
 ### Documentation
