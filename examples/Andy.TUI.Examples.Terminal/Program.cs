@@ -23,6 +23,7 @@ class Program
             Console.WriteLine("  dotnet run terminal-mario  - 16x16 Pixel Mario game");
             Console.WriteLine("  dotnet run terminal-aquarium - Animated aquarium");
             Console.WriteLine("  dotnet run terminal-fire - ASCII fire effect");
+            Console.WriteLine("  dotnet run terminal-snake - Classic Snake game");
             Console.WriteLine("\nOther:");
             Console.WriteLine("  dotnet run all            - Run all terminal examples");
             return;
@@ -65,6 +66,9 @@ class Program
                 break;
             case "terminal-fire":
                 FireEffectExample.Run();
+                break;
+            case "terminal-snake":
+                SnakeGameExample.Run();
                 break;
             case "all":
                 BasicTerminalExample.Run();
