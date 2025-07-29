@@ -20,6 +20,7 @@ class Program
             Console.WriteLine("  dotnet run terminal-banner - Ubuntu-style system banner");
             Console.WriteLine("  dotnet run terminal-matrix - Matrix digital rain screensaver");
             Console.WriteLine("  dotnet run terminal-cowsay - Cowsay implementation");
+            Console.WriteLine("  dotnet run terminal-mario  - 16x16 Pixel Mario game");
             Console.WriteLine("\nOther:");
             Console.WriteLine("  dotnet run all            - Run all terminal examples");
             return;
@@ -53,6 +54,9 @@ class Program
                 break;
             case "terminal-cowsay":
                 CowsayExample.Run();
+                break;
+            case "terminal-mario":
+                PixelMarioExample.Run();
                 break;
             case "all":
                 BasicTerminalExample.Run();
