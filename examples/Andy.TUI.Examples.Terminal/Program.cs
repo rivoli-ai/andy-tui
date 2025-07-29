@@ -27,6 +27,7 @@ class Program
             Console.WriteLine("  dotnet run terminal-loading - Loading animations showcase");
             Console.WriteLine("  dotnet run terminal-art - ASCII art gallery with effects");
             Console.WriteLine("  dotnet run terminal-weather - Weather dashboard with animations");
+            Console.WriteLine("  dotnet run terminal-input-system - Enhanced input system demonstration");
             Console.WriteLine("\nOther:");
             Console.WriteLine("  dotnet run all            - Run all terminal examples");
             return;
@@ -81,6 +82,9 @@ class Program
                 break;
             case "terminal-weather":
                 WeatherDashboardExample.Run();
+                break;
+            case "terminal-input-system":
+                BasicInputSystemExample.Run();
                 break;
             case "all":
                 BasicTerminalExample.Run();
