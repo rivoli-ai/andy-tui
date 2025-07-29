@@ -6,9 +6,11 @@ A .NET reactive text user interface library for the Andy code assistant.
 
 Andy.TUI is a modern terminal user interface library that brings reactive programming patterns to console applications. It provides a declarative, component-based approach to building dynamic terminal interfaces, inspired by frameworks like WPF and SwiftUI.
 
-## Current Status (Phase 1 - Core Foundation)
+## Current Status
 
-### Completed Features
+### Phase 1 - Core Foundation (Completed)
+
+#### Completed Features
 
 - **Observable System** (100% implemented, 89.7% test coverage)
   - `ObservableProperty<T>` - Thread-safe properties with change notifications
@@ -26,10 +28,23 @@ Andy.TUI is a modern terminal user interface library that brings reactive progra
   - Full test coverage (51 tests, all passing)
   - Examples demonstrating basic, advanced, and reactive scenarios
 
+### Phase 2 - Terminal Abstraction (Completed)
+
+- **Terminal Abstraction Layer** (100% implemented)
+  - Cross-platform terminal interface with ANSI escape sequence support
+  - Double-buffered rendering for smooth animations
+  - Comprehensive color support (16-color, 256-color, and 24-bit RGB)
+  - Text styling (bold, italic, underline, strikethrough, dim, inverse, blink)
+  - Input handling with keyboard event support
+  - Efficient cell-based buffer management
+  - Platform-specific handling for Windows and Unix-like systems
+  - Full test coverage with unit tests
+  - Interactive examples demonstrating all features
+
 ### In Progress
 
-- Terminal abstraction layer
 - Render engine for applying Virtual DOM patches
+- Integration between Virtual DOM and Terminal layers
 
 ## Getting Started
 
@@ -59,13 +74,19 @@ dotnet run --project examples/Andy.TUI.Examples
 dotnet run --project examples/Andy.TUI.Examples observable
 dotnet run --project examples/Andy.TUI.Examples collection
 
-# Run all examples
+# Run all observable examples
 dotnet run --project examples/Andy.TUI.Examples all
 
 # Run Virtual DOM examples
 dotnet run --project examples/VirtualDom basic
 dotnet run --project examples/VirtualDom advanced
 dotnet run --project examples/VirtualDom reactive
+
+# Run Terminal examples
+dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-basic
+dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-style
+dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-buffer
+dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-input
 ```
 
 ## Example Usage
@@ -139,6 +160,35 @@ var patches = diffEngine.Diff(oldTree, newTree);
 // Apply only the minimal changes needed
 ```
 
+### Terminal Abstraction
+
+```csharp
+using Andy.TUI.Terminal;
+
+// Create a terminal with double buffering
+var terminal = new AnsiTerminal();
+using var renderingSystem = new RenderingSystem(terminal);
+renderingSystem.Initialize();
+
+// Apply styles and colors
+var style = Style.Default
+    .WithForegroundColor(Color.Blue)
+    .WithBackgroundColor(Color.White)
+    .WithBold();
+
+renderingSystem.WriteText(10, 5, "Hello, TUI!", style);
+renderingSystem.DrawBox(0, 0, 80, 24, style, BoxStyle.Double);
+renderingSystem.Render();
+
+// Handle input
+var inputHandler = new ConsoleInputHandler();
+inputHandler.KeyPressed += (_, e) => 
+{
+    if (e.Key == ConsoleKey.Escape) 
+        Environment.Exit(0);
+};
+```
+
 ## Architecture
 
 The library is organized into several key components:
@@ -147,7 +197,11 @@ The library is organized into several key components:
   - Observable system with automatic dependency tracking
   - Thread-safe property implementations
   - Memory-efficient weak reference support
-- **Andy.TUI.Terminal** - Terminal abstraction layer (planned)
+- **Andy.TUI.Terminal** - Terminal abstraction layer
+  - Cross-platform ANSI terminal support
+  - Double-buffered rendering
+  - Rich color and styling capabilities
+  - Efficient cell-based rendering
 - **Andy.TUI.Components** - Built-in UI components (planned)
 - **Andy.TUI.Framework** - Application framework (planned)
 
@@ -156,6 +210,7 @@ The library is organized into several key components:
 - [Architecture Overview](docs/ARCHITECTURE.md) - Detailed architecture and design decisions
 - [Observable API Reference](docs/OBSERVABLE_API.md) - Complete API documentation for the Observable system
 - [Virtual DOM API Reference](docs/VIRTUAL_DOM_API.md) - Complete API documentation for the Virtual DOM system
+- [Terminal API Reference](docs/TERMINAL_API.md) - Complete API documentation for the Terminal abstraction layer
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Roadmap and development phases
 
 ## Contributing
