@@ -17,7 +17,7 @@ public class DeclarativeRenderer
     private readonly DeclarativeContext _context;
     private bool _needsRender = true;
     
-    public DeclarativeRenderer(IRenderingSystem renderingSystem)
+    public DeclarativeRenderer(IRenderingSystem renderingSystem, object? owner = null)
     {
         _renderingSystem = renderingSystem ?? throw new ArgumentNullException(nameof(renderingSystem));
         _virtualDomRenderer = new VirtualDomRenderer(renderingSystem);
@@ -59,6 +59,12 @@ public class DeclarativeRenderer
     {
         // Get or create the root view instance
         var rootInstance = _context.ViewInstanceManager.GetOrCreateInstance(root, "root");
+        
+        // Calculate layout with terminal constraints
+        var terminalWidth = _renderingSystem.Width;
+        var terminalHeight = _renderingSystem.Height;
+        var constraints = LayoutConstraints.Loose(terminalWidth, terminalHeight);
+        rootInstance.CalculateLayout(constraints);
         
         // Walk the instance tree and register focusables
         RegisterViewInstances(rootInstance);
@@ -105,6 +111,13 @@ public class DeclarativeRenderer
         else if (instance is HStackInstance hstack)
         {
             foreach (var child in hstack.GetChildInstances())
+            {
+                RegisterViewInstances(child);
+            }
+        }
+        else if (instance is BoxInstance box)
+        {
+            foreach (var child in box.GetChildInstances())
             {
                 RegisterViewInstances(child);
             }

@@ -1,6 +1,7 @@
 using System;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Declarative.Components;
+using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Terminal;
 using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
@@ -127,7 +128,19 @@ public class TextFieldInstance : ViewInstance, IFocusable
         }
     }
     
-    public override VirtualNode Render()
+    protected override LayoutBox PerformLayout(LayoutConstraints constraints)
+    {
+        var layout = new LayoutBox();
+        
+        // TextField has fixed width with brackets
+        const int fieldWidth = 20;
+        layout.Width = constraints.ConstrainWidth(fieldWidth + 2); // +2 for brackets
+        layout.Height = constraints.ConstrainHeight(1);
+        
+        return layout;
+    }
+    
+    protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         var currentText = _textBinding?.Value ?? string.Empty;
         var displayText = string.IsNullOrEmpty(currentText) ? _placeholder : 
@@ -172,8 +185,8 @@ public class TextFieldInstance : ViewInstance, IFocusable
             : Style.Default.WithForegroundColor(Color.Gray);
         
         return Element("text")
-            .WithProp("x", 0)
-            .WithProp("y", 0)
+            .WithProp("x", layout.AbsoluteX)
+            .WithProp("y", layout.AbsoluteY)
             .WithProp("style", style)
             .WithChild(new TextNode($"[{fieldContent}]"))
             .Build();

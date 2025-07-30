@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Andy.TUI.Core.VirtualDom;
@@ -8,6 +9,7 @@ namespace Andy.TUI.Declarative;
 
 /// <summary>
 /// Runtime instance of a VStack view with child management.
+/// VStack is a simplified Box with flexDirection: column.
 /// </summary>
 public class VStackInstance : ViewInstance
 {
@@ -41,46 +43,82 @@ public class VStackInstance : ViewInstance
         }
     }
     
-    public override VirtualNode Render()
+    protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
-        return RenderWithOffset(0, 0);
+        var layout = new LayoutBox();
+        
+        if (_childInstances.Count == 0)
+        {
+            layout.Width = 0;
+            layout.Height = 0;
+            return layout;
+        }
+        
+        // Calculate total height needed
+        float totalHeight = 0;
+        float maxWidth = 0;
+        
+        // First pass: calculate child sizes
+        var childLayouts = new List<LayoutBox>();
+        foreach (var child in _childInstances)
+        {
+            // For VStack, children get constrained width but unconstrained height
+            var childConstraints = new LayoutConstraints(
+                constraints.MinWidth, constraints.MaxWidth,
+                0, float.PositiveInfinity
+            );
+            
+            child.CalculateLayout(childConstraints);
+            var childLayout = child.Layout;
+            childLayouts.Add(childLayout);
+            
+            totalHeight += childLayout.Height;
+            maxWidth = Math.Max(maxWidth, childLayout.Width);
+        }
+        
+        // Add spacing
+        if (_childInstances.Count > 1)
+        {
+            totalHeight += _spacing * (_childInstances.Count - 1);
+        }
+        
+        // Constrain to available space
+        layout.Width = constraints.ConstrainWidth(maxWidth);
+        layout.Height = constraints.ConstrainHeight(totalHeight);
+        
+        // Position children
+        float currentY = 0;
+        for (int i = 0; i < _childInstances.Count; i++)
+        {
+            var child = _childInstances[i];
+            var childLayout = child.Layout;
+            
+            // Left-align children by default
+            childLayout.X = 0;
+            childLayout.Y = currentY;
+            
+            currentY += childLayout.Height + _spacing;
+        }
+        
+        return layout;
     }
     
-    internal VirtualNode RenderWithOffset(int offsetX, int offsetY)
+    protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         if (_childInstances.Count == 0)
             return Fragment();
-
-        var childElements = new List<VirtualNode>();
-        int currentY = offsetY;
         
-        foreach (var childInstance in _childInstances)
+        var childElements = new List<VirtualNode>();
+        
+        foreach (var child in _childInstances)
         {
-            VirtualNode childNode;
+            // Update child's absolute position
+            child.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(child.Layout.X);
+            child.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(child.Layout.Y);
             
-            // If child is an HStack, render it with the current offset
-            if (childInstance is HStackInstance hstack)
-            {
-                childNode = hstack.RenderWithOffset(offsetX, currentY);
-            }
-            else
-            {
-                childNode = childInstance.Render();
-                
-                // Position the child
-                if (childNode is ElementNode element)
-                {
-                    var props = new Dictionary<string, object?>(element.Props)
-                    {
-                        ["x"] = offsetX,
-                        ["y"] = currentY
-                    };
-                    childNode = new ElementNode(element.TagName, props, element.Children.ToArray());
-                }
-            }
-            
+            // Render child with its layout
+            var childNode = child.Render();
             childElements.Add(childNode);
-            currentY += 1 + _spacing;
         }
         
         return Fragment(childElements.ToArray());

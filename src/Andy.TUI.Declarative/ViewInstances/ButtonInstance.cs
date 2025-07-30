@@ -1,6 +1,7 @@
 using System;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Declarative.Components;
+using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Terminal;
 using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
 
@@ -61,7 +62,22 @@ public class ButtonInstance : ViewInstance, IFocusable
         _textColor = button.GetTextColor();
     }
     
-    public override VirtualNode Render()
+    protected override LayoutBox PerformLayout(LayoutConstraints constraints)
+    {
+        var layout = new LayoutBox();
+        
+        // Button content with focus indicator and brackets
+        var prefix = _isFocused ? "> " : "  ";
+        var content = $"{prefix}[ {_title} ]";
+        
+        // Button size is based on content
+        layout.Width = constraints.ConstrainWidth(content.Length);
+        layout.Height = constraints.ConstrainHeight(1);
+        
+        return layout;
+    }
+    
+    protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         // Visual styling based on focus
         var bgColor = _isFocused ? Color.Cyan : _backgroundColor;
@@ -74,8 +90,8 @@ public class ButtonInstance : ViewInstance, IFocusable
             
         return Element("text")
             .WithProp("style", style)
-            .WithProp("x", 0)
-            .WithProp("y", 0)
+            .WithProp("x", layout.AbsoluteX)
+            .WithProp("y", layout.AbsoluteY)
             .WithChild(new TextNode($"{prefix}[ {_title} ]"))
             .Build();
     }

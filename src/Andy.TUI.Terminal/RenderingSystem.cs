@@ -32,6 +32,16 @@ public class RenderingSystem : IRenderingSystem, IDisposable
     public IRenderer Renderer => _renderer;
     
     /// <summary>
+    /// Gets the width of the terminal.
+    /// </summary>
+    public int Width => _terminal.Width;
+    
+    /// <summary>
+    /// Gets the height of the terminal.
+    /// </summary>
+    public int Height => _terminal.Height;
+    
+    /// <summary>
     /// Creates a new rendering system.
     /// </summary>
     public RenderingSystem(ITerminal terminal, IRenderer? renderer = null)

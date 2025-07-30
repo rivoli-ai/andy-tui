@@ -5,6 +5,7 @@ using System.Linq;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Focus;
+using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Terminal;
 using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
@@ -143,7 +144,34 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
         }
     }
     
-    public override VirtualNode Render()
+    protected override LayoutBox PerformLayout(LayoutConstraints constraints)
+    {
+        var layout = new LayoutBox();
+        
+        // Calculate dropdown width based on content
+        var currentValue = _selection?.Value;
+        bool hasValue = currentValue != null && (currentValue is not string str || !string.IsNullOrEmpty(str));
+        var displayText = hasValue
+            ? (_displayText?.Invoke(currentValue!) ?? currentValue!.ToString() ?? "")
+            : _placeholder;
+        
+        var dropdownText = $"▶ {displayText}"; // Use closed state for width calculation
+        layout.Width = constraints.ConstrainWidth(dropdownText.Length);
+        
+        // Height depends on whether dropdown is open
+        if (_isOpen && _items.Count > 0)
+        {
+            layout.Height = constraints.ConstrainHeight(1 + _items.Count);
+        }
+        else
+        {
+            layout.Height = constraints.ConstrainHeight(1);
+        }
+        
+        return layout;
+    }
+    
+    protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         var currentValue = _selection?.Value;
         string displayText;
@@ -171,8 +199,8 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
         
         elements.Add(
             Element("text")
-                .WithProp("x", 0)
-                .WithProp("y", 0)
+                .WithProp("x", layout.AbsoluteX)
+                .WithProp("y", layout.AbsoluteY)
                 .WithProp("style", dropdownStyle)
                 .WithChild(new TextNode(dropdownText))
                 .Build()
@@ -197,8 +225,8 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 
                 elements.Add(
                     Element("text")
-                        .WithProp("x", 2)
-                        .WithProp("y", y)
+                        .WithProp("x", layout.AbsoluteX + 2)
+                        .WithProp("y", layout.AbsoluteY + y)
                         .WithProp("style", itemStyle)
                         .WithChild(new TextNode($"  {itemText}"))
                         .Build()

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Andy.TUI.Core.VirtualDom;
@@ -8,6 +9,7 @@ namespace Andy.TUI.Declarative;
 
 /// <summary>
 /// Runtime instance of an HStack view with child management.
+/// HStack is a simplified Box with flexDirection: row.
 /// </summary>
 public class HStackInstance : ViewInstance
 {
@@ -41,80 +43,85 @@ public class HStackInstance : ViewInstance
         }
     }
     
-    public override VirtualNode Render()
+    protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
-        return RenderWithOffset(0, 0);
+        var layout = new LayoutBox();
+        
+        if (_childInstances.Count == 0)
+        {
+            layout.Width = 0;
+            layout.Height = 0;
+            return layout;
+        }
+        
+        // Calculate total width needed
+        float totalWidth = 0;
+        float maxHeight = 0;
+        
+        // First pass: calculate child sizes
+        var childLayouts = new List<LayoutBox>();
+        foreach (var child in _childInstances)
+        {
+            // For HStack, children get unconstrained width but constrained height
+            var childConstraints = new LayoutConstraints(
+                0, float.PositiveInfinity,
+                constraints.MinHeight, constraints.MaxHeight
+            );
+            
+            child.CalculateLayout(childConstraints);
+            var childLayout = child.Layout;
+            childLayouts.Add(childLayout);
+            
+            totalWidth += childLayout.Width;
+            maxHeight = Math.Max(maxHeight, childLayout.Height);
+        }
+        
+        // Add spacing
+        if (_childInstances.Count > 1)
+        {
+            totalWidth += _spacing * (_childInstances.Count - 1);
+        }
+        
+        // Constrain to available space
+        layout.Width = constraints.ConstrainWidth(totalWidth);
+        layout.Height = constraints.ConstrainHeight(maxHeight);
+        
+        // Position children
+        float currentX = 0;
+        for (int i = 0; i < _childInstances.Count; i++)
+        {
+            var child = _childInstances[i];
+            var childLayout = child.Layout;
+            
+            // Center children vertically if they're smaller than the container
+            childLayout.X = currentX;
+            childLayout.Y = (layout.Height - childLayout.Height) / 2;
+            
+            currentX += childLayout.Width + _spacing;
+        }
+        
+        return layout;
     }
     
-    internal VirtualNode RenderWithOffset(int offsetX, int offsetY)
+    protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         if (_childInstances.Count == 0)
             return Fragment();
-
-        var childElements = new List<VirtualNode>();
-        int currentX = offsetX;
         
-        foreach (var childInstance in _childInstances)
+        var childElements = new List<VirtualNode>();
+        
+        foreach (var child in _childInstances)
         {
-            var childNode = childInstance.Render();
+            // Update child's absolute position
+            child.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(child.Layout.X);
+            child.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(child.Layout.Y);
             
-            // Position the child
-            if (childNode is ElementNode element)
-            {
-                var props = new Dictionary<string, object?>(element.Props)
-                {
-                    ["x"] = currentX,
-                    ["y"] = offsetY
-                };
-                childNode = new ElementNode(element.TagName, props, element.Children.ToArray());
-            }
-            else if (childNode is FragmentNode fragment)
-            {
-                // For fragments, position each child element
-                var fragmentChildren = new List<VirtualNode>();
-                foreach (var fragChild in fragment.Children)
-                {
-                    if (fragChild is ElementNode fragElement)
-                    {
-                        var props = new Dictionary<string, object?>(fragElement.Props)
-                        {
-                            ["x"] = currentX + (int)(fragElement.Props.GetValueOrDefault("x") ?? 0),
-                            ["y"] = offsetY + (int)(fragElement.Props.GetValueOrDefault("y") ?? 0)
-                        };
-                        fragmentChildren.Add(new ElementNode(fragElement.TagName, props, fragElement.Children.ToArray()));
-                    }
-                    else
-                    {
-                        fragmentChildren.Add(fragChild);
-                    }
-                }
-                childNode = Fragment(fragmentChildren.ToArray());
-            }
-            
+            // Render child with its layout
+            var childNode = child.Render();
             childElements.Add(childNode);
-            
-            // Estimate width
-            int width = EstimateWidth(childNode);
-            currentX += width + _spacing;
         }
         
         return Fragment(childElements.ToArray());
-    }
-    
-    private int EstimateWidth(VirtualNode node)
-    {
-        if (node is TextNode textNode)
-            return textNode.Content.Length;
-        if (node is ElementNode element && element.Children.FirstOrDefault() is TextNode text)
-            return text.Content.Length;
-        if (node is FragmentNode fragment)
-        {
-            // For fragments, use the width of the first element
-            var firstChild = fragment.Children.FirstOrDefault();
-            if (firstChild != null)
-                return EstimateWidth(firstChild);
-        }
-        return 10; // Default width
     }
     
     public IReadOnlyList<ViewInstance> GetChildInstances() => _childInstances;

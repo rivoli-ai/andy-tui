@@ -6,6 +6,16 @@ namespace Andy.TUI.Terminal;
 public interface IRenderingSystem
 {
     /// <summary>
+    /// Gets the width of the terminal.
+    /// </summary>
+    int Width { get; }
+    
+    /// <summary>
+    /// Gets the height of the terminal.
+    /// </summary>
+    int Height { get; }
+    
+    /// <summary>
     /// Writes text at the specified position.
     /// </summary>
     void WriteText(int x, int y, string text, Style style);
