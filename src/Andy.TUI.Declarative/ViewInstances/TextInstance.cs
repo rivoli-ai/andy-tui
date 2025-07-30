@@ -1,5 +1,6 @@
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Declarative.Components;
+using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Terminal;
 using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
 
@@ -26,12 +27,28 @@ public class TextInstance : ViewInstance
         _style = text.GetStyle();
     }
     
-    public override VirtualNode Render()
+    protected override LayoutBox PerformLayout(LayoutConstraints constraints)
+    {
+        // Text takes up only the space it needs
+        var layout = new LayoutBox
+        {
+            Width = _content.Length,
+            Height = 1
+        };
+        
+        // Constrain to available space
+        layout.Width = constraints.ConstrainWidth(layout.Width);
+        layout.Height = constraints.ConstrainHeight(layout.Height);
+        
+        return layout;
+    }
+    
+    protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         return Element("text")
             .WithProp("style", _style)
-            .WithProp("x", 0)
-            .WithProp("y", 0)
+            .WithProp("x", layout.AbsoluteX)
+            .WithProp("y", layout.AbsoluteY)
             .WithChild(new TextNode(_content))
             .Build();
     }

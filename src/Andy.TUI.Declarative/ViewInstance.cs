@@ -14,6 +14,8 @@ public abstract class ViewInstance
 {
     private readonly string _id;
     private bool _needsUpdate = true;
+    private bool _needsLayout = true;
+    private LayoutBox _layout = new();
     
     /// <summary>
     /// Gets the unique identifier for this view instance.
@@ -26,9 +28,19 @@ public abstract class ViewInstance
     public bool NeedsUpdate => _needsUpdate;
     
     /// <summary>
+    /// Gets whether this view needs layout recalculation.
+    /// </summary>
+    public bool NeedsLayout => _needsLayout;
+    
+    /// <summary>
     /// Gets or sets the context for this view instance.
     /// </summary>
     public DeclarativeContext? Context { get; set; }
+    
+    /// <summary>
+    /// Gets the calculated layout box for this view.
+    /// </summary>
+    public LayoutBox Layout => _layout;
     
     protected ViewInstance(string id)
     {
@@ -45,6 +57,15 @@ public abstract class ViewInstance
     }
     
     /// <summary>
+    /// Marks this view as needing layout recalculation.
+    /// </summary>
+    public void InvalidateLayout()
+    {
+        _needsLayout = true;
+        Context?.RequestRender();
+    }
+    
+    /// <summary>
     /// Updates this view instance from a view declaration.
     /// </summary>
     public void Update(ISimpleComponent viewDeclaration)
@@ -54,9 +75,40 @@ public abstract class ViewInstance
     }
     
     /// <summary>
-    /// Renders this view instance to virtual DOM.
+    /// Calculates the layout for this view given constraints.
     /// </summary>
-    public abstract VirtualNode Render();
+    public void CalculateLayout(LayoutConstraints constraints)
+    {
+        _layout = PerformLayout(constraints);
+        _needsLayout = false;
+    }
+    
+    /// <summary>
+    /// Performs layout calculation for this view.
+    /// Override to implement custom layout logic.
+    /// </summary>
+    protected virtual LayoutBox PerformLayout(LayoutConstraints constraints)
+    {
+        // Default implementation - just fill available space
+        return new LayoutBox
+        {
+            Width = constraints.MaxWidth,
+            Height = constraints.MaxHeight
+        };
+    }
+    
+    /// <summary>
+    /// Renders this view instance to virtual DOM using the calculated layout.
+    /// </summary>
+    public VirtualNode Render()
+    {
+        return RenderWithLayout(_layout);
+    }
+    
+    /// <summary>
+    /// Renders this view instance with the given layout information.
+    /// </summary>
+    protected abstract VirtualNode RenderWithLayout(LayoutBox layout);
     
     /// <summary>
     /// Called when the view needs to update from a declaration.
@@ -109,6 +161,7 @@ public class ViewInstanceManager
     {
         return viewDeclaration switch
         {
+            Box box => new BoxInstance(id),
             TextField textField => new TextFieldInstance(id),
             Button button => new ButtonInstance(id),
             Text text => new TextInstance(id),
