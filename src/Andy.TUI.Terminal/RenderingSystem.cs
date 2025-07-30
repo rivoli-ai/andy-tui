@@ -3,7 +3,7 @@ namespace Andy.TUI.Terminal;
 /// <summary>
 /// High-level rendering system that coordinates buffer management, rendering, and scheduling.
 /// </summary>
-public class RenderingSystem : IDisposable
+public class RenderingSystem : IRenderingSystem, IDisposable
 {
     private readonly ITerminal _terminal;
     private readonly TerminalBuffer _buffer;
