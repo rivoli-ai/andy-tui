@@ -248,6 +248,17 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         // Their children are already handled by the render tree
     }
     
+    public void VisitClipping(ClippingNode node)
+    {
+        // Clipping nodes constrain their children to a rectangular area
+        // For terminal rendering, we'll need to handle this at a higher level
+        // since we can't truly clip in a terminal. We'll track the clipping bounds
+        // and prevent rendering outside them.
+        
+        // The actual clipping logic is handled in BuildRenderTree and CollectElements
+        // This visitor method is just a placeholder for now
+    }
+    
     #endregion
     
     #region IPatchVisitor Implementation

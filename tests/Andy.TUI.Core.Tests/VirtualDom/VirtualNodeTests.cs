@@ -223,5 +223,6 @@ public class VirtualNodeTests
         public void VisitElement(ElementNode node) => VisitedElement = true;
         public void VisitComponent(ComponentNode node) => VisitedComponent = true;
         public void VisitFragment(FragmentNode node) => VisitedFragment = true;
+        public void VisitClipping(ClippingNode node) { }
     }
 }

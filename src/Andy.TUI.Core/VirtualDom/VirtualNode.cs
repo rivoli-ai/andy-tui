@@ -68,7 +68,12 @@ public enum VirtualNodeType
     /// <summary>
     /// A fragment node that groups multiple nodes without a wrapper.
     /// </summary>
-    Fragment
+    Fragment,
+    
+    /// <summary>
+    /// A clipping node that constrains children to a rectangular area.
+    /// </summary>
+    Clipping
 }
 
 /// <summary>
@@ -80,4 +85,5 @@ public interface IVirtualNodeVisitor
     void VisitElement(ElementNode node);
     void VisitComponent(ComponentNode node);
     void VisitFragment(FragmentNode node);
+    void VisitClipping(ClippingNode node);
 }

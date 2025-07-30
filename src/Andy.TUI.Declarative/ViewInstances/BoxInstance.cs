@@ -393,6 +393,18 @@ public class BoxInstance : ViewInstance
             elements.Add(childNode);
         }
         
+        // Apply overflow clipping if needed
+        if (_box.Overflow == Overflow.Hidden && elements.Count > 0)
+        {
+            // Create a clipping node that constrains children to the box's content area
+            var clipX = layout.ContentX;
+            var clipY = layout.ContentY;
+            var clipWidth = (int)Math.Round(layout.ContentWidth);
+            var clipHeight = (int)Math.Round(layout.ContentHeight);
+            
+            return Clip(clipX, clipY, clipWidth, clipHeight, elements.ToArray());
+        }
+        
         return Fragment(elements.ToArray());
     }
     

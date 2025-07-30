@@ -307,5 +307,6 @@ public class ComponentNodeTests
             VisitedComponentNode = node;
         }
         public void VisitFragment(FragmentNode node) { }
+        public void VisitClipping(ClippingNode node) { }
     }
 }

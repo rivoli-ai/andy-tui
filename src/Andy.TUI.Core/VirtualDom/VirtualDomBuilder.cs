@@ -48,6 +48,17 @@ public static class VirtualDomBuilder
     public static ElementBuilder Label() => Element("label");
     public static ElementBuilder List() => Element("list");
     public static ElementBuilder ListItem() => Element("li");
+    
+    /// <summary>
+    /// Creates an empty node.
+    /// </summary>
+    public static EmptyNode Empty() => new EmptyNode();
+    
+    /// <summary>
+    /// Creates a clipping node that constrains children to a rectangular area.
+    /// </summary>
+    public static ClippingNode Clip(int x, int y, int width, int height, params VirtualNode[] children) 
+        => new ClippingNode(x, y, width, height, children);
 }
 
 /// <summary>
