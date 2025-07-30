@@ -168,6 +168,7 @@ public class ViewInstanceManager
             Text text => new TextInstance(id),
             VStack vstack => new VStackInstance(id),
             HStack hstack => new HStackInstance(id),
+            ZStack zstack => new ZStackInstance(id),
             Spacer spacer => new SpacerInstance(spacer, id),
             _ => CreateGenericInstance(viewDeclaration, id)
         };
