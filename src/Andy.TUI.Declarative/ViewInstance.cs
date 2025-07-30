@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Declarative.ViewInstances;
 
 namespace Andy.TUI.Declarative;
 
@@ -167,6 +168,7 @@ public class ViewInstanceManager
             Text text => new TextInstance(id),
             VStack vstack => new VStackInstance(id),
             HStack hstack => new HStackInstance(id),
+            Spacer spacer => new SpacerInstance(spacer, id),
             _ => CreateGenericInstance(viewDeclaration, id)
         };
     }

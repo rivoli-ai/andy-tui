@@ -58,8 +58,26 @@ class LayoutTestApp
                 new Text("Right").Color(Color.Red)
             },
             
+            // HStack with Spacer to push content apart
+            new HStack {
+                new Text("Start").Color(Color.Green),
+                new Spacer(),
+                new Text("End").Color(Color.Red)
+            },
+            
+            // HStack with multiple Spacers for even distribution
+            new HStack {
+                new Spacer(),
+                new Text("Centered").Color(Color.Yellow),
+                new Spacer()
+            },
+            
             box1,
-            box2
+            box2,
+            
+            new Spacer(), // Push remaining content to bottom
+            
+            new Text("Bottom text pushed down by Spacer").Color(Color.Gray)
         };
         
         // Render

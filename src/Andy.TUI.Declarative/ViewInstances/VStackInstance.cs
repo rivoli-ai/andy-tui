@@ -54,50 +54,88 @@ public class VStackInstance : ViewInstance
             return layout;
         }
         
-        // Calculate total height needed
-        float totalHeight = 0;
+        // First pass: calculate sizes for non-spacer children and identify spacers
+        float totalFixedHeight = 0;
         float maxWidth = 0;
-        
-        // First pass: calculate child sizes
+        var spacerIndices = new List<int>();
         var childLayouts = new List<LayoutBox>();
-        foreach (var child in _childInstances)
+        
+        for (int i = 0; i < _childInstances.Count; i++)
         {
-            // For VStack, children get constrained width but unconstrained height
-            var childConstraints = new LayoutConstraints(
-                constraints.MinWidth, constraints.MaxWidth,
-                0, float.PositiveInfinity
-            );
+            var child = _childInstances[i];
             
-            child.CalculateLayout(childConstraints);
-            var childLayout = child.Layout;
-            childLayouts.Add(childLayout);
-            
-            totalHeight += childLayout.Height;
-            maxWidth = Math.Max(maxWidth, childLayout.Width);
+            if (child is SpacerInstance spacer)
+            {
+                spacerIndices.Add(i);
+                // Give spacer minimum size for now
+                var minLength = spacer.MinLength?.Resolve(constraints.MaxHeight) ?? 0;
+                childLayouts.Add(new LayoutBox { Width = 0, Height = minLength });
+                totalFixedHeight += minLength;
+            }
+            else
+            {
+                // For VStack, non-spacer children get constrained width but unconstrained height
+                var childConstraints = new LayoutConstraints(
+                    constraints.MinWidth, constraints.MaxWidth,
+                    0, float.PositiveInfinity
+                );
+                
+                child.CalculateLayout(childConstraints);
+                var childLayout = child.Layout;
+                childLayouts.Add(childLayout);
+                
+                totalFixedHeight += childLayout.Height;
+                maxWidth = Math.Max(maxWidth, childLayout.Width);
+            }
         }
         
         // Add spacing
+        float totalSpacing = 0;
         if (_childInstances.Count > 1)
         {
-            totalHeight += _spacing * (_childInstances.Count - 1);
+            totalSpacing = _spacing * (_childInstances.Count - 1);
+            totalFixedHeight += totalSpacing;
         }
         
-        // Constrain to available space
+        // Calculate available space for spacers
+        float availableHeight = constraints.MaxHeight;
+        float remainingSpace = Math.Max(0, availableHeight - totalFixedHeight);
+        
+        // Distribute remaining space among spacers
+        if (spacerIndices.Count > 0 && remainingSpace > 0)
+        {
+            float spacePerSpacer = remainingSpace / spacerIndices.Count;
+            foreach (var index in spacerIndices)
+            {
+                childLayouts[index].Height += spacePerSpacer;
+            }
+        }
+        
+        // Calculate final dimensions
+        float finalHeight = totalFixedHeight + remainingSpace;
         layout.Width = constraints.ConstrainWidth(maxWidth);
-        layout.Height = constraints.ConstrainHeight(totalHeight);
+        layout.Height = constraints.ConstrainHeight(finalHeight);
         
         // Position children
         float currentY = 0;
         for (int i = 0; i < _childInstances.Count; i++)
         {
             var child = _childInstances[i];
-            var childLayout = child.Layout;
+            var childLayout = childLayouts[i];
+            
+            // Update child's layout with final size
+            child.Layout.Width = childLayout.Width;
+            child.Layout.Height = childLayout.Height;
             
             // Left-align children by default
-            childLayout.X = 0;
-            childLayout.Y = currentY;
+            child.Layout.X = 0;
+            child.Layout.Y = currentY;
             
-            currentY += childLayout.Height + _spacing;
+            currentY += childLayout.Height;
+            if (i < _childInstances.Count - 1)
+            {
+                currentY += _spacing;
+            }
         }
         
         return layout;
