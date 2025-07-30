@@ -1,10 +1,16 @@
 # Andy.TUI
 
-A .NET reactive text user interface library for the Andy code assistant.
+A powerful declarative terminal UI framework for .NET that combines the best of Ink, Yoga, SwiftUI, and WPF.
 
 ## Overview
 
-Andy.TUI is a modern terminal user interface library that brings reactive programming patterns to console applications. It provides a declarative, component-based approach to building dynamic terminal interfaces, inspired by frameworks like WPF and SwiftUI.
+Andy.TUI is a modern terminal user interface library that brings declarative UI patterns to console applications. It combines:
+- **Ink's rich component library** and developer experience
+- **Yoga's flexbox layout engine** for precise positioning
+- **SwiftUI's type safety** and declarative syntax
+- **WPF's MVVM patterns** and data binding
+
+See [DECLARATIVE_ARCHITECTURE.md](docs/DECLARATIVE_ARCHITECTURE.md) for the complete architecture overview.
 
 ## Current Status
 
