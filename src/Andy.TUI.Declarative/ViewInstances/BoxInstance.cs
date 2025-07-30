@@ -112,56 +112,99 @@ public class BoxInstance : ViewInstance
         var totalGap = gap * Math.Max(0, _childInstances.Count - 1);
         var availableMainSize = mainAxisSize - totalGap;
         
-        // Calculate flex items
+        // First pass: Calculate natural sizes and collect flex properties
+        var childInfos = new List<(ViewInstance instance, float naturalSize, float flexGrow, float flexShrink, float flexBasis)>();
+        var totalNaturalSize = 0f;
         var totalFlexGrow = 0f;
-        var totalFlexShrink = 0f;
-        var totalFixedSize = 0f;
+        var totalWeightedFlexShrink = 0f;
         
         foreach (var child in _childInstances)
         {
+            var flexGrow = 0f;
+            var flexShrink = 1f;
+            var flexBasis = Length.Auto;
+            
             if (child is BoxInstance boxChild && boxChild._box != null)
             {
-                totalFlexGrow += boxChild._box.FlexGrow;
-                totalFlexShrink += boxChild._box.FlexShrink;
-                
-                // For now, assume fixed size children take their preferred size
-                if (boxChild._box.FlexGrow == 0)
-                {
-                    var childConstraints = isRow
-                        ? LayoutConstraints.Loose(availableMainSize, crossAxisSize)
-                        : LayoutConstraints.Loose(crossAxisSize, availableMainSize);
-                    
-                    child.CalculateLayout(childConstraints);
-                    totalFixedSize += isRow ? child.Layout.Width : child.Layout.Height;
-                }
+                flexGrow = boxChild._box.FlexGrow;
+                flexShrink = boxChild._box.FlexShrink;
+                flexBasis = boxChild._box.FlexBasis;
             }
-        }
-        
-        // Distribute remaining space to flex items
-        var remainingSpace = availableMainSize - totalFixedSize;
-        var flexUnit = totalFlexGrow > 0 ? remainingSpace / totalFlexGrow : 0;
-        
-        // Position children
-        var mainPos = 0f;
-        var crossPos = 0f;
-        
-        foreach (var child in _childInstances)
-        {
-            var childBox = child as BoxInstance;
-            var flexGrow = childBox?._box?.FlexGrow ?? 0;
             
-            // Calculate child size
-            float childMainSize;
-            if (flexGrow > 0)
+            // Calculate natural size (flex-basis or content size)
+            float naturalSize;
+            if (!flexBasis.IsAuto)
             {
-                childMainSize = flexUnit * flexGrow;
+                naturalSize = flexBasis.ToPixels(availableMainSize);
             }
             else
             {
-                childMainSize = isRow ? child.Layout.Width : child.Layout.Height;
+                // Measure content
+                var childConstraints = isRow
+                    ? LayoutConstraints.Loose(float.PositiveInfinity, crossAxisSize)
+                    : LayoutConstraints.Loose(crossAxisSize, float.PositiveInfinity);
+                
+                child.CalculateLayout(childConstraints);
+                naturalSize = isRow ? child.Layout.Width : child.Layout.Height;
             }
             
-            // Apply child constraints
+            childInfos.Add((child, naturalSize, flexGrow, flexShrink, flexBasis));
+            totalNaturalSize += naturalSize;
+            totalFlexGrow += flexGrow;
+            totalWeightedFlexShrink += naturalSize * flexShrink; // Weighted by natural size
+        }
+        
+        // Determine if we need to grow or shrink
+        var totalSize = totalNaturalSize + totalGap;
+        var availableSpace = availableMainSize;
+        var needsToShrink = totalSize > availableSpace;
+        var remainingSpace = availableSpace - totalSize;
+        
+        // Calculate final sizes
+        var finalSizes = new List<float>();
+        
+        if (needsToShrink && totalWeightedFlexShrink > 0)
+        {
+            // Shrink items proportionally
+            var shrinkAmount = Math.Abs(remainingSpace);
+            
+            foreach (var (instance, naturalSize, flexGrow, flexShrink, flexBasis) in childInfos)
+            {
+                var shrinkProportion = (naturalSize * flexShrink) / totalWeightedFlexShrink;
+                var shrinkValue = shrinkAmount * shrinkProportion;
+                var finalSize = Math.Max(0, naturalSize - shrinkValue);
+                finalSizes.Add(finalSize);
+            }
+        }
+        else if (!needsToShrink && totalFlexGrow > 0 && remainingSpace > 0)
+        {
+            // Grow items proportionally
+            foreach (var (instance, naturalSize, flexGrow, flexShrink, flexBasis) in childInfos)
+            {
+                var growValue = flexGrow > 0 ? (remainingSpace * flexGrow / totalFlexGrow) : 0;
+                var finalSize = naturalSize + growValue;
+                finalSizes.Add(finalSize);
+            }
+        }
+        else
+        {
+            // No grow or shrink needed
+            foreach (var (instance, naturalSize, flexGrow, flexShrink, flexBasis) in childInfos)
+            {
+                finalSizes.Add(naturalSize);
+            }
+        }
+        
+        // Position children with final sizes
+        var mainPos = 0f;
+        var crossPos = 0f;
+        
+        for (int i = 0; i < _childInstances.Count; i++)
+        {
+            var child = _childInstances[i];
+            var childMainSize = finalSizes[i];
+            
+            // Apply child constraints with final size
             var childConstraints = isRow
                 ? LayoutConstraints.Tight(childMainSize, crossAxisSize)
                 : LayoutConstraints.Tight(crossAxisSize, childMainSize);
@@ -180,11 +223,15 @@ public class BoxInstance : ViewInstance
                 child.Layout.Y = mainPos;
             }
             
-            mainPos += childMainSize + gap;
+            mainPos += childMainSize;
+            if (i < _childInstances.Count - 1)
+            {
+                mainPos += gap;
+            }
         }
         
         // Apply justification and alignment
-        ApplyJustification(parentLayout, isRow, mainPos - gap);
+        ApplyJustification(parentLayout, isRow, mainPos);
         ApplyAlignment(parentLayout, isRow, crossAxisSize);
     }
     
@@ -350,4 +397,6 @@ public class BoxInstance : ViewInstance
     }
     
     public IReadOnlyList<ViewInstance> GetChildInstances() => _childInstances;
+    
+    internal Box? GetBox() => _box;
 }
