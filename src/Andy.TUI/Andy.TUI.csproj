@@ -37,7 +37,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Andy.TUI.Core\Andy.TUI.Core.csproj" />
-    <ProjectReference Include="..\Andy.TUI.Components\Andy.TUI.Components.csproj" />
+    <ProjectReference Include="..\Andy.TUI.Declarative\Andy.TUI.Declarative.csproj" />
     <ProjectReference Include="..\Andy.TUI.Terminal\Andy.TUI.Terminal.csproj" />
   </ItemGroup>
 

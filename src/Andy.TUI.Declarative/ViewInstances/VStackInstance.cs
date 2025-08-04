@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Declarative.ViewInstances;
 using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative;
@@ -68,8 +69,8 @@ public class VStackInstance : ViewInstance
             {
                 spacerIndices.Add(i);
                 // Give spacer minimum size for now
-                var minLength = spacer.MinLength?.Resolve(constraints.MaxHeight) ?? 0;
-                childLayouts.Add(new LayoutBox { Width = 0, Height = minLength });
+                var minLength = spacer.MinLength?.ToPixels(constraints.MaxHeight) ?? 0;
+                childLayouts.Add(new LayoutBox { X = 0, Y = 0, Width = 0, Height = minLength });
                 totalFixedHeight += minLength;
             }
             else

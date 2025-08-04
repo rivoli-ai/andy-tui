@@ -76,13 +76,13 @@ public class Grid : ISimpleComponent, IEnumerable<ISimpleComponent>
         return this;
     }
     
-    public Grid JustifyItems(JustifyContent justify)
+    public Grid WithJustifyItems(JustifyContent justify)
     {
         JustifyItems = justify;
         return this;
     }
     
-    public Grid AlignItems(AlignItems align)
+    public Grid WithAlignItems(AlignItems align)
     {
         AlignItems = align;
         return this;

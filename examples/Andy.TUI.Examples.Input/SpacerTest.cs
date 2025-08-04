@@ -5,9 +5,13 @@ using Andy.TUI.Declarative.Rendering;
 using Andy.TUI.Declarative;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Extensions;
+using Andy.TUI.Declarative.Layout;
 
 namespace Andy.TUI.Examples.Input;
 
+// Commented out to avoid multiple entry points
+// Uncomment and comment out other Main methods to run this example
+/*
 class SpacerTest
 {
     static void Main(string[] args)
@@ -16,6 +20,7 @@ class SpacerTest
         app.Run();
     }
 }
+*/
 
 class SpacerTestApp
 {

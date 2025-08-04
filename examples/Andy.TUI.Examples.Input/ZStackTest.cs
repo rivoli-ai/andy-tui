@@ -9,6 +9,9 @@ using Andy.TUI.Declarative.Layout;
 
 namespace Andy.TUI.Examples.Input;
 
+// Commented out to avoid multiple entry points
+// Uncomment and comment out other Main methods to run this example
+/*
 class ZStackTest
 {
     static void Main(string[] args)
@@ -17,6 +20,7 @@ class ZStackTest
         app.Run();
     }
 }
+*/
 
 class ZStackTestApp
 {
@@ -99,9 +103,11 @@ class ZStackTestApp
                 .WithPadding(2),
                 
                 // Badge overlay in top-right corner
-                new HStack {
-                    new Spacer(),
-                    new Text("NEW").Color(Color.White).BackgroundColor(Color.Red)
+                new Box {
+                    new HStack {
+                        new Spacer(),
+                        new Text("NEW").Color(Color.White)
+                    }
                 }
                 .WithWidth(35)
             }

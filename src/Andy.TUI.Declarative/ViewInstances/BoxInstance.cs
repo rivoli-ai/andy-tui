@@ -148,7 +148,7 @@ public class BoxInstance : ViewInstance
                 naturalSize = isRow ? child.Layout.Width : child.Layout.Height;
             }
             
-            childInfos.Add((child, naturalSize, flexGrow, flexShrink, flexBasis));
+            childInfos.Add((child, naturalSize, flexGrow, flexShrink, naturalSize));
             totalNaturalSize += naturalSize;
             totalFlexGrow += flexGrow;
             totalWeightedFlexShrink += naturalSize * flexShrink; // Weighted by natural size
@@ -399,8 +399,8 @@ public class BoxInstance : ViewInstance
             // Create a clipping node that constrains children to the box's content area
             var clipX = layout.ContentX;
             var clipY = layout.ContentY;
-            var clipWidth = (int)Math.Round(layout.ContentWidth);
-            var clipHeight = (int)Math.Round(layout.ContentHeight);
+            var clipWidth = (int)Math.Round((double)layout.ContentWidth);
+            var clipHeight = (int)Math.Round((double)layout.ContentHeight);
             
             return Clip(clipX, clipY, clipWidth, clipHeight, elements.ToArray());
         }

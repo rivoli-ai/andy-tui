@@ -4,6 +4,7 @@ using System.Linq;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Declarative.ViewInstances;
 using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative;
@@ -69,7 +70,7 @@ public class HStackInstance : ViewInstance
             {
                 spacerIndices.Add(i);
                 // Give spacer minimum size for now
-                var minLength = spacer.MinLength?.Resolve(constraints.MaxWidth) ?? 0;
+                var minLength = spacer.MinLength?.ToPixels(constraints.MaxWidth) ?? 0;
                 childInfos.Add((child, minLength, 0, true));
                 totalNaturalWidth += minLength;
             }
@@ -79,7 +80,7 @@ public class HStackInstance : ViewInstance
                 var flexShrink = 1f;
                 if (child is BoxInstance boxChild && boxChild.GetBox() != null)
                 {
-                    flexShrink = boxChild.GetBox().FlexShrink;
+                    flexShrink = boxChild.GetBox()!.FlexShrink;
                 }
                 
                 // For HStack, non-spacer children get unconstrained width but constrained height

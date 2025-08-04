@@ -69,25 +69,20 @@ See [DECLARATIVE_ARCHITECTURE.md](docs/DECLARATIVE_ARCHITECTURE.md) for the comp
   - Comprehensive test coverage (252 tests passing)
   - Working examples demonstrating all component features
 
-### Phase 3.2 - Layout Components (Completed)
+### Phase 3 - Declarative UI Framework (Completed)
 
-- **Layout System** (100% implemented)
-  - `LayoutComponent` base class with measure/arrange pattern
-  - `Box` component with padding, margin, borders, and background styling
-  - `Stack` component with vertical/horizontal orientation and alignment
-  - `Grid` component with row/column definitions and star sizing
-  - `ScrollView` component with viewport management and scrollbars
-  - Full test coverage (41 tests, all passing)
-  - Visual examples demonstrating all layout components
-
-### Phase 3.3 - Input Components (Completed)
-
-- **Input System** (100% implemented)
-  - `InputComponent` base class with focus management and validation
-  - `TextInput` component - single-line text entry with cursor and selection
-  - `TextArea` component - multi-line editor with scrolling and line numbers
-  - `Button` component - clickable buttons with multiple styles
-  - `Select<T>` component - dropdown selection with filtering and search
+- **Declarative UI Framework** (100% implemented)
+  - SwiftUI-style declarative syntax with collection initializers
+  - Flexbox layout engine with Yoga-style properties
+  - Type-safe `Length` type supporting pixels, percentages, and auto
+  - `Spacing` type for margin/padding with individual side control
+  - Layout components: `Box`, `VStack`, `HStack`, `ZStack`, `Grid`, `Spacer`
+  - Input components: `TextField`, `Button`, `Dropdown<T>`, `Text`
+  - State management with `Binding<T>` for two-way data binding
+  - Focus management and keyboard navigation
+  - Overflow handling with clipping support
+  - CSS Grid-like behavior with fr units and spanning
+  - Full test coverage with comprehensive examples
   - Full test coverage (112 tests, all passing)
   - Comprehensive examples demonstrating all input components
 
@@ -133,8 +128,8 @@ dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-style
 dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-buffer
 dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-input
 
-# Run Component examples
-dotnet run --project examples/Andy.TUI.Examples.Components
+# Run Declarative examples
+dotnet run --project examples/Andy.TUI.Examples.Input
 
 # Run Layout examples
 dotnet run --project examples/Andy.TUI.Examples.Layout
@@ -240,10 +235,12 @@ inputHandler.KeyPressed += (_, e) =>
 };
 ```
 
-### Layout Components
+### Declarative Components
 
 ```csharp
-using Andy.TUI.Components.Layout;
+using Andy.TUI.Declarative;
+using Andy.TUI.Declarative.Components;
+using Andy.TUI.Declarative.Layout;
 
 // Create a grid layout
 var grid = new Grid();
@@ -282,10 +279,10 @@ sidebar.AddChild(new TextNode("Menu Item 3"));
 grid.AddChild(sidebar, row: 1, column: 2);
 ```
 
-### Input Components
+### Declarative Input
 
 ```csharp
-using Andy.TUI.Components.Input;
+using Andy.TUI.Declarative.Components;
 
 // TextInput for single-line text entry
 var nameInput = new TextInput
@@ -355,9 +352,11 @@ The library is organized into several key components:
   - Rich color and styling capabilities
   - Efficient cell-based rendering with dirty region tracking
   - High-level rendering system with animation support
-- **Andy.TUI.Components** - Built-in UI components
-  - Layout components (Box, Stack, Grid, ScrollView)
-  - Input components (TextInput, TextArea, Button, Select)
+- **Andy.TUI.Declarative** - SwiftUI-style declarative UI framework
+  - Layout components (Box, VStack, HStack, ZStack, Grid, Spacer)
+  - Input components (TextField, Button, Dropdown, Text)
+  - State management with Binding<T> for two-way data binding
+  - Flexbox layout engine with Yoga-style properties
   - Display components (planned)
 - **Andy.TUI.Framework** - Application framework (planned)
 

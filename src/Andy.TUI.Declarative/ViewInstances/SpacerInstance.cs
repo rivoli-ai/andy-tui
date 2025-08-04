@@ -9,11 +9,20 @@ namespace Andy.TUI.Declarative.ViewInstances;
 /// </summary>
 public class SpacerInstance : ViewInstance
 {
-    private readonly Spacer _spacer;
-    private readonly Length? _minLength;
+    private Spacer _spacer;
+    private Length? _minLength;
     
     public SpacerInstance(Spacer spacer, string key) : base(key)
     {
+        _spacer = spacer;
+        _minLength = spacer.GetMinLength();
+    }
+    
+    protected override void OnUpdate(ISimpleComponent viewDeclaration)
+    {
+        if (viewDeclaration is not Spacer spacer)
+            throw new ArgumentException("Expected Spacer declaration");
+        
         _spacer = spacer;
         _minLength = spacer.GetMinLength();
     }
@@ -29,7 +38,7 @@ public class SpacerInstance : ViewInstance
         
         if (_minLength.HasValue)
         {
-            var minValue = _minLength.Value.Resolve(0); // No parent size context yet
+            var minValue = _minLength.Value.ToPixels(0); // No parent size context yet
             
             // We don't know the parent's direction here, so we set both dimensions
             // The parent will use the appropriate one based on its flex direction
@@ -39,7 +48,7 @@ public class SpacerInstance : ViewInstance
         
         // Spacer is flexible - it wants to grow as much as possible
         // Return minimum size; parent will expand us as needed
-        return new LayoutBox(0, 0, minWidth, minHeight);
+        return new LayoutBox { X = 0, Y = 0, Width = minWidth, Height = minHeight };
     }
     
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
