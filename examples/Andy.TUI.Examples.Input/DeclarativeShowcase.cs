@@ -15,18 +15,6 @@ namespace Andy.TUI.Examples.Input;
 /// <summary>
 /// Comprehensive showcase of the Andy.TUI Declarative framework features.
 /// </summary>
-// Commented out to avoid multiple entry points
-// Uncomment and comment out other Main methods to run this example
-/*
-class DeclarativeShowcase
-{
-    static void Main(string[] args)
-    {
-        var app = new DeclarativeShowcaseApp();
-        app.Run();
-    }
-}
-*/
 
 class DeclarativeShowcaseApp
 {

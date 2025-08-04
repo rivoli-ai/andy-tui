@@ -9,19 +9,6 @@ using Andy.TUI.Declarative.Layout;
 
 namespace Andy.TUI.Examples.Input;
 
-// Commented out to avoid multiple entry points
-// Uncomment and comment out other Main methods to run this example
-/*
-class GridTest
-{
-    static void Main(string[] args)
-    {
-        var app = new GridTestApp();
-        app.Run();
-    }
-}
-*/
-
 class GridTestApp
 {
     public void Run()

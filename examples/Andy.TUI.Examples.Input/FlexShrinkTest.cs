@@ -9,19 +9,6 @@ using Andy.TUI.Declarative.Layout;
 
 namespace Andy.TUI.Examples.Input;
 
-// Commented out to avoid multiple entry points
-// Uncomment and comment out other Main methods to run this example
-/*
-class FlexShrinkTest
-{
-    static void Main(string[] args)
-    {
-        var app = new FlexShrinkTestApp();
-        app.Run();
-    }
-}
-*/
-
 class FlexShrinkTestApp
 {
     public void Run()

@@ -16,8 +16,57 @@ class Program
 {
     static void Main(string[] args)
     {
-        var app = new InputDemoApp();
-        app.Run();
+        Console.Clear();
+        Console.WriteLine("Andy.TUI Declarative Examples");
+        Console.WriteLine("==============================\n");
+        Console.WriteLine("Choose an example to run:\n");
+        Console.WriteLine("1. Input Demo (TextField, Button, Dropdown)");
+        Console.WriteLine("2. Grid Test (CSS Grid-like layout)");
+        Console.WriteLine("3. Spacer Test (Flexible space distribution)");
+        Console.WriteLine("4. ZStack Test (Layered layouts)");
+        Console.WriteLine("5. Overflow Test (Clipping and scrolling)");
+        Console.WriteLine("6. Flex Basis Test (Flex sizing)");
+        Console.WriteLine("7. Flex Shrink Test (Content shrinking)");
+        Console.WriteLine("8. Declarative Showcase (Comprehensive demo)");
+        Console.WriteLine("\n0. Exit");
+        Console.Write("\nEnter your choice (0-8): ");
+        
+        var choice = Console.ReadLine();
+        Console.Clear();
+        
+        switch (choice)
+        {
+            case "1":
+                new InputDemoApp().Run();
+                break;
+            case "2":
+                new GridTestApp().Run();
+                break;
+            case "3":
+                new SpacerTestApp().Run();
+                break;
+            case "4":
+                new ZStackTestApp().Run();
+                break;
+            case "5":
+                new OverflowTestApp().Run();
+                break;
+            case "6":
+                new FlexBasisTestApp().Run();
+                break;
+            case "7":
+                new FlexShrinkTestApp().Run();
+                break;
+            case "8":
+                new DeclarativeShowcaseApp().Run();
+                break;
+            case "0":
+                return;
+            default:
+                Console.WriteLine("Invalid choice. Press any key to exit.");
+                Console.ReadKey();
+                break;
+        }
     }
 }
 

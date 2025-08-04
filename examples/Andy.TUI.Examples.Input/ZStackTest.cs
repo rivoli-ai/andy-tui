@@ -9,19 +9,6 @@ using Andy.TUI.Declarative.Layout;
 
 namespace Andy.TUI.Examples.Input;
 
-// Commented out to avoid multiple entry points
-// Uncomment and comment out other Main methods to run this example
-/*
-class ZStackTest
-{
-    static void Main(string[] args)
-    {
-        var app = new ZStackTestApp();
-        app.Run();
-    }
-}
-*/
-
 class ZStackTestApp
 {
     public void Run()
