@@ -28,8 +28,17 @@ class Program
         Console.WriteLine("6. Flex Basis Test (Flex sizing)");
         Console.WriteLine("7. Flex Shrink Test (Content shrinking)");
         Console.WriteLine("8. Declarative Showcase (Comprehensive demo)");
+        Console.WriteLine("9. Text Wrap Test (Text wrapping and truncation)");
+        Console.WriteLine("10. TextArea Test (Multi-line text input)");
+        Console.WriteLine("11. SelectInput Test (Keyboard-navigable lists)");
+        Console.WriteLine("12. Table Test (Sortable table with selection)");
+        Console.WriteLine("13. Modal Test (Modal/Dialog system)");
+        Console.WriteLine("14. Newline Test (Line break component)");
+        Console.WriteLine("15. Transform Test (Text transformation)");
+        Console.WriteLine("16. MultiSelectInput Test (Multiple selection lists)");
+        Console.WriteLine("17. UI Components Showcase (Checkbox, RadioGroup, List, ProgressBar, Spinner)");
         Console.WriteLine("\n0. Exit");
-        Console.Write("\nEnter your choice (0-8): ");
+        Console.Write("\nEnter your choice (0-17): ");
         
         var choice = Console.ReadLine();
         Console.Clear();
@@ -59,6 +68,33 @@ class Program
                 break;
             case "8":
                 new DeclarativeShowcaseApp().Run();
+                break;
+            case "9":
+                new TextWrapTestApp().Run();
+                break;
+            case "10":
+                new TextAreaTestApp().Run();
+                break;
+            case "11":
+                new SelectInputTestApp().Run();
+                break;
+            case "12":
+                new TableTestApp().Run();
+                break;
+            case "13":
+                new ModalTestApp().Run();
+                break;
+            case "14":
+                new NewlineTestApp().Run();
+                break;
+            case "15":
+                new TransformTestApp().Run();
+                break;
+            case "16":
+                new MultiSelectInputTestApp().Run();
+                break;
+            case "17":
+                new UIComponentsShowcaseApp().Run();
                 break;
             case "0":
                 return;

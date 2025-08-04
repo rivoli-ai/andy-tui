@@ -164,6 +164,7 @@ public class ViewInstanceManager
         {
             Box box => new BoxInstance(id),
             TextField textField => new TextFieldInstance(id),
+            TextArea textArea => new TextAreaInstance(id),
             Button button => new ButtonInstance(id),
             Text text => new TextInstance(id),
             VStack vstack => new VStackInstance(id),
@@ -171,6 +172,17 @@ public class ViewInstanceManager
             ZStack zstack => new ZStackInstance(id),
             Grid grid => new GridInstance(id),
             Spacer spacer => new SpacerInstance(spacer, id),
+            Modal modal => new ModalInstance(id, this),
+            Newline newline => new NewlineInstance(id),
+            Transform transform => new TransformInstance(id),
+            Checkbox checkbox => new CheckboxInstance(id),
+            List list => new ListInstance(id),
+            ProgressBar progressBar => new ProgressBarInstance(id),
+            Spinner spinner => new SpinnerInstance(id),
+            Gradient gradient => new GradientInstance(id),
+            BigText bigText => new BigTextInstance(id),
+            Slider slider => new SliderInstance(id),
+            Badge badge => new BadgeInstance(id),
             _ => CreateGenericInstance(viewDeclaration, id)
         };
     }
@@ -178,11 +190,36 @@ public class ViewInstanceManager
     private ViewInstance CreateGenericInstance(ISimpleComponent viewDeclaration, string id)
     {
         var type = viewDeclaration.GetType();
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dropdown<>))
+        if (type.IsGenericType)
         {
+            var genericTypeDef = type.GetGenericTypeDefinition();
             var itemType = type.GetGenericArguments()[0];
-            var instanceType = typeof(DropdownInstance<>).MakeGenericType(itemType);
-            return (ViewInstance)Activator.CreateInstance(instanceType, id)!;
+            
+            if (genericTypeDef == typeof(Dropdown<>))
+            {
+                var instanceType = typeof(DropdownInstance<>).MakeGenericType(itemType);
+                return (ViewInstance)Activator.CreateInstance(instanceType, id)!;
+            }
+            else if (genericTypeDef == typeof(SelectInput<>))
+            {
+                var instanceType = typeof(SelectInputInstance<>).MakeGenericType(itemType);
+                return (ViewInstance)Activator.CreateInstance(instanceType, id)!;
+            }
+            else if (genericTypeDef == typeof(Table<>))
+            {
+                var instanceType = typeof(TableInstance<>).MakeGenericType(itemType);
+                return (ViewInstance)Activator.CreateInstance(instanceType, id)!;
+            }
+            else if (genericTypeDef == typeof(MultiSelectInput<>))
+            {
+                var instanceType = typeof(MultiSelectInputInstance<>).MakeGenericType(itemType);
+                return (ViewInstance)Activator.CreateInstance(instanceType, id)!;
+            }
+            else if (genericTypeDef == typeof(RadioGroup<>))
+            {
+                var instanceType = typeof(RadioGroupInstance<>).MakeGenericType(itemType);
+                return (ViewInstance)Activator.CreateInstance(instanceType, id)!;
+            }
         }
         
         throw new NotSupportedException($"No instance type for {type}");
