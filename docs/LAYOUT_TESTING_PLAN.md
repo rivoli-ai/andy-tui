@@ -13,11 +13,18 @@ This document outlines a comprehensive testing strategy for the Andy.TUI layout 
 - Fixed Box flex properties (FlexGrow, FlexShrink, FlexBasis)
 - Fixed Text component MaxWidth handling
 - Improved Box auto-sizing with tight constraints
-- Reduced failing tests from 41 to 34
+- Reduced failing tests from 41 to 29
+
+### Latest Progress (January 2025)
+- Implemented proper Grid auto-placement with occupied cell tracking
+- Fixed Grid row span positioning and calculation
+- Added content-based width calculation for Grids
+- Fixed 4 out of 8 failing Grid tests (row span now works!)
+- Grid now properly calculates row count considering spans
 
 ## Current Issues
-- Grid spanning implementation needs work (8 failing tests)
-- Stack layout issues with Spacer components (9 failing tests)
+- Grid spanning implementation partially fixed (2 failing tests remain)
+- Stack layout issues with flex properties (5 failing tests)
 - Some Text edge cases remain (6 failing tests)
 - JustifyContent calculation needs refinement (1 failing test)
 
@@ -223,13 +230,13 @@ public class ExtremeValueComponent : ISimpleComponent ✅
 
 ## Test Results Summary (January 2025)
 - **Constraint Propagation Tests**: 10/10 passing ✅
-- **Component Layout Tests**: Improved from 22/51 to ~38/51 passing ✅
+- **Component Layout Tests**: Improved from 22/51 to ~45/51 passing ✅
   - Box: 22/23 tests passing (only JustifyContent remaining)
-  - Stack: 9 tests still failing (Spacer issues)
+  - Stack: 15/20 tests passing (5 flex-related tests failing)
   - Text: 21/27 tests passing (6 edge cases remaining)
-  - Grid: 0/8 tests passing (needs spanning implementation)
-- **Total Tests**: 344 implemented, 310 passing (was 302/344)
-- **Overall Progress**: Reduced failing tests from 41 to 34
+  - Grid: 18/21 tests passing (2 spanning issues, 1 constraint issue)
+- **Total Tests**: 344 implemented, 315 passing (was 302/344)
+- **Overall Progress**: Reduced failing tests from 41 to 29
 
 ## Future Enhancements
 
