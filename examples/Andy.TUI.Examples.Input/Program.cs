@@ -20,9 +20,12 @@ class Program
         // Initialize debug logging if enabled
         DebugContext.Initialize();
         
-        // Pause to see initialization output
-        Console.Error.WriteLine("Press any key to continue...");
-        Console.ReadKey(true);
+        // Only pause if debug mode is enabled
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_DEBUG")))
+        {
+            Console.Error.WriteLine("Press any key to continue...");
+            Console.ReadKey(true);
+        }
         
         Console.Clear();
         Console.WriteLine("Andy.TUI Declarative Examples");

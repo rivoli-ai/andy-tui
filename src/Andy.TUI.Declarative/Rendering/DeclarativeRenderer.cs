@@ -82,6 +82,9 @@ public class DeclarativeRenderer
         _logger.Debug("Layout constraints: {0}x{1}", terminalWidth, terminalHeight);
         
         rootInstance.CalculateLayout(constraints);
+        // Set the root's absolute position
+        rootInstance.Layout.AbsoluteX = 0;
+        rootInstance.Layout.AbsoluteY = 0;
         _logger.Debug("Layout calculated");
         
         // Render the virtual DOM from instances

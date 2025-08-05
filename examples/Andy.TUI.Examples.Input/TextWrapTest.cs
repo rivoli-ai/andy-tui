@@ -105,6 +105,9 @@ class TextWrapTestApp
         var renderer = new DeclarativeRenderer(renderingSystem, this);
         renderer.Render(ui);
         
+        // Force a render flush to ensure everything is displayed
+        renderingSystem.Render();
+        
         Console.SetCursorPosition(0, terminal.Height - 2);
         Console.WriteLine("Press any key to exit...");
         Console.ReadKey();

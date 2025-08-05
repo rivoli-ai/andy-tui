@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.Core.Diagnostics;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Terminal;
@@ -21,9 +22,11 @@ public class TextInstance : ViewInstance
     private TruncationMode _truncationMode = TruncationMode.Tail;
     private int? _maxWidth = null;
     private List<string> _wrappedLines = new();
+    private readonly ILogger _logger;
     
     public TextInstance(string id) : base(id)
     {
+        _logger = DebugContext.Logger.ForCategory("TextInstance");
     }
     
     protected override void OnUpdate(ISimpleComponent viewDeclaration)
@@ -82,8 +85,14 @@ public class TextInstance : ViewInstance
     
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
+        _logger.Debug("RenderWithLayout called - content: '{0}', wrappedLines: {1}, layout: x={2}, y={3}, w={4}, h={5}", 
+            _content, _wrappedLines.Count, layout.AbsoluteX, layout.AbsoluteY, layout.Width, layout.Height);
+            
         if (_wrappedLines.Count == 0)
+        {
+            _logger.Debug("No wrapped lines, returning empty fragment");
             return Fragment();
+        }
         
         var elements = new List<VirtualNode>();
         
@@ -95,6 +104,8 @@ public class TextInstance : ViewInstance
                 line = ApplyTruncation(line, (int)layout.Width);
             }
             
+            _logger.Debug("Rendering line {0}: '{1}' at ({2}, {3})", i, line, layout.AbsoluteX, layout.AbsoluteY + i);
+            
             elements.Add(
                 Element("text")
                     .WithProp("style", _style)
@@ -105,6 +116,7 @@ public class TextInstance : ViewInstance
             );
         }
         
+        _logger.Debug("Rendered {0} text elements", elements.Count);
         return Fragment(elements.ToArray());
     }
     

@@ -53,7 +53,7 @@ public class BoxInstance : ViewInstance
             Margin = _box.Margin
         };
         
-        // Calculate own size based on width/height properties
+        // Calculate tentative size based on width/height properties
         var width = CalculateSize(_box.Width, constraints.MinWidth, constraints.MaxWidth, constraints.MaxWidth);
         var height = CalculateSize(_box.Height, constraints.MinHeight, constraints.MaxHeight, constraints.MaxHeight);
         
@@ -67,13 +67,30 @@ public class BoxInstance : ViewInstance
         if (!_box.MaxHeight.IsAuto)
             height = Math.Min(height, _box.MaxHeight.ToPixels(constraints.MaxHeight));
         
+        // Set tentative dimensions
         layout.Width = width;
         layout.Height = height;
         
-        // Layout children using flexbox algorithm
+        // Layout children with current dimensions
         if (_childInstances.Count > 0)
         {
             LayoutChildren(layout, constraints);
+            
+            // If width/height is auto, adjust to fit content
+            if (_box.Width.IsAuto)
+            {
+                var contentWidth = _childInstances.Count > 0 
+                    ? _childInstances.Max(c => c.Layout.X + c.Layout.Width) 
+                    : 0;
+                layout.Width = contentWidth + _box.Padding.Left.Value + _box.Padding.Right.Value;
+            }
+            if (_box.Height.IsAuto)
+            {
+                var contentHeight = _childInstances.Count > 0 
+                    ? _childInstances.Max(c => c.Layout.Y + c.Layout.Height)
+                    : 0;
+                layout.Height = contentHeight + _box.Padding.Top.Value + _box.Padding.Bottom.Value;
+            }
         }
         
         return layout;
@@ -140,9 +157,12 @@ public class BoxInstance : ViewInstance
             else
             {
                 // Measure content
+                // For text wrapping to work, we need to pass the actual available width
+                // when the parent has a fixed width, not infinity
+                var mainConstraint = isRow ? contentConstraints.MaxWidth : contentConstraints.MaxHeight;
                 var childConstraints = isRow
-                    ? LayoutConstraints.Loose(float.PositiveInfinity, crossAxisSize)
-                    : LayoutConstraints.Loose(crossAxisSize, float.PositiveInfinity);
+                    ? LayoutConstraints.Loose(mainConstraint, crossAxisSize)
+                    : LayoutConstraints.Loose(crossAxisSize, mainConstraint);
                 
                 child.CalculateLayout(childConstraints);
                 naturalSize = isRow ? child.Layout.Width : child.Layout.Height;
