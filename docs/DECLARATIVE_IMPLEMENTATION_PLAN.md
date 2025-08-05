@@ -118,6 +118,34 @@ This document provides a concrete, step-by-step implementation plan for the Andy
 - [x] Create Badge for status indicators
 - [x] Create Modal/Dialog system
 
+## Recent Changes & Known Issues
+
+### Debug Logging System (Completed 2025-08-04)
+- [x] Implemented comprehensive debug logging framework
+- [x] File-based logging with categories and log levels
+- [x] Environment variable control (`ANDY_TUI_DEBUG`)
+- [x] Cross-platform support (Windows, macOS, Linux)
+- [x] Added logging to all major components
+
+### SelectInput Rendering Fix (Completed 2025-08-04)
+- [x] Fixed UI frozen issue where patches were applied but not rendered
+- [x] Added explicit render flushing after virtual DOM updates
+- [x] Temporary solution: using full re-renders instead of patching
+- [x] Added comprehensive unit tests for SelectInput navigation
+
+### Known Issues
+- [ ] Virtual DOM patching in VirtualDomRenderer needs proper implementation
+  - Currently using full re-renders as a workaround
+  - Patches attempt to mutate immutable nodes
+  - Need to properly rebuild affected nodes
+- [ ] SelectInput doesn't auto-select first item on initialization
+  - Current behavior: starts with Optional<T>.None
+  - May need to add an option for auto-selection
+- [ ] Some unit tests are failing and need updates
+  - Focus-related tests need updates after focus management changes
+  - Layout tests need updates for new layout calculation
+  - Terminal rendering tests need updates for new render pipeline
+
 ## Phase 3: State Management & Hooks (Week 3)
 
 ### 3.1 Hook Infrastructure (2 days)

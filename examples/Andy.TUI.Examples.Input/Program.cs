@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.Core.Diagnostics;
 using Andy.TUI.Terminal;
 using Andy.TUI.Terminal.Rendering;
 using Andy.TUI.Declarative.Rendering;
@@ -16,6 +17,13 @@ class Program
 {
     static void Main(string[] args)
     {
+        // Initialize debug logging if enabled
+        DebugContext.Initialize();
+        
+        // Pause to see initialization output
+        Console.Error.WriteLine("Press any key to continue...");
+        Console.ReadKey(true);
+        
         Console.Clear();
         Console.WriteLine("Andy.TUI Declarative Examples");
         Console.WriteLine("==============================\n");

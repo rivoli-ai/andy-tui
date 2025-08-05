@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.Core.Diagnostics;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.ViewInstances;
@@ -33,10 +34,34 @@ public abstract class ViewInstance
     /// </summary>
     public bool NeedsLayout => _needsLayout;
     
+    private DeclarativeContext? _context;
+    
     /// <summary>
     /// Gets or sets the context for this view instance.
     /// </summary>
-    public DeclarativeContext? Context { get; set; }
+    public DeclarativeContext? Context 
+    { 
+        get => _context;
+        set 
+        {
+            if (_context != value)
+            {
+                // Unregister from old context
+                if (_context != null && this is IFocusable focusable)
+                {
+                    _context.FocusManager.UnregisterFocusable(focusable);
+                }
+                
+                _context = value;
+                
+                // Register with new context
+                if (_context != null && this is IFocusable newFocusable)
+                {
+                    _context.FocusManager.RegisterFocusable(newFocusable);
+                }
+            }
+        }
+    }
     
     /// <summary>
     /// Gets the calculated layout box for this view.
@@ -121,6 +146,11 @@ public abstract class ViewInstance
     /// </summary>
     public virtual void Dispose()
     {
+        // Unregister from focus manager if focusable
+        if (_context != null && this is IFocusable focusable)
+        {
+            _context.FocusManager.UnregisterFocusable(focusable);
+        }
     }
 }
 

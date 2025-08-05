@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.Core.Diagnostics;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.State;

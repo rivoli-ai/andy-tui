@@ -1,5 +1,6 @@
 using System;
 using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.Core.Diagnostics;
 using Andy.TUI.Terminal;
 using Andy.TUI.Terminal.Rendering;
 using Andy.TUI.Declarative.Components;
@@ -15,6 +16,9 @@ public class DeclarativeRenderer
     private readonly IRenderingSystem _renderingSystem;
     private readonly VirtualDomRenderer _virtualDomRenderer;
     private readonly DeclarativeContext _context;
+    private readonly DiffEngine _diffEngine;
+    private readonly ILogger _logger;
+    private VirtualNode? _previousTree;
     private bool _needsRender = true;
     
     public DeclarativeRenderer(IRenderingSystem renderingSystem, object? owner = null)
@@ -22,6 +26,10 @@ public class DeclarativeRenderer
         _renderingSystem = renderingSystem ?? throw new ArgumentNullException(nameof(renderingSystem));
         _virtualDomRenderer = new VirtualDomRenderer(renderingSystem);
         _context = new DeclarativeContext(() => _needsRender = true);
+        _diffEngine = new DiffEngine();
+        _logger = DebugContext.Logger.ForCategory("DeclarativeRenderer");
+        
+        _logger.Info("DeclarativeRenderer initialized");
     }
     
     /// <summary>
@@ -33,13 +41,17 @@ public class DeclarativeRenderer
         inputHandler.KeyPressed += OnKeyPressed;
         inputHandler.Start();
         
+        // Create the root component once
+        var root = createRoot();
+        
         try
         {
             while (true)
             {
                 if (_needsRender)
                 {
-                    Render(createRoot());
+                    _logger.Debug("Render requested, executing render cycle");
+                    Render(root);
                     _needsRender = false;
                 }
                 
@@ -57,27 +69,52 @@ public class DeclarativeRenderer
     /// </summary>
     public void Render(ISimpleComponent root)
     {
+        _logger.Debug("Render() called");
+        
         // Get or create the root view instance
         var rootInstance = _context.ViewInstanceManager.GetOrCreateInstance(root, "root");
+        _logger.Debug("Root instance: {0}", rootInstance.GetType().Name);
         
         // Calculate layout with terminal constraints
         var terminalWidth = _renderingSystem.Width;
         var terminalHeight = _renderingSystem.Height;
         var constraints = LayoutConstraints.Loose(terminalWidth, terminalHeight);
-        rootInstance.CalculateLayout(constraints);
+        _logger.Debug("Layout constraints: {0}x{1}", terminalWidth, terminalHeight);
         
-        // Walk the instance tree and register focusables
-        RegisterViewInstances(rootInstance);
+        rootInstance.CalculateLayout(constraints);
+        _logger.Debug("Layout calculated");
         
         // Render the virtual DOM from instances
-        var virtualDom = rootInstance.Render();
-        _virtualDomRenderer.Render(virtualDom);
+        var newTree = rootInstance.Render();
+        _logger.Debug("Virtual DOM rendered");
+        
+        // For now, always do a full render until patch application is fixed
+        _logger.Debug("Performing full render");
+        _virtualDomRenderer.Render(newTree);
+        
+        // Force the rendering system to flush changes to screen
+        if (_renderingSystem is RenderingSystem rs)
+        {
+            _logger.Debug("Buffer dirty state before flush: {0}", rs.Buffer.IsDirty);
+            rs.Render();
+            _logger.Debug("Forced render flush");
+            
+            // Give the render thread time to process
+            System.Threading.Thread.Sleep(10);
+            _logger.Debug("Buffer dirty state after flush: {0}", rs.Buffer.IsDirty);
+        }
+        
+        _previousTree = newTree;
+        _logger.Debug("Render complete");
     }
     
     private void OnKeyPressed(object? sender, KeyEventArgs e)
     {
+        _logger.Debug("Key pressed: {0} (Modifiers: {1})", e.Key, e.Modifiers);
+        
         if (e.Key == ConsoleKey.C && e.Modifiers.HasFlag(System.ConsoleModifiers.Control))
         {
+            _logger.Info("Ctrl+C detected, exiting");
             Environment.Exit(0);
         }
         
@@ -92,100 +129,4 @@ public class DeclarativeRenderer
         _context.EventRouter.RouteKeyPress(keyInfo);
     }
     
-    private void RegisterViewInstances(ViewInstance instance)
-    {
-        // Register focusable instances
-        if (instance is IFocusable focusable)
-        {
-            _context.FocusManager.RegisterFocusable(focusable);
-        }
-        
-        // Walk children for containers
-        if (instance is VStackInstance vstack)
-        {
-            foreach (var child in vstack.GetChildInstances())
-            {
-                RegisterViewInstances(child);
-            }
-        }
-        else if (instance is HStackInstance hstack)
-        {
-            foreach (var child in hstack.GetChildInstances())
-            {
-                RegisterViewInstances(child);
-            }
-        }
-        else if (instance is BoxInstance box)
-        {
-            foreach (var child in box.GetChildInstances())
-            {
-                RegisterViewInstances(child);
-            }
-        }
-    }
-}
-
-/// <summary>
-/// Simple console input handler for keyboard events.
-/// </summary>
-public class ConsoleInputHandler
-{
-    private bool _running;
-    private System.Threading.Thread? _thread;
-    
-    public event EventHandler<KeyEventArgs>? KeyPressed;
-    
-    public void Start()
-    {
-        _running = true;
-        _thread = new System.Threading.Thread(ReadKeys) { IsBackground = true };
-        _thread.Start();
-    }
-    
-    public void Stop()
-    {
-        _running = false;
-        _thread?.Join(100);
-    }
-    
-    private void ReadKeys()
-    {
-        while (_running)
-        {
-            try
-            {
-                if (Console.KeyAvailable)
-                {
-                    var keyInfo = Console.ReadKey(true);
-                    KeyPressed?.Invoke(this, new KeyEventArgs
-                    {
-                        Key = keyInfo.Key,
-                        KeyChar = keyInfo.KeyChar,
-                        Modifiers = GetModifiers(keyInfo)
-                    });
-                }
-                else
-                {
-                    System.Threading.Thread.Sleep(10);
-                }
-            }
-            catch (InvalidOperationException)
-            {
-                // Console not available in this environment
-                System.Threading.Thread.Sleep(100);
-            }
-        }
-    }
-    
-    private System.ConsoleModifiers GetModifiers(ConsoleKeyInfo keyInfo)
-    {
-        return keyInfo.Modifiers;
-    }
-}
-
-public class KeyEventArgs : EventArgs
-{
-    public ConsoleKey Key { get; set; }
-    public char KeyChar { get; set; }
-    public System.ConsoleModifiers Modifiers { get; set; }
 }

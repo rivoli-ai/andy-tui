@@ -335,6 +335,72 @@ form.AddChild(countrySelect);
 form.AddChild(saveButton);
 ```
 
+## Debugging
+
+Andy.TUI includes a comprehensive debug logging system that helps diagnose issues with rendering, event routing, and state management.
+
+### Enabling Debug Logging
+
+Set the `ANDY_TUI_DEBUG` environment variable to enable debug logging:
+
+```bash
+# Enable debug logging with default level (Debug)
+export ANDY_TUI_DEBUG=1
+
+# Set specific log level (Debug, Info, Warning, Error)
+export ANDY_TUI_DEBUG=Info
+
+# Run your application
+dotnet run --project examples/Andy.TUI.Examples.Input
+```
+
+### Debug Output Location
+
+By default, debug logs are written to timestamped directories in your system's temp folder:
+- **macOS/Linux**: `/tmp/andy-tui-debug/YYYYMMDD_HHMMSS/`
+- **Windows**: `%TEMP%\andy-tui-debug\YYYYMMDD_HHMMSS\`
+
+You can customize the log directory:
+```bash
+export ANDY_TUI_DEBUG_DIR=/path/to/custom/logs
+```
+
+### Log Categories
+
+The debug system organizes logs by category:
+- **DeclarativeRenderer**: Rendering cycles, virtual DOM updates, and patch application
+- **FocusManager**: Focus changes and keyboard navigation
+- **EventRouter**: Event routing and handling
+- **ViewInstanceManager**: Component lifecycle and instance management
+- **SelectInputInstance**: SelectInput-specific behavior and state changes
+
+### Reading Debug Logs
+
+Each category gets its own log file:
+```
+/tmp/andy-tui-debug/20250804_175311/
+├── DeclarativeRenderer.log
+├── EventRouter.log
+├── FocusManager.log
+└── ViewInstanceManager.log
+```
+
+Example log output:
+```
+[2025-08-04 17:53:11.123] [DEBUG] [DeclarativeRenderer] Render requested, executing render cycle
+[2025-08-04 17:53:11.124] [DEBUG] [DeclarativeRenderer] Virtual DOM rendered
+[2025-08-04 17:53:11.125] [DEBUG] [DeclarativeRenderer] Performing full render
+[2025-08-04 17:53:11.126] [DEBUG] [DeclarativeRenderer] Buffer dirty state before flush: True
+[2025-08-04 17:53:11.127] [DEBUG] [DeclarativeRenderer] Forced render flush
+```
+
+### Common Debugging Scenarios
+
+1. **UI Not Updating**: Check `DeclarativeRenderer.log` for render cycles and patch application
+2. **Keyboard Input Issues**: Check `EventRouter.log` and `FocusManager.log`
+3. **Component State Problems**: Check the specific component's log file
+4. **Performance Issues**: Look for excessive render cycles or large patch counts
+
 ## Architecture
 
 The library is organized into several key components:
@@ -366,6 +432,7 @@ The library is organized into several key components:
 - [Observable API Reference](docs/OBSERVABLE_API.md) - Complete API documentation for the Observable system
 - [Virtual DOM API Reference](docs/VIRTUAL_DOM_API.md) - Complete API documentation for the Virtual DOM system
 - [Terminal API Reference](docs/TERMINAL_API.md) - Complete API documentation for the Terminal abstraction layer
+- [Debug Logging Guide](docs/DEBUG_LOGGING.md) - How to use the debug logging system
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Roadmap and development phases
 
 ## Contributing
