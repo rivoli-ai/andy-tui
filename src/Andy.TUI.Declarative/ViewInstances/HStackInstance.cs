@@ -60,7 +60,7 @@ public class HStackInstance : ViewInstance
         float totalNaturalWidth = 0;
         float maxHeight = 0;
         var spacerIndices = new List<int>();
-        var childInfos = new List<(ViewInstance instance, float naturalWidth, float flexShrink, bool isSpacer)>();
+        var childInfos = new List<(ViewInstance instance, float naturalWidth, float flexGrow, float flexShrink, bool isSpacer)>();
         
         for (int i = 0; i < _childInstances.Count; i++)
         {
@@ -71,30 +71,61 @@ public class HStackInstance : ViewInstance
                 spacerIndices.Add(i);
                 // Give spacer minimum size for now
                 var minLength = spacer.MinLength?.ToPixels(constraints.MaxWidth) ?? 0;
-                childInfos.Add((child, minLength, 0, true));
+                childInfos.Add((child, minLength, 1f, 0, true)); // Spacers have implicit flexGrow=1
                 totalNaturalWidth += minLength;
             }
             else
             {
-                // Get flex-shrink value if this is a Box
+                // Get flex properties if this is a Box
+                var flexGrow = 0f;
                 var flexShrink = 1f;
+                var flexBasis = Length.Auto;
+                float naturalWidth;
+                
                 if (child is BoxInstance boxChild && boxChild.GetBox() != null)
                 {
-                    flexShrink = boxChild.GetBox()!.FlexShrink;
+                    var box = boxChild.GetBox()!;
+                    flexGrow = box.FlexGrow;
+                    flexShrink = box.FlexShrink;
+                    flexBasis = box.FlexBasis;
                 }
                 
-                // For HStack, non-spacer children get unconstrained width but constrained height
-                var childConstraints = new LayoutConstraints(
-                    0, float.PositiveInfinity,
-                    constraints.MinHeight, constraints.MaxHeight
-                );
+                // Calculate natural width based on flex-basis or content
+                if (!flexBasis.IsAuto)
+                {
+                    naturalWidth = flexBasis.ToPixels(constraints.MaxWidth);
+                }
+                else
+                {
+                    // For HStack, non-spacer children get unconstrained width but constrained height
+                    var childConstraints = new LayoutConstraints(
+                        0, float.PositiveInfinity,
+                        constraints.MinHeight, constraints.MaxHeight
+                    );
+                    
+                    child.CalculateLayout(childConstraints);
+                    naturalWidth = child.Layout.Width;
+                }
                 
-                child.CalculateLayout(childConstraints);
-                var naturalWidth = child.Layout.Width;
-                childInfos.Add((child, naturalWidth, flexShrink, false));
+                childInfos.Add((child, naturalWidth, flexGrow, flexShrink, false));
                 
                 totalNaturalWidth += naturalWidth;
-                maxHeight = Math.Max(maxHeight, child.Layout.Height);
+                
+                // Measure height separately if needed
+                if (flexBasis.IsAuto)
+                {
+                    maxHeight = Math.Max(maxHeight, child.Layout.Height);
+                }
+                else
+                {
+                    // Need to measure for height
+                    var childConstraints = new LayoutConstraints(
+                        naturalWidth, naturalWidth,
+                        constraints.MinHeight, constraints.MaxHeight
+                    );
+                    child.CalculateLayout(childConstraints);
+                    maxHeight = Math.Max(maxHeight, child.Layout.Height);
+                }
             }
         }
         
@@ -117,7 +148,7 @@ public class HStackInstance : ViewInstance
         {
             // Need to shrink - calculate total weighted shrink
             float totalWeightedShrink = 0;
-            foreach (var (instance, naturalWidth, flexShrink, isSpacer) in childInfos)
+            foreach (var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) in childInfos)
             {
                 if (!isSpacer)
                 {
@@ -127,7 +158,7 @@ public class HStackInstance : ViewInstance
             
             // Shrink non-spacer items proportionally
             var shrinkAmount = Math.Abs(remainingSpace);
-            foreach (var (instance, naturalWidth, flexShrink, isSpacer) in childInfos)
+            foreach (var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) in childInfos)
             {
                 if (isSpacer)
                 {
@@ -146,18 +177,28 @@ public class HStackInstance : ViewInstance
                 }
             }
         }
-        else if (remainingSpace > 0 && spacerIndices.Count > 0)
+        else if (remainingSpace > 0)
         {
-            // Distribute remaining space among spacers
-            float spacePerSpacer = remainingSpace / spacerIndices.Count;
-            for (int i = 0; i < childInfos.Count; i++)
+            // Distribute remaining space among items with flexGrow > 0
+            float totalFlexGrow = 0;
+            foreach (var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) in childInfos)
             {
-                var (instance, naturalWidth, flexShrink, isSpacer) = childInfos[i];
-                if (isSpacer)
+                totalFlexGrow += flexGrow;
+            }
+            
+            if (totalFlexGrow > 0)
+            {
+                // Distribute based on flex grow
+                foreach (var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) in childInfos)
                 {
-                    finalWidths.Add(naturalWidth + spacePerSpacer);
+                    var growAmount = (remainingSpace * flexGrow) / totalFlexGrow;
+                    finalWidths.Add(naturalWidth + growAmount);
                 }
-                else
+            }
+            else
+            {
+                // No flex items, just use natural widths
+                foreach (var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) in childInfos)
                 {
                     finalWidths.Add(naturalWidth);
                 }
@@ -166,7 +207,7 @@ public class HStackInstance : ViewInstance
         else
         {
             // No adjustment needed
-            foreach (var (instance, naturalWidth, flexShrink, isSpacer) in childInfos)
+            foreach (var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) in childInfos)
             {
                 finalWidths.Add(naturalWidth);
             }
@@ -183,7 +224,7 @@ public class HStackInstance : ViewInstance
         {
             var child = _childInstances[i];
             var finalWidth = finalWidths[i];
-            var (instance, naturalWidth, flexShrink, isSpacer) = childInfos[i];
+            var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) = childInfos[i];
             
             // Recalculate child with final width constraint
             var childConstraints = new LayoutConstraints(

@@ -117,15 +117,90 @@ public class GridInstance : ViewInstance
                 }
             }
             
-            // Then calculate for auto-placed items
-            var autoPlacedCount = _childInstances.Count(ci => ci.item == null || !ci.item.Row.HasValue);
-            var autoRows = (int)Math.Ceiling((double)autoPlacedCount / columnCount);
+            // Simulate auto-placement to determine actual rows needed
+            var occupiedCells = new bool[10, columnCount]; // Start with 10 rows max
+            var simulatedCursor = 0;
             
-            rowCount = Math.Max(maxRow + 1, autoRows);
+            // Mark explicitly placed items
+            foreach (var (instance, item) in _childInstances)
+            {
+                if (item != null && (item.Row.HasValue || item.Column.HasValue))
+                {
+                    var row = item.Row ?? 0;
+                    var col = item.Column ?? 0;
+                    for (int r = row; r < row + item.RowSpan && r < 10; r++)
+                    {
+                        for (int c = col; c < col + item.ColumnSpan && c < columnCount; c++)
+                        {
+                            occupiedCells[r, c] = true;
+                        }
+                    }
+                    maxRow = Math.Max(maxRow, row + item.RowSpan - 1);
+                }
+            }
+            
+            // Simulate placement of auto-placed items
+            foreach (var (instance, item) in _childInstances)
+            {
+                if (item == null || (!item.Row.HasValue && !item.Column.HasValue))
+                {
+                    var rowSpan = item?.RowSpan ?? 1;
+                    var colSpan = item?.ColumnSpan ?? 1;
+                    bool placed = false;
+                    
+                    while (simulatedCursor < 10 * columnCount && !placed)
+                    {
+                        int row = simulatedCursor / columnCount;
+                        int col = simulatedCursor % columnCount;
+                        
+                        // Check if item fits
+                        bool canFit = col + colSpan <= columnCount && row + rowSpan <= 10;
+                        if (canFit)
+                        {
+                            for (int r = row; r < row + rowSpan && canFit; r++)
+                            {
+                                for (int c = col; c < col + colSpan && canFit; c++)
+                                {
+                                    if (occupiedCells[r, c]) canFit = false;
+                                }
+                            }
+                        }
+                        
+                        if (canFit)
+                        {
+                            // Mark as occupied
+                            for (int r = row; r < row + rowSpan; r++)
+                            {
+                                for (int c = col; c < col + colSpan; c++)
+                                {
+                                    occupiedCells[r, c] = true;
+                                }
+                            }
+                            maxRow = Math.Max(maxRow, row + rowSpan - 1);
+                            placed = true;
+                            simulatedCursor = row * columnCount + col + 1;
+                        }
+                        else
+                        {
+                            simulatedCursor++;
+                        }
+                    }
+                }
+            }
+            
+            rowCount = maxRow + 1;
             _grid.Rows.Clear();
+            
+            // If parent has tight constraints AND columns are all Fr, use Fr for rows too
+            // This ensures even distribution when the grid itself is constrained
+            bool columnsAreFr = _grid.Columns.Count > 0 && _grid.Columns.All(c => c.Type == GridTrackSizeType.Fr);
+            bool shouldDistributeEvenly = columnsAreFr && 
+                                        constraints.MinHeight == constraints.MaxHeight && 
+                                        constraints.MaxHeight > 0;
+            
             for (int i = 0; i < rowCount; i++)
             {
-                _grid.Rows.Add(GridTrackSize.Auto);
+                _grid.Rows.Add(shouldDistributeEvenly ? GridTrackSize.Fr(1) : GridTrackSize.Auto);
             }
         }
         
@@ -319,8 +394,13 @@ public class GridInstance : ViewInstance
         if (totalFr > 0)
         {
             // If all tracks are fr and we have loose constraints, use content sizing
+            // But if parent has tight constraints, always distribute space evenly
+            bool parentHasTightConstraints = constraints.MinWidth == constraints.MaxWidth && 
+                                            constraints.MinHeight == constraints.MaxHeight;
+            
             if (tracks.All(t => t.Type == GridTrackSizeType.Fr) && 
-                !float.IsInfinity(availableSize))
+                !float.IsInfinity(availableSize) && 
+                !parentHasTightConstraints)
             {
                 // Calculate content-based minimum for fr tracks
                 foreach (var frIndex in frIndices)
@@ -477,6 +557,8 @@ public class GridInstance : ViewInstance
                             }
                         }
                         placed = true;
+                        // Move cursor to next position after this placement
+                        autoPlacementCursor = row * columnCount + col + 1;
                     }
                     else
                     {
@@ -528,11 +610,27 @@ public class GridInstance : ViewInstance
             }
             
             // Apply alignment within cell
-            // Always constrain children to cell size
-            var childConstraints = LayoutConstraints.Loose(cellWidth, cellHeight);
+            // Use appropriate constraints based on parent constraints and overflow settings
+            LayoutConstraints childConstraints;
+            
+            // If parent has tight constraints, constrain children to cell size
+            bool shouldConstrain = parentConstraints.MinWidth == parentConstraints.MaxWidth && 
+                                   parentConstraints.MinHeight == parentConstraints.MaxHeight;
+            
+            if (shouldConstrain)
+            {
+                // Use tight constraints to force children to fit exactly in their cells
+                childConstraints = LayoutConstraints.Tight(cellWidth, cellHeight);
+            }
+            else
+            {
+                // Use loose constraints to allow children to size naturally up to cell size
+                childConstraints = LayoutConstraints.Loose(cellWidth, cellHeight);
+            }
+            
             instance.CalculateLayout(childConstraints);
             
-            // For spanning items, ensure they use the full cell size
+            // For spanning items, ensure they use the full allocated space
             if (item != null && (item.ColumnSpan > 1 || item.RowSpan > 1))
             {
                 // Spanning items should fill their allocated space

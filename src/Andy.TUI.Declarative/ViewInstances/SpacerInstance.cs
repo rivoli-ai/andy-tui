@@ -30,25 +30,34 @@ public class SpacerInstance : ViewInstance
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
         // Spacer takes up available space in the parent's main axis
-        // The actual size will be determined by the parent container
-        // For now, we just report our minimum size requirements
+        // If we have tight constraints, that means the parent has calculated our size
         
-        float minWidth = 0;
-        float minHeight = 0;
+        float width = 0;
+        float height = 0;
         
-        if (_minLength.HasValue)
+        // Check for tight constraints - this means parent has calculated our final size
+        if (constraints.MinWidth == constraints.MaxWidth)
         {
-            var minValue = _minLength.Value.ToPixels(0); // No parent size context yet
-            
-            // We don't know the parent's direction here, so we set both dimensions
-            // The parent will use the appropriate one based on its flex direction
-            minWidth = minValue;
-            minHeight = minValue;
+            width = constraints.MinWidth;
+        }
+        else if (_minLength.HasValue)
+        {
+            // Use minimum width if specified
+            width = _minLength.Value.ToPixels(constraints.MaxWidth);
+        }
+        
+        if (constraints.MinHeight == constraints.MaxHeight)
+        {
+            height = constraints.MinHeight;
+        }
+        else if (_minLength.HasValue)
+        {
+            // Use minimum height if specified
+            height = _minLength.Value.ToPixels(constraints.MaxHeight);
         }
         
         // Spacer is flexible - it wants to grow as much as possible
-        // Return minimum size; parent will expand us as needed
-        return new LayoutBox { X = 0, Y = 0, Width = minWidth, Height = minHeight };
+        return new LayoutBox { X = 0, Y = 0, Width = width, Height = height };
     }
     
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
