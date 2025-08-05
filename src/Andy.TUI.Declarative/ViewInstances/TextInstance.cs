@@ -78,7 +78,19 @@ public class TextInstance : ViewInstance
         
         // Constrain to available space
         layout.Width = constraints.ConstrainWidth(layout.Width);
-        layout.Height = constraints.ConstrainHeight(layout.Height);
+        // For height, use the calculated height directly when constraints allow infinity
+        // This allows text to report its natural height for auto-sizing containers
+        if (float.IsPositiveInfinity(constraints.MaxHeight))
+        {
+            layout.Height = height;
+        }
+        else
+        {
+            layout.Height = constraints.ConstrainHeight(layout.Height);
+        }
+        
+        _logger.Debug("TextInstance layout: calculated height={0}, constrained height={1}, constraints={2}", 
+            height, layout.Height, constraints);
         
         return layout;
     }

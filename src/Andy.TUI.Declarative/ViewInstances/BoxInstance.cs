@@ -67,9 +67,9 @@ public class BoxInstance : ViewInstance
         if (!_box.MaxHeight.IsAuto)
             height = Math.Min(height, _box.MaxHeight.ToPixels(constraints.MaxHeight));
         
-        // Set tentative dimensions
+        // Set tentative dimensions - for auto height, use 0 initially to avoid infinite propagation
         layout.Width = width;
-        layout.Height = height;
+        layout.Height = _box.Height.IsAuto ? 0 : height;
         
         // Layout children with current dimensions
         if (_childInstances.Count > 0)
@@ -86,9 +86,18 @@ public class BoxInstance : ViewInstance
             }
             if (_box.Height.IsAuto)
             {
-                var contentHeight = _childInstances.Count > 0 
-                    ? _childInstances.Max(c => c.Layout.Y + c.Layout.Height)
-                    : 0;
+                var contentHeight = 0f;
+                if (_childInstances.Count > 0)
+                {
+                    // Find the maximum bottom edge of children, ignoring infinite heights
+                    foreach (var child in _childInstances)
+                    {
+                        if (!float.IsInfinity(child.Layout.Height))
+                        {
+                            contentHeight = Math.Max(contentHeight, child.Layout.Y + child.Layout.Height);
+                        }
+                    }
+                }
                 layout.Height = contentHeight + _box.Padding.Top.Value + _box.Padding.Bottom.Value;
             }
         }
@@ -118,7 +127,10 @@ public class BoxInstance : ViewInstance
         if (_box == null || _childInstances.Count == 0) return;
         
         // Calculate content area after padding
-        var contentConstraints = constraints.Deflate(_box.Padding, parentLayout.Width, parentLayout.Height);
+        // For auto-sized dimensions, use the original constraints instead of the tentative layout size
+        var effectiveWidth = _box.Width.IsAuto ? constraints.MaxWidth : parentLayout.Width;
+        var effectiveHeight = _box.Height.IsAuto ? constraints.MaxHeight : parentLayout.Height;
+        var contentConstraints = constraints.Deflate(_box.Padding, effectiveWidth, effectiveHeight);
         
         var isRow = _box.FlexDirection == FlexDirection.Row || _box.FlexDirection == FlexDirection.RowReverse;
         var mainAxisSize = isRow ? contentConstraints.MaxWidth : contentConstraints.MaxHeight;
@@ -160,9 +172,23 @@ public class BoxInstance : ViewInstance
                 // For text wrapping to work, we need to pass the actual available width
                 // when the parent has a fixed width, not infinity
                 var mainConstraint = isRow ? contentConstraints.MaxWidth : contentConstraints.MaxHeight;
+                
+                // When the parent box has auto-size in the main axis, don't constrain children in that axis
+                var effectiveCrossSize = crossAxisSize;
+                var effectiveMainSize = mainConstraint;
+                
+                if (isRow && _box.Width.IsAuto)
+                {
+                    effectiveMainSize = float.PositiveInfinity;
+                }
+                else if (!isRow && _box.Height.IsAuto)
+                {
+                    effectiveMainSize = float.PositiveInfinity;
+                }
+                
                 var childConstraints = isRow
-                    ? LayoutConstraints.Loose(mainConstraint, crossAxisSize)
-                    : LayoutConstraints.Loose(crossAxisSize, mainConstraint);
+                    ? LayoutConstraints.Loose(effectiveMainSize, effectiveCrossSize)
+                    : LayoutConstraints.Loose(effectiveCrossSize, effectiveMainSize);
                 
                 child.CalculateLayout(childConstraints);
                 naturalSize = isRow ? child.Layout.Width : child.Layout.Height;
@@ -225,9 +251,12 @@ public class BoxInstance : ViewInstance
             var childMainSize = finalSizes[i];
             
             // Apply child constraints with final size
+            // For auto-sized dimensions, use loose constraints to allow natural sizing
             var childConstraints = isRow
                 ? LayoutConstraints.Tight(childMainSize, crossAxisSize)
-                : LayoutConstraints.Tight(crossAxisSize, childMainSize);
+                : (_box.Height.IsAuto 
+                    ? LayoutConstraints.Loose(crossAxisSize, childMainSize)
+                    : LayoutConstraints.Tight(crossAxisSize, childMainSize));
             
             child.CalculateLayout(childConstraints);
             
