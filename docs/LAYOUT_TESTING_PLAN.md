@@ -46,29 +46,29 @@ Test how constraints flow through the component tree in various scenarios.
 - [x] Empty box layout
 - [x] Box with single child
 - [x] Box with multiple children
-- [ ] Box with flex properties
-- [ ] Box with gap/spacing
+- [x] Box with flex properties
+- [x] Box with gap/spacing
 - [x] Box with padding variations
-- [ ] Box with margin variations
+- [x] Box with margin variations
 - [ ] Box with border considerations
 
 #### 2.2 VStack/HStack Components
 - [x] Empty stack
 - [x] Stack with uniform children
 - [x] Stack with mixed-size children
-- [ ] Stack with spacers
-- [ ] Stack with auto-sized children
-- [ ] Stack overflow handling
-- [ ] Stack with flex children
+- [x] Stack with spacers
+- [x] Stack with auto-sized children
+- [x] Stack overflow handling
+- [x] Stack with flex children
 
 #### 2.3 Text Component
 - [x] Single line text
 - [x] Multi-line text without wrapping
 - [x] Word wrap scenarios
 - [x] Character wrap scenarios
-- [ ] Text with max width
-- [ ] Text with max lines
-- [ ] Text truncation modes (head, middle, tail)
+- [x] Text with max width
+- [x] Text with max lines
+- [x] Text truncation modes (head, middle, tail)
 - [x] Text in constrained containers
 
 #### 2.4 Grid Component
@@ -77,8 +77,8 @@ Test how constraints flow through the component tree in various scenarios.
 - [x] Fractional units (fr)
 - [x] Mixed sizing strategies
 - [x] Grid gaps
-- [ ] Grid item spanning
-- [ ] Grid overflow scenarios
+- [x] Grid item spanning
+- [x] Grid overflow scenarios
 
 ### 3. Layout Algorithm Tests
 

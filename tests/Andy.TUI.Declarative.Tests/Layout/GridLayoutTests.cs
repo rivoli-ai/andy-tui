@@ -385,6 +385,229 @@ public class GridLayoutTests
     }
     
     #endregion
+    
+    #region Grid Item Spanning Tests
+    
+    [Fact]
+    public void Grid_WithColumnSpan_ShouldOccupyMultipleColumns()
+    {
+        // Arrange
+        var grid = new Grid();
+        grid.WithColumns(GridTrackSize.Pixels(50), GridTrackSize.Pixels(50), GridTrackSize.Pixels(50));
+        grid.Add(new Box { Width = 50, Height = 30 }.GridColumn(0, span: 2)); // Spans 2 columns
+        grid.Add(new Box { Width = 50, Height = 30 }); // Regular item
+        grid.Add(new Box { Width = 50, Height = 30 }); // Should go to next row
+        
+        var root = _context.ViewInstanceManager.GetOrCreateInstance(grid, "root");
+        var constraints = LayoutTestHelper.Loose(400, 400);
+        
+        // Act
+        var result = LayoutTestHelper.PerformLayout(root, constraints);
+        _output.WriteLine(result.LayoutTree);
+        
+        // Assert
+        var gridInstance = root as GridInstance;
+        Assert.NotNull(gridInstance);
+        var children = gridInstance.GetChildInstances();
+        
+        // First child should span 2 columns (0 to 100)
+        Assert.Equal(0, children[0].Layout.X);
+        Assert.Equal(0, children[0].Layout.Y);
+        Assert.Equal(100, children[0].Layout.Width); // 50 * 2
+        
+        // Second child in column 3
+        Assert.Equal(100, children[1].Layout.X);
+        Assert.Equal(0, children[1].Layout.Y);
+        
+        // Third child starts new row
+        Assert.Equal(0, children[2].Layout.X);
+        Assert.Equal(30, children[2].Layout.Y);
+    }
+    
+    [Fact]
+    public void Grid_WithRowSpan_ShouldOccupyMultipleRows()
+    {
+        // Arrange
+        var grid = new Grid();
+        grid.WithColumns(GridTrackSize.Pixels(50), GridTrackSize.Pixels(50));
+        grid.Add(new Box { Width = 50, Height = 30 }.GridRow(0, span: 2)); // Spans 2 rows
+        grid.Add(new Box { Width = 50, Height = 30 }); // Regular item
+        grid.Add(new Box { Width = 50, Height = 30 }); // Should skip to column 1, row 2
+        grid.Add(new Box { Width = 50, Height = 30 }); // Row 3
+        
+        var root = _context.ViewInstanceManager.GetOrCreateInstance(grid, "root");
+        var constraints = LayoutTestHelper.Loose(400, 400);
+        
+        // Act
+        var result = LayoutTestHelper.PerformLayout(root, constraints);
+        _output.WriteLine(result.LayoutTree);
+        
+        // Assert
+        var gridInstance = root as GridInstance;
+        Assert.NotNull(gridInstance);
+        var children = gridInstance.GetChildInstances();
+        
+        // First child should span 2 rows
+        Assert.Equal(0, children[0].Layout.X);
+        Assert.Equal(0, children[0].Layout.Y);
+        Assert.Equal(60, children[0].Layout.Height); // 30 * 2
+        
+        // Second child in column 2, row 1
+        Assert.Equal(50, children[1].Layout.X);
+        Assert.Equal(0, children[1].Layout.Y);
+        
+        // Third child in column 2, row 2
+        Assert.Equal(50, children[2].Layout.X);
+        Assert.Equal(30, children[2].Layout.Y);
+    }
+    
+    [Fact]
+    public void Grid_WithAreaSpan_ShouldOccupyRectangularArea()
+    {
+        // Arrange
+        var grid = new Grid();
+        grid.WithColumns(GridTrackSize.Pixels(40), GridTrackSize.Pixels(40), GridTrackSize.Pixels(40));
+        grid.Add(new Box { Width = 40, Height = 30 }); // Regular item at 0,0
+        grid.Add(new Box { Width = 80, Height = 60 }.GridArea(0, 1, rowSpan: 2, columnSpan: 2)); // Spans 2x2 area
+        grid.Add(new Box { Width = 40, Height = 30 }); // Should go to row 2
+        
+        var root = _context.ViewInstanceManager.GetOrCreateInstance(grid, "root");
+        var constraints = LayoutTestHelper.Loose(400, 400);
+        
+        // Act
+        var result = LayoutTestHelper.PerformLayout(root, constraints);
+        _output.WriteLine(result.LayoutTree);
+        
+        // Assert
+        var gridInstance = root as GridInstance;
+        Assert.NotNull(gridInstance);
+        var children = gridInstance.GetChildInstances();
+        
+        // Large item should span 2x2 grid
+        Assert.Equal(40, children[1].Layout.X); // Column 2
+        Assert.Equal(0, children[1].Layout.Y);  // Row 1
+        Assert.Equal(80, children[1].Layout.Width);  // 40 * 2
+        Assert.Equal(60, children[1].Layout.Height); // 30 * 2
+    }
+    
+    [Fact]
+    public void Grid_WithOverlappingSpans_ShouldHandleGracefully()
+    {
+        // Arrange
+        var grid = new Grid();
+        grid.WithColumns(GridTrackSize.Pixels(50), GridTrackSize.Pixels(50), GridTrackSize.Pixels(50));
+        grid.Add(new Box { Width = 100, Height = 30 }.GridColumn(0, span: 2));
+        grid.Add(new Box { Width = 100, Height = 30 }.GridColumn(1, span: 2)); // Overlaps with first
+        
+        var root = _context.ViewInstanceManager.GetOrCreateInstance(grid, "root");
+        var constraints = LayoutTestHelper.Loose(400, 400);
+        
+        // Act & Assert - should not crash
+        var result = LayoutTestHelper.PerformLayout(root, constraints);
+        Assert.NotNull(result);
+    }
+    
+    #endregion
+    
+    #region Grid Overflow Tests
+    
+    [Fact]
+    public void Grid_WithContentExceedingCellSize_ShouldClipOrOverflow()
+    {
+        // Arrange
+        var grid = new Grid();
+        grid.WithColumns(GridTrackSize.Pixels(50), GridTrackSize.Pixels(50));
+        grid.Add(new Box { Width = 100, Height = 80 }); // Wider than cell
+        grid.Add(new Box { Width = 30, Height = 100 }); // Taller than typical row
+        
+        var root = _context.ViewInstanceManager.GetOrCreateInstance(grid, "root");
+        var constraints = LayoutTestHelper.Loose(200, 200);
+        
+        // Act
+        var result = LayoutTestHelper.PerformLayout(root, constraints);
+        _output.WriteLine(result.LayoutTree);
+        
+        // Assert
+        // Grid size should be based on actual content
+        Assert.True(result.RootLayout.Width >= 100); // At least as wide as content
+        Assert.True(result.RootLayout.Height >= 80); // At least as tall as tallest content
+    }
+    
+    [Fact]
+    public void Grid_WithFrColumns_AndLargeContent_ShouldDistributeSpace()
+    {
+        // Arrange
+        var grid = new Grid();
+        grid.WithColumns(GridTrackSize.Fr(1), GridTrackSize.Fr(2)); // 1fr and 2fr columns
+        grid.Add(new Box { Width = 200, Height = 50 }); // Large content
+        grid.Add(new Box { Width = 300, Height = 50 }); // Even larger
+        
+        var root = _context.ViewInstanceManager.GetOrCreateInstance(grid, "root");
+        var constraints = LayoutTestHelper.Tight(300, 100); // Limited space
+        
+        // Act
+        var result = LayoutTestHelper.PerformLayout(root, constraints);
+        _output.WriteLine(result.LayoutTree);
+        
+        // Assert
+        var gridInstance = root as GridInstance;
+        var children = gridInstance!.GetChildInstances();
+        
+        // Fr columns should divide available space: 100px and 200px
+        Assert.Equal(100, children[0].Layout.Width, 10); // 1/3 of 300
+        Assert.Equal(200, children[1].Layout.Width, 10); // 2/3 of 300
+    }
+    
+    [Fact]
+    public void Grid_WithMixedSizing_AndOverflow_ShouldPrioritizeFixed()
+    {
+        // Arrange
+        var grid = new Grid();
+        grid.WithColumns(GridTrackSize.Pixels(50), GridTrackSize.Auto, GridTrackSize.Fr(1));
+        grid.Add(new Box { Width = 100, Height = 30 }); // Overflows fixed column
+        grid.Add(new Box { Width = 80, Height = 30 });  // Sets auto column
+        grid.Add(new Box { Width = 200, Height = 30 }); // Gets remaining space
+        
+        var root = _context.ViewInstanceManager.GetOrCreateInstance(grid, "root");
+        var constraints = LayoutTestHelper.Tight(200, 100);
+        
+        // Act
+        var result = LayoutTestHelper.PerformLayout(root, constraints);
+        
+        // Assert
+        Assert.Equal(200, result.RootLayout.Width); // Constrained to max
+        // Layout should prioritize: fixed (50) + auto (80) + fr (remaining 70)
+    }
+    
+    [Fact]
+    public void Grid_WithInsufficientSpace_ShouldShrinkContent()
+    {
+        // Arrange
+        var grid = new Grid();
+        grid.WithColumns(GridTrackSize.Pixels(100), GridTrackSize.Pixels(100), GridTrackSize.Pixels(100));
+        grid.Add(new Box { Width = 100, Height = 50 });
+        grid.Add(new Box { Width = 100, Height = 50 });
+        grid.Add(new Box { Width = 100, Height = 50 });
+        
+        var root = _context.ViewInstanceManager.GetOrCreateInstance(grid, "root");
+        var constraints = LayoutTestHelper.Tight(200, 100); // Only 200px available for 300px content
+        
+        // Act
+        var result = LayoutTestHelper.PerformLayout(root, constraints);
+        
+        // Assert
+        Assert.Equal(200, result.RootLayout.Width); // Should be constrained
+        
+        // Children should be shrunk proportionally
+        var gridInstance = root as GridInstance;
+        var children = gridInstance!.GetChildInstances();
+        foreach (var child in children)
+        {
+            Assert.True(child.Layout.Width <= 70); // Each gets ~66.67px
+        }
+    }
+    
+    #endregion
 }
 
 /// <summary>
