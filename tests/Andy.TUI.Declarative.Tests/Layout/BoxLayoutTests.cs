@@ -78,12 +78,11 @@ public class BoxLayoutTests
         
         // Act
         var result = LayoutTestHelper.PerformLayout(root, constraints);
-        _output.WriteLine(result.LayoutTree);
         
         // Assert
         Assert.Equal(200, result.RootLayout.Width);
-        // Height should be sum of children heights (stacked vertically)
-        Assert.Equal(125, result.RootLayout.Height);
+        // In row layout (default), height should be max of children heights
+        Assert.Equal(75, result.RootLayout.Height);
     }
     
     [Fact]
@@ -95,14 +94,14 @@ public class BoxLayoutTests
         box.Add(new Box { Width = 150, Height = 30 });
         
         var root = _context.ViewInstanceManager.GetOrCreateInstance(box, "root");
-        var constraints = LayoutTestHelper.Loose(400, 400);
+        var constraints = LayoutTestHelper.Loose(500, 400);
         
         // Act
         var result = LayoutTestHelper.PerformLayout(root, constraints);
         
         // Assert
-        // Width should be max of children widths
-        Assert.Equal(250, result.RootLayout.Width);
+        // In row layout (default), width should be sum of children widths
+        Assert.Equal(400, result.RootLayout.Width); // 250 + 150
         Assert.Equal(100, result.RootLayout.Height);
     }
     
@@ -121,8 +120,9 @@ public class BoxLayoutTests
         var result = LayoutTestHelper.PerformLayout(root, constraints);
         
         // Assert
-        Assert.Equal(200, result.RootLayout.Width); // Max child width
-        Assert.Equal(100, result.RootLayout.Height); // Sum of heights
+        // In row layout (default), width is sum and height is max
+        Assert.Equal(350, result.RootLayout.Width); // Sum of child widths
+        Assert.Equal(60, result.RootLayout.Height); // Max child height
     }
     
     #endregion
@@ -178,12 +178,17 @@ public class BoxLayoutTests
         var boxInstance = root as BoxInstance;
         Assert.NotNull(boxInstance);
         
-        var contentInstance = boxInstance.GetContentInstance();
-        Assert.NotNull(contentInstance);
+        var children = boxInstance.GetChildInstances();
+        Assert.Single(children);
         
-        // Content should be positioned at padding offset
-        Assert.Equal(15, contentInstance.Layout.X);
-        Assert.Equal(10, contentInstance.Layout.Y);
+        // Child should be positioned at (0,0) relative to content area
+        // The padding offset is handled when calculating absolute positions
+        Assert.Equal(0, children[0].Layout.X);
+        Assert.Equal(0, children[0].Layout.Y);
+        
+        // Absolute position should include padding
+        Assert.Equal(15, children[0].Layout.AbsoluteX); // left padding
+        Assert.Equal(10, children[0].Layout.AbsoluteY); // top padding
     }
     
     #endregion

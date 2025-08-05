@@ -67,8 +67,8 @@ public class BoxInstance : ViewInstance
         if (!_box.MaxHeight.IsAuto)
             height = Math.Min(height, _box.MaxHeight.ToPixels(constraints.MaxHeight));
         
-        // Set tentative dimensions - for auto height, use 0 initially to avoid infinite propagation
-        layout.Width = width;
+        // Set tentative dimensions - for auto dimensions, use 0 initially to avoid infinite propagation
+        layout.Width = _box.Width.IsAuto ? 0 : width;
         layout.Height = _box.Height.IsAuto ? 0 : height;
         
         // Layout children with current dimensions
@@ -79,26 +79,65 @@ public class BoxInstance : ViewInstance
             // If width/height is auto, adjust to fit content
             if (_box.Width.IsAuto)
             {
-                var contentWidth = _childInstances.Count > 0 
-                    ? _childInstances.Max(c => c.Layout.X + c.Layout.Width) 
-                    : 0;
+                var contentWidth = 0f;
+                if (_childInstances.Count > 0)
+                {
+                    var isRow = _box.FlexDirection == FlexDirection.Row || _box.FlexDirection == FlexDirection.RowReverse;
+                    if (isRow)
+                    {
+                        // For row layout, width is the rightmost edge of children
+                        contentWidth = _childInstances.Max(c => c.Layout.X + c.Layout.Width);
+                    }
+                    else
+                    {
+                        // For column layout, width is the widest child
+                        contentWidth = _childInstances.Max(c => c.Layout.Width);
+                    }
+                }
                 layout.Width = contentWidth + _box.Padding.Left.Value + _box.Padding.Right.Value;
+                
+                // Apply min/max constraints to auto-calculated width
+                if (!_box.MinWidth.IsAuto)
+                    layout.Width = Math.Max(layout.Width, _box.MinWidth.ToPixels(constraints.MaxWidth));
+                if (!_box.MaxWidth.IsAuto)
+                    layout.Width = Math.Min(layout.Width, _box.MaxWidth.ToPixels(constraints.MaxWidth));
             }
             if (_box.Height.IsAuto)
             {
                 var contentHeight = 0f;
                 if (_childInstances.Count > 0)
                 {
-                    // Find the maximum bottom edge of children, ignoring infinite heights
-                    foreach (var child in _childInstances)
+                    var isRow = _box.FlexDirection == FlexDirection.Row || _box.FlexDirection == FlexDirection.RowReverse;
+                    if (isRow)
                     {
-                        if (!float.IsInfinity(child.Layout.Height))
+                        // For row layout, height is the tallest child
+                        foreach (var child in _childInstances)
                         {
-                            contentHeight = Math.Max(contentHeight, child.Layout.Y + child.Layout.Height);
+                            if (!float.IsInfinity(child.Layout.Height))
+                            {
+                                contentHeight = Math.Max(contentHeight, child.Layout.Height);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // For column layout, height is the bottom edge of the last child
+                        foreach (var child in _childInstances)
+                        {
+                            if (!float.IsInfinity(child.Layout.Height))
+                            {
+                                contentHeight = Math.Max(contentHeight, child.Layout.Y + child.Layout.Height);
+                            }
                         }
                     }
                 }
                 layout.Height = contentHeight + _box.Padding.Top.Value + _box.Padding.Bottom.Value;
+                
+                // Apply min/max constraints to auto-calculated height
+                if (!_box.MinHeight.IsAuto)
+                    layout.Height = Math.Max(layout.Height, _box.MinHeight.ToPixels(constraints.MaxHeight));
+                if (!_box.MaxHeight.IsAuto)
+                    layout.Height = Math.Min(layout.Height, _box.MaxHeight.ToPixels(constraints.MaxHeight));
             }
         }
         
@@ -252,11 +291,47 @@ public class BoxInstance : ViewInstance
             
             // Apply child constraints with final size
             // For auto-sized dimensions, use loose constraints to allow natural sizing
-            var childConstraints = isRow
-                ? LayoutConstraints.Tight(childMainSize, crossAxisSize)
-                : (_box.Height.IsAuto 
-                    ? LayoutConstraints.Loose(crossAxisSize, childMainSize)
-                    : LayoutConstraints.Tight(crossAxisSize, childMainSize));
+            LayoutConstraints childConstraints;
+            
+            // Check if child has fixed dimensions in the cross axis
+            bool childHasFixedCrossSize = false;
+            if (child is BoxInstance boxChild && boxChild._box != null)
+            {
+                childHasFixedCrossSize = isRow 
+                    ? !boxChild._box.Height.IsAuto 
+                    : !boxChild._box.Width.IsAuto;
+            }
+            
+            if (isRow)
+            {
+                // For row layout, use tight constraints for main axis (width)
+                // For cross axis (height), preserve child's natural height if it has fixed height
+                if (childHasFixedCrossSize)
+                {
+                    // Child has fixed height, let it use its natural height
+                    childConstraints = LayoutConstraints.Tight(childMainSize, child.Layout.Height);
+                }
+                else
+                {
+                    // Child has auto height, can be stretched if AlignItems is Stretch
+                    childConstraints = LayoutConstraints.Tight(childMainSize, crossAxisSize);
+                }
+            }
+            else
+            {
+                // For column layout, use tight constraints for main axis (height)
+                // For cross axis (width), preserve child's natural width if it has fixed width
+                if (childHasFixedCrossSize)
+                {
+                    // Child has fixed width, let it use its natural width
+                    childConstraints = LayoutConstraints.Tight(child.Layout.Width, childMainSize);
+                }
+                else
+                {
+                    // Child has auto width, can be stretched if AlignItems is Stretch
+                    childConstraints = LayoutConstraints.Tight(crossAxisSize, childMainSize);
+                }
+            }
             
             child.CalculateLayout(childConstraints);
             
@@ -360,10 +435,27 @@ public class BoxInstance : ViewInstance
                     crossOffset = (crossAxisSize - childCrossSize) / 2;
                     break;
                 case AlignItems.Stretch:
-                    if (isRow)
-                        child.Layout.Height = crossAxisSize;
+                    // Only stretch if the child doesn't have a fixed size in the cross axis
+                    bool shouldStretch = true;
+                    if (child is BoxInstance boxChildForStretch && boxChildForStretch._box != null)
+                    {
+                        shouldStretch = isRow 
+                            ? boxChildForStretch._box.Height.IsAuto 
+                            : boxChildForStretch._box.Width.IsAuto;
+                    }
                     else
-                        child.Layout.Width = crossAxisSize;
+                    {
+                        // For non-Box children, don't stretch by default
+                        shouldStretch = false;
+                    }
+                    
+                    if (shouldStretch)
+                    {
+                        if (isRow)
+                            child.Layout.Height = crossAxisSize;
+                        else
+                            child.Layout.Width = crossAxisSize;
+                    }
                     break;
             }
             

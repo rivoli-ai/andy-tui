@@ -28,17 +28,17 @@ Test how constraints flow through the component tree in various scenarios.
 - [x] Zero-size constraint handling
 
 #### 1.2 Auto-Sizing Tests
-- [ ] Box with auto width and fixed height
-- [ ] Box with fixed width and auto height
-- [ ] Box with both auto dimensions
-- [ ] Nested auto-sized boxes
-- [ ] Auto-sized boxes with padding/margin
+- [x] Box with auto width and fixed height
+- [x] Box with fixed width and auto height
+- [x] Box with both auto dimensions
+- [x] Nested auto-sized boxes
+- [x] Auto-sized boxes with padding/margin
 
 #### 1.3 Edge Case Tests
 - [x] Components with zero size
 - [x] Components with infinite preferred size
 - [x] Deeply nested constraint propagation
-- [ ] Circular dependency detection
+- [x] Circular dependency detection
 
 ### 2. Component Layout Tests
 
