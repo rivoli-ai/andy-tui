@@ -65,10 +65,14 @@ public class TextInstance : ViewInstance
         }
         
         // Calculate dimensions
-        var width = _wrappedLines.Count > 0 
+        var contentWidth = _wrappedLines.Count > 0 
             ? _wrappedLines.Max(line => line.Length) 
             : 0;
         var height = _wrappedLines.Count;
+        
+        // If maxWidth is specified, use it as the layout width
+        // Otherwise use the actual content width
+        var width = _maxWidth.HasValue ? maxWidth : contentWidth;
         
         var layout = new LayoutBox
         {

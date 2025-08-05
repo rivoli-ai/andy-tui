@@ -457,6 +457,7 @@ public class BoxLayoutTests
         var children = boxInstance.GetChildInstances();
         Assert.Equal(3, children.Count);
         
+        
         // Total flex basis: 80 + 120 + 60 = 260
         // Available space: 300
         // Extra space: 40
@@ -476,7 +477,7 @@ public class BoxLayoutTests
             (JustifyContent.FlexEnd, new[] { 150f, 200f, 250f }),
             (JustifyContent.Center, new[] { 75f, 125f, 175f }),
             (JustifyContent.SpaceBetween, new[] { 0f, 125f, 250f }),
-            (JustifyContent.SpaceAround, new[] { 50f, 125f, 200f }),
+            (JustifyContent.SpaceAround, new[] { 25f, 125f, 225f }),
             (JustifyContent.SpaceEvenly, new[] { 75f, 150f, 225f })
         };
         
@@ -508,6 +509,10 @@ public class BoxLayoutTests
             
             for (int i = 0; i < 3; i++)
             {
+                if (Math.Abs(expectedPositions[i] - children[i].Layout.X) > 1)
+                {
+                    _output.WriteLine($"JustifyContent.{justifyContent}: Child {i} expected at {expectedPositions[i]}, actual {children[i].Layout.X}");
+                }
                 Assert.Equal(expectedPositions[i], children[i].Layout.X, 1);
             }
         }

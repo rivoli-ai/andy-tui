@@ -67,9 +67,14 @@ public class BoxInstance : ViewInstance
         if (!_box.MaxHeight.IsAuto)
             height = Math.Min(height, _box.MaxHeight.ToPixels(constraints.MaxHeight));
         
-        // Set tentative dimensions - for auto dimensions, use 0 initially to avoid infinite propagation
-        layout.Width = _box.Width.IsAuto ? 0 : width;
-        layout.Height = _box.Height.IsAuto ? 0 : height;
+        // Set tentative dimensions
+        // For auto dimensions with tight constraints, use the constraint value
+        // Otherwise use 0 initially to avoid infinite propagation
+        var isTightWidth = constraints.MinWidth == constraints.MaxWidth;
+        var isTightHeight = constraints.MinHeight == constraints.MaxHeight;
+        
+        layout.Width = _box.Width.IsAuto ? (isTightWidth ? width : 0) : width;
+        layout.Height = _box.Height.IsAuto ? (isTightHeight ? height : 0) : height;
         
         // Layout children with current dimensions
         if (_childInstances.Count > 0)
@@ -169,7 +174,16 @@ public class BoxInstance : ViewInstance
         // For auto-sized dimensions, use the original constraints instead of the tentative layout size
         var effectiveWidth = _box.Width.IsAuto ? constraints.MaxWidth : parentLayout.Width;
         var effectiveHeight = _box.Height.IsAuto ? constraints.MaxHeight : parentLayout.Height;
-        var contentConstraints = constraints.Deflate(_box.Padding, effectiveWidth, effectiveHeight);
+        
+        // Calculate padding
+        var paddingH = _box.Padding.GetHorizontalTotal(effectiveWidth);
+        var paddingV = _box.Padding.GetVerticalTotal(effectiveHeight);
+        
+        // Create content constraints based on effective dimensions
+        // This ensures that when parent has fixed size, children get constraints based on that size
+        var contentWidth = Math.Max(0, effectiveWidth - paddingH);
+        var contentHeight = Math.Max(0, effectiveHeight - paddingV);
+        var contentConstraints = LayoutConstraints.Loose(contentWidth, contentHeight);
         
         var isRow = _box.FlexDirection == FlexDirection.Row || _box.FlexDirection == FlexDirection.RowReverse;
         var mainAxisSize = isRow ? contentConstraints.MaxWidth : contentConstraints.MaxHeight;
@@ -354,8 +368,15 @@ public class BoxInstance : ViewInstance
             }
         }
         
+        // Calculate total size of children (without gaps) for justification
+        var totalChildrenSize = 0f;
+        for (int i = 0; i < finalSizes.Count; i++)
+        {
+            totalChildrenSize += finalSizes[i];
+        }
+        
         // Apply justification and alignment
-        ApplyJustification(parentLayout, isRow, mainPos);
+        ApplyJustification(parentLayout, isRow, totalChildrenSize);
         ApplyAlignment(parentLayout, isRow, crossAxisSize);
     }
     
