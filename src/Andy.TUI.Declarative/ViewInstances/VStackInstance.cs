@@ -113,7 +113,10 @@ public class VStackInstance : ViewInstance
         }
         
         // Calculate final dimensions
-        float finalHeight = totalFixedHeight + remainingSpace;
+        // Only include remaining space if we have spacers
+        float finalHeight = spacerIndices.Count > 0 
+            ? totalFixedHeight + remainingSpace 
+            : totalFixedHeight;
         layout.Width = constraints.ConstrainWidth(maxWidth);
         layout.Height = constraints.ConstrainHeight(finalHeight);
         

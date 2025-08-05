@@ -80,7 +80,7 @@ public class GridInstance : ViewInstance
         layout.Height = constraints.ConstrainHeight(gridHeight);
         
         // Position children in grid cells
-        PositionChildren(columnSizes, rowSizes, rowGap, columnGap);
+        PositionChildren(columnSizes, rowSizes, rowGap, columnGap, constraints);
         
         return layout;
     }
@@ -97,19 +97,31 @@ public class GridInstance : ViewInstance
         // Auto-generate columns/rows if not specified
         if (columnCount == 0)
         {
-            // Default to auto-sized columns based on number of children
-            columnCount = Math.Min(_childInstances.Count, 3); // Max 3 columns by default
+            // Default to single column if no columns specified
+            columnCount = 1;
             _grid.Columns.Clear();
-            for (int i = 0; i < columnCount; i++)
-            {
-                _grid.Columns.Add(GridTrackSize.Fr(1));
-            }
+            _grid.Columns.Add(GridTrackSize.Auto);
         }
         
         if (rowCount == 0)
         {
-            // Calculate rows needed based on children and columns
-            rowCount = (int)Math.Ceiling((double)_childInstances.Count / columnCount);
+            // Calculate rows needed based on children and columns, considering spans
+            int maxRow = 0;
+            
+            // First check explicitly placed items
+            foreach (var (instance, item) in _childInstances)
+            {
+                if (item != null && item.Row.HasValue)
+                {
+                    maxRow = Math.Max(maxRow, item.Row.Value + item.RowSpan - 1);
+                }
+            }
+            
+            // Then calculate for auto-placed items
+            var autoPlacedCount = _childInstances.Count(ci => ci.item == null || !ci.item.Row.HasValue);
+            var autoRows = (int)Math.Ceiling((double)autoPlacedCount / columnCount);
+            
+            rowCount = Math.Max(maxRow + 1, autoRows);
             _grid.Rows.Clear();
             for (int i = 0; i < rowCount; i++)
             {
@@ -135,11 +147,63 @@ public class GridInstance : ViewInstance
             constraints
         );
         
-        // Calculate total size
+        // Calculate total size based on actual content, not full available space
         var totalWidth = columnSizes.Sum() + Math.Max(0, columnCount - 1) * columnGap;
         var totalHeight = rowSizes.Sum() + Math.Max(0, rowCount - 1) * rowGap;
         
+        // For grids with all columns of same type, size to content if appropriate
+        bool allPixels = _grid.Columns.All(c => c.Type == GridTrackSizeType.Pixels);
+        bool allFr = _grid.Columns.All(c => c.Type == GridTrackSizeType.Fr);
+        
+        if ((allPixels || allFr) && constraints.MinWidth != constraints.MaxWidth)
+        {
+            // Calculate actual content width based on occupied columns
+            totalWidth = GetContentBasedWidth(columnSizes, columnGap);
+        }
+        
         return (columnSizes, rowSizes, totalWidth, totalHeight);
+    }
+    
+    private float GetContentBasedWidth(float[] columnSizes, float columnGap)
+    {
+        // Calculate the actual content width by finding the rightmost occupied column
+        int maxColumn = -1;
+        
+        // Track occupied cells to determine actual grid bounds
+        var columnCount = columnSizes.Length;
+        var rowCount = _grid?.Rows.Count ?? 1;
+        var occupiedCells = new bool[rowCount, columnCount];
+        
+        // Mark all occupied cells
+        foreach (var (instance, item) in _childInstances)
+        {
+            var (row, col) = GetChildPlacement(item, _childInstances.IndexOf((instance, item)));
+            var rowSpan = item?.RowSpan ?? 1;
+            var colSpan = item?.ColumnSpan ?? 1;
+            
+            for (int r = row; r < Math.Min(row + rowSpan, rowCount); r++)
+            {
+                for (int c = col; c < Math.Min(col + colSpan, columnCount); c++)
+                {
+                    if (r >= 0 && r < rowCount && c >= 0 && c < columnCount)
+                    {
+                        occupiedCells[r, c] = true;
+                        maxColumn = Math.Max(maxColumn, c);
+                    }
+                }
+            }
+        }
+        
+        if (maxColumn < 0) return 0;
+        
+        float width = 0;
+        for (int i = 0; i <= maxColumn && i < columnSizes.Length; i++)
+        {
+            width += columnSizes[i];
+            if (i > 0) width += columnGap;
+        }
+        
+        return width;
     }
     
     private float[] CalculateTrackSizes(
@@ -154,10 +218,12 @@ public class GridInstance : ViewInstance
         var totalGap = Math.Max(0, trackCount - 1) * gap;
         var remainingSpace = availableSize - totalGap;
         
-        // First pass: Calculate fixed sizes and auto sizes
+        // First pass: Calculate ideal sizes
         var totalFixed = 0f;
         var totalFr = 0f;
         var autoIndices = new List<int>();
+        var frIndices = new List<int>();
+        var fixedIndices = new List<int>();
         
         for (int i = 0; i < trackCount; i++)
         {
@@ -167,11 +233,13 @@ public class GridInstance : ViewInstance
                 case GridTrackSizeType.Pixels:
                     sizes[i] = track.Value;
                     totalFixed += track.Value;
+                    fixedIndices.Add(i);
                     break;
                     
                 case GridTrackSizeType.Percentage:
                     sizes[i] = availableSize * track.Value / 100f;
                     totalFixed += sizes[i];
+                    fixedIndices.Add(i);
                     break;
                     
                 case GridTrackSizeType.Auto:
@@ -180,6 +248,7 @@ public class GridInstance : ViewInstance
                     break;
                     
                 case GridTrackSizeType.Fr:
+                    frIndices.Add(i);
                     totalFr += track.Value;
                     break;
             }
@@ -190,12 +259,25 @@ public class GridInstance : ViewInstance
         {
             var maxSize = 0f;
             
-            // Find all children in this track
+            // Find all children in this track (considering spans)
             foreach (var (instance, item) in _childInstances)
             {
                 var (row, col) = GetChildPlacement(item, _childInstances.IndexOf((instance, item)));
+                var columnSpan = item?.ColumnSpan ?? 1;
+                var rowSpan = item?.RowSpan ?? 1;
                 
-                if ((isColumn && col == autoIndex) || (!isColumn && row == autoIndex))
+                // Check if child occupies this track
+                bool occupiesTrack = false;
+                if (isColumn)
+                {
+                    occupiesTrack = col <= autoIndex && autoIndex < col + columnSpan;
+                }
+                else
+                {
+                    occupiesTrack = row <= autoIndex && autoIndex < row + rowSpan;
+                }
+                
+                if (occupiesTrack)
                 {
                     // Measure child
                     var childConstraints = LayoutConstraints.Loose(
@@ -205,6 +287,14 @@ public class GridInstance : ViewInstance
                     
                     instance.CalculateLayout(childConstraints);
                     var childSize = isColumn ? instance.Layout.Width : instance.Layout.Height;
+                    
+                    // For spanning items, divide size by span count
+                    var span = isColumn ? columnSpan : rowSpan;
+                    if (span > 1)
+                    {
+                        childSize = childSize / span;
+                    }
+                    
                     maxSize = Math.Max(maxSize, childSize);
                 }
             }
@@ -213,9 +303,79 @@ public class GridInstance : ViewInstance
             totalFixed += maxSize;
         }
         
-        // Second pass: Distribute remaining space to fr units
+        // Check if we need to shrink fixed-size tracks
+        if (totalFixed > remainingSpace && fixedIndices.Count > 0)
+        {
+            // Shrink fixed tracks proportionally
+            var shrinkFactor = remainingSpace / totalFixed;
+            foreach (var fixedIndex in fixedIndices)
+            {
+                sizes[fixedIndex] *= shrinkFactor;
+            }
+            totalFixed = remainingSpace;
+        }
+        
+        // Second pass: Calculate fr sizes
         if (totalFr > 0)
         {
+            // If all tracks are fr and we have loose constraints, use content sizing
+            if (tracks.All(t => t.Type == GridTrackSizeType.Fr) && 
+                !float.IsInfinity(availableSize))
+            {
+                // Calculate content-based minimum for fr tracks
+                foreach (var frIndex in frIndices)
+                {
+                    var maxSize = 0f;
+                    
+                    foreach (var (instance, item) in _childInstances)
+                    {
+                        var (row, col) = GetChildPlacement(item, _childInstances.IndexOf((instance, item)));
+                        var columnSpan = item?.ColumnSpan ?? 1;
+                        var rowSpan = item?.RowSpan ?? 1;
+                        
+                        bool occupiesTrack = false;
+                        if (isColumn)
+                        {
+                            occupiesTrack = col <= frIndex && frIndex < col + columnSpan;
+                        }
+                        else
+                        {
+                            occupiesTrack = row <= frIndex && frIndex < row + rowSpan;
+                        }
+                        
+                        if (occupiesTrack)
+                        {
+                            var childConstraints = LayoutConstraints.Loose(
+                                isColumn ? float.PositiveInfinity : constraints.MaxWidth,
+                                isColumn ? constraints.MaxHeight : float.PositiveInfinity
+                            );
+                            
+                            instance.CalculateLayout(childConstraints);
+                            var childSize = isColumn ? instance.Layout.Width : instance.Layout.Height;
+                            
+                            var span = isColumn ? columnSpan : rowSpan;
+                            if (span > 1)
+                            {
+                                childSize = childSize / span;
+                            }
+                            
+                            maxSize = Math.Max(maxSize, childSize);
+                        }
+                    }
+                    
+                    sizes[frIndex] = maxSize;
+                }
+                
+                // Check if content fits in available space
+                var contentTotal = sizes.Sum();
+                if (contentTotal <= remainingSpace)
+                {
+                    // Use content sizes
+                    return sizes;
+                }
+            }
+            
+            // Standard fr distribution
             var frSpace = Math.Max(0, remainingSpace - totalFixed);
             var frUnit = frSpace / totalFr;
             
@@ -231,22 +391,105 @@ public class GridInstance : ViewInstance
         return sizes;
     }
     
-    private void PositionChildren(float[] columnSizes, float[] rowSizes, float rowGap, float columnGap)
+    private void PositionChildren(float[] columnSizes, float[] rowSizes, float rowGap, float columnGap, LayoutConstraints parentConstraints)
     {
         if (_grid == null) return;
         
         var columnCount = columnSizes.Length;
         var rowCount = rowSizes.Length;
-        var autoPlacementIndex = 0;
         
+        // Track occupied cells for auto-placement
+        var occupiedCells = new bool[rowCount, columnCount];
+        var autoPlacementCursor = 0;
+        
+        // First pass: mark explicitly placed items
         foreach (var (instance, item) in _childInstances)
         {
-            // Determine grid placement
-            var (row, col) = GetChildPlacement(item, autoPlacementIndex);
-            
-            if (item == null)
+            if (item != null && (item.Row.HasValue || item.Column.HasValue))
             {
-                autoPlacementIndex++;
+                var row = item.Row ?? 0;
+                var col = item.Column ?? 0;
+                var rowSpan = item.RowSpan;
+                var colSpan = item.ColumnSpan;
+                
+                // Mark cells as occupied
+                for (int r = row; r < Math.Min(row + rowSpan, rowCount); r++)
+                {
+                    for (int c = col; c < Math.Min(col + colSpan, columnCount); c++)
+                    {
+                        occupiedCells[r, c] = true;
+                    }
+                }
+            }
+        }
+        
+        // Second pass: position all children
+        foreach (var (instance, item) in _childInstances)
+        {
+            int row = 0, col = 0;
+            
+            if (item != null && (item.Row.HasValue || item.Column.HasValue))
+            {
+                // Explicit placement
+                row = item.Row ?? 0;
+                col = item.Column ?? 0;
+            }
+            else
+            {
+                // Auto-placement: find next available cell
+                var placed = false;
+                var rowSpan = item?.RowSpan ?? 1;
+                var colSpan = item?.ColumnSpan ?? 1;
+                
+                while (autoPlacementCursor < rowCount * columnCount && !placed)
+                {
+                    row = autoPlacementCursor / columnCount;
+                    col = autoPlacementCursor % columnCount;
+                    
+                    // Check if this position can fit the item
+                    bool canFit = true;
+                    if (col + colSpan <= columnCount && row + rowSpan <= rowCount)
+                    {
+                        for (int r = row; r < row + rowSpan && canFit; r++)
+                        {
+                            for (int c = col; c < col + colSpan && canFit; c++)
+                            {
+                                if (occupiedCells[r, c])
+                                {
+                                    canFit = false;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        canFit = false;
+                    }
+                    
+                    if (canFit)
+                    {
+                        // Mark cells as occupied
+                        for (int r = row; r < row + rowSpan; r++)
+                        {
+                            for (int c = col; c < col + colSpan; c++)
+                            {
+                                occupiedCells[r, c] = true;
+                            }
+                        }
+                        placed = true;
+                    }
+                    else
+                    {
+                        autoPlacementCursor++;
+                    }
+                }
+                
+                if (!placed)
+                {
+                    // Fallback: place at the end
+                    row = rowCount - 1;
+                    col = columnCount - 1;
+                }
             }
             
             // Ensure within bounds
@@ -285,36 +528,52 @@ public class GridInstance : ViewInstance
             }
             
             // Apply alignment within cell
+            // Always constrain children to cell size
             var childConstraints = LayoutConstraints.Loose(cellWidth, cellHeight);
             instance.CalculateLayout(childConstraints);
+            
+            // For spanning items, ensure they use the full cell size
+            if (item != null && (item.ColumnSpan > 1 || item.RowSpan > 1))
+            {
+                // Spanning items should fill their allocated space
+                instance.Layout.Width = cellWidth;
+                instance.Layout.Height = cellHeight;
+            }
             
             // Apply justify/align
             var childX = x;
             var childY = y;
             
-            switch (_grid.JustifyItems)
+            // Only apply justification/alignment if not stretching
+            if (_grid.AlignItems != AlignItems.Stretch)
             {
-                case JustifyContent.Center:
-                    childX += (cellWidth - instance.Layout.Width) / 2;
-                    break;
-                case JustifyContent.FlexEnd:
-                    childX += cellWidth - instance.Layout.Width;
-                    break;
+                switch (_grid.JustifyItems)
+                {
+                    case JustifyContent.Center:
+                        childX += (cellWidth - instance.Layout.Width) / 2;
+                        break;
+                    case JustifyContent.FlexEnd:
+                        childX += cellWidth - instance.Layout.Width;
+                        break;
+                }
+                
+                switch (_grid.AlignItems)
+                {
+                    case AlignItems.Center:
+                        childY += (cellHeight - instance.Layout.Height) / 2;
+                        break;
+                    case AlignItems.FlexEnd:
+                        childY += cellHeight - instance.Layout.Height;
+                        break;
+                }
             }
-            
-            switch (_grid.AlignItems)
+            else
             {
-                case AlignItems.Center:
-                    childY += (cellHeight - instance.Layout.Height) / 2;
-                    break;
-                case AlignItems.FlexEnd:
-                    childY += cellHeight - instance.Layout.Height;
-                    break;
-                case AlignItems.Stretch:
-                    // Recalculate with tight constraints
-                    childConstraints = LayoutConstraints.Tight(cellWidth, cellHeight);
-                    instance.CalculateLayout(childConstraints);
-                    break;
+                // Stretch: recalculate with tight constraints
+                childConstraints = LayoutConstraints.Tight(cellWidth, cellHeight);
+                instance.CalculateLayout(childConstraints);
+                instance.Layout.Width = cellWidth;
+                instance.Layout.Height = cellHeight;
             }
             
             instance.Layout.X = childX;
@@ -326,9 +585,9 @@ public class GridInstance : ViewInstance
     {
         if (item != null && (item.Row.HasValue || item.Column.HasValue))
         {
-            // Explicit placement (convert from 1-based to 0-based)
-            var row = (item.Row ?? 1) - 1;
-            var col = (item.Column ?? 1) - 1;
+            // Explicit placement - already 0-based from extension methods
+            var row = item.Row ?? 0;
+            var col = item.Column ?? 0;
             return (Math.Max(0, row), Math.Max(0, col));
         }
         else
