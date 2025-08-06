@@ -46,5 +46,10 @@ public readonly struct Optional<T>
         return _hasValue ? _value?.GetHashCode() ?? 0 : -1;
     }
     
+    public override string ToString()
+    {
+        return _hasValue ? _value?.ToString() ?? "Some(null)" : "None";
+    }
+    
     public static implicit operator Optional<T>(T value) => Some(value);
 }

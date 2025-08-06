@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Terminal;
@@ -23,6 +24,8 @@ public class RadioGroupInstance<T> : ViewInstance, IFocusable
     private string _unselectedMark = "( )";
     private bool _vertical = true;
     private int _currentIndex = 0;
+    private IDisposable? _bindingSubscription;
+    private Optional<T> _lastBindingValue = Optional<T>.None;
     
     public RadioGroupInstance(string id) : base(id)
     {
@@ -41,17 +44,38 @@ public class RadioGroupInstance<T> : ViewInstance, IFocusable
         _unselectedMark = radioGroup.GetUnselectedMark();
         _vertical = radioGroup.GetVertical();
         
-        // Find current selection index
-        if (_selectedOptionBinding?.Value.HasValue == true)
+        // Subscribe to binding changes
+        if (_selectedOptionBinding != null)
         {
-            var selectedValue = _selectedOptionBinding.Value.Value;
-            for (int i = 0; i < _options.Count; i++)
+            // Unsubscribe from old binding
+            _bindingSubscription?.Dispose();
+            
+            // Subscribe to new binding
+            _bindingSubscription = new BindingSubscription<Optional<T>>(_selectedOptionBinding, () => InvalidateView());
+        }
+        
+        // Find current selection index - only update if binding value changed
+        var currentBindingValue = _selectedOptionBinding?.Value ?? Optional<T>.None;
+        if (!EqualityComparer<Optional<T>>.Default.Equals(_lastBindingValue, currentBindingValue))
+        {
+            _lastBindingValue = currentBindingValue;
+            
+            if (currentBindingValue.HasValue)
             {
-                if (EqualityComparer<T>.Default.Equals(_options[i], selectedValue))
+                var selectedValue = currentBindingValue.Value;
+                for (int i = 0; i < _options.Count; i++)
                 {
-                    _currentIndex = i;
-                    break;
+                    if (EqualityComparer<T>.Default.Equals(_options[i], selectedValue))
+                    {
+                        _currentIndex = i;
+                        break;
+                    }
                 }
+            }
+            else
+            {
+                // Reset to first option if no selection
+                _currentIndex = 0;
             }
         }
     }
@@ -248,6 +272,36 @@ public class RadioGroupInstance<T> : ViewInstance, IFocusable
                 
             default:
                 return false;
+        }
+    }
+    
+    public override void Dispose()
+    {
+        _bindingSubscription?.Dispose();
+        base.Dispose();
+    }
+    
+    // Helper class for binding subscriptions
+    private class BindingSubscription<TValue> : IDisposable
+    {
+        private readonly Binding<TValue> _binding;
+        private readonly Action _callback;
+        
+        public BindingSubscription(Binding<TValue> binding, Action callback)
+        {
+            _binding = binding;
+            _callback = callback;
+            _binding.PropertyChanged += OnPropertyChanged;
+        }
+        
+        private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            _callback();
+        }
+        
+        public void Dispose()
+        {
+            _binding.PropertyChanged -= OnPropertyChanged;
         }
     }
 }

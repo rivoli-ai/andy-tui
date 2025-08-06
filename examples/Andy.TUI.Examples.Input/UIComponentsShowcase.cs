@@ -21,6 +21,7 @@ class UIComponentsShowcaseApp
     private bool _enableNotifications = true;
     private bool _darkMode = false;
     private Optional<string> _selectedTheme = Optional<string>.None;
+    private Optional<string> _selectedSize = Optional<string>.None;
     private float _downloadProgress = 0f;
     private Timer? _progressTimer;
     
@@ -56,12 +57,12 @@ class UIComponentsShowcaseApp
                 new VStack(spacing: 1) {
                     new Text("Checkboxes:").Bold().Color(Color.Yellow),
                     new Checkbox("Accept Terms & Conditions", 
-                        new Binding<bool>(() => _acceptTerms, v => _acceptTerms = v)),
+                        this.Bind(() => _acceptTerms)),
                     new Checkbox("Enable Notifications", 
-                        new Binding<bool>(() => _enableNotifications, v => _enableNotifications = v),
+                        this.Bind(() => _enableNotifications),
                         checkedMark: "[✓]", uncheckedMark: "[×]"),
                     new Checkbox("Dark Mode", 
-                        new Binding<bool>(() => _darkMode, v => _darkMode = v),
+                        this.Bind(() => _darkMode),
                         labelFirst: false),
                     
                     new Newline(),
@@ -69,7 +70,7 @@ class UIComponentsShowcaseApp
                     new RadioGroup<string>(
                         "Select Theme:",
                         themes,
-                        new Binding<Optional<string>>(() => _selectedTheme, v => _selectedTheme = v),
+                        this.Bind(() => _selectedTheme),
                         selectedMark: "(●)",
                         unselectedMark: "( )"
                     ),
@@ -160,13 +161,14 @@ class UIComponentsShowcaseApp
             new Newline(),
             new Box {
                 new VStack {
-                    new Text("Horizontal Radio Group:").Bold(),
+                    new Text("Horizontal Radio Group (Size Selection):").Bold().Color(Color.Yellow),
                     new RadioGroup<string>(
-                        "",
+                        "Choose Size:",
                         new[] { "Small", "Medium", "Large", "X-Large" },
-                        new Binding<Optional<string>>(() => Optional<string>.None, _ => {}),
+                        this.Bind(() => _selectedSize),
                         vertical: false
-                    )
+                    ),
+                    new Text($"Selected Size: {(_selectedSize.HasValue ? _selectedSize.Value : "None")}").Color(Color.Gray)
                 }
             }.WithPadding(1),
             
