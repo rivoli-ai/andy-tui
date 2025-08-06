@@ -105,6 +105,17 @@ public class HStackInstance : ViewInstance
                     
                     child.CalculateLayout(childConstraints);
                     naturalWidth = child.Layout.Width;
+                    
+                    // For auto-width children that end up with 0 width, give them a minimum size
+                    // This prevents layout issues in flex containers
+                    if (naturalWidth == 0 && child is BoxInstance boxInstance && boxInstance.GetBox() != null)
+                    {
+                        var box = boxInstance.GetBox()!;
+                        if (box.Width.IsAuto)
+                        {
+                            naturalWidth = Math.Max(1, box.Padding.Left.Value + box.Padding.Right.Value);
+                        }
+                    }
                 }
                 
                 childInfos.Add((child, naturalWidth, flexGrow, flexShrink, false));
@@ -227,11 +238,16 @@ public class HStackInstance : ViewInstance
             var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) = childInfos[i];
             
             // Recalculate child with final width constraint
-            // For HStack (row layout), children should fill the container height by default
-            var childConstraints = new LayoutConstraints(
-                finalWidth, finalWidth,
-                layout.Height, layout.Height
-            );
+            // For HStack (row layout), only stretch children with auto height
+            bool childHasFixedHeight = false;
+            if (instance is BoxInstance boxChild && boxChild.GetBox() != null)
+            {
+                childHasFixedHeight = !boxChild.GetBox()!.Height.IsAuto;
+            }
+            
+            var childConstraints = childHasFixedHeight
+                ? new LayoutConstraints(finalWidth, finalWidth, constraints.MinHeight, constraints.MaxHeight)
+                : new LayoutConstraints(finalWidth, finalWidth, layout.Height, layout.Height);
             child.CalculateLayout(childConstraints);
             
             // Center children vertically if they're smaller than the container

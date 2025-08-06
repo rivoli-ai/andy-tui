@@ -158,7 +158,8 @@ public class BoxInstance : ViewInstance
                 else
                 {
                     // For empty auto-sized boxes, use padding as minimum size
-                    layout.Width = _box.Padding.Left.Value + _box.Padding.Right.Value;
+                    var paddingWidth = _box.Padding.Left.Value + _box.Padding.Right.Value;
+                    layout.Width = paddingWidth;
                 }
                 
                 // Apply min/max constraints
@@ -177,7 +178,8 @@ public class BoxInstance : ViewInstance
                 else
                 {
                     // For empty auto-sized boxes, use padding as minimum size
-                    layout.Height = _box.Padding.Top.Value + _box.Padding.Bottom.Value;
+                    var paddingHeight = _box.Padding.Top.Value + _box.Padding.Bottom.Value;
+                    layout.Height = paddingHeight;
                 }
                 
                 // Apply min/max constraints
