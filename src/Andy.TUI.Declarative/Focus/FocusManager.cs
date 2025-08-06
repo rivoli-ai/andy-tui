@@ -24,12 +24,6 @@ public class FocusManager
         if (!_focusableComponents.Contains(component))
         {
             _focusableComponents.Add(component);
-            
-            // Auto-focus first focusable component
-            if (_focusedComponent == null && component.CanFocus)
-            {
-                SetFocus(component);
-            }
         }
     }
     
