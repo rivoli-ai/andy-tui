@@ -313,7 +313,15 @@ public class BoxInstance : ViewInstance
             {
                 var shrinkProportion = (naturalSize * flexShrink) / totalWeightedFlexShrink;
                 var shrinkValue = shrinkAmount * shrinkProportion;
-                var finalSize = Math.Max(0, naturalSize - shrinkValue);
+                
+                // Respect MinWidth constraint for Box instances
+                float minSize = 0;
+                if (instance is BoxInstance boxChild && boxChild._box != null && !boxChild._box.MinWidth.IsAuto)
+                {
+                    minSize = boxChild._box.MinWidth.ToPixels(isRow ? availableMainSize : crossAxisSize);
+                }
+                
+                var finalSize = Math.Max(minSize, naturalSize - shrinkValue);
                 finalSizes.Add(finalSize);
             }
         }
@@ -433,13 +441,21 @@ public class BoxInstance : ViewInstance
         var availableSize = isRow ? parentLayout.Width : parentLayout.Height;
         var remainingSpace = availableSize - totalMainSize;
         
-        if (remainingSpace <= 0) return;
+        // Get the gap that was already applied during positioning
+        var gap = _box.Gap > 0 ? _box.Gap : (isRow ? _box.ColumnGap : _box.RowGap);
+        
+        // For FlexStart with no remaining space, don't reposition (gap already applied)
+        if (_box.JustifyContent == JustifyContent.FlexStart && remainingSpace <= 0) return;
         
         float offset = 0;
         float spacing = 0;
         
         switch (_box.JustifyContent)
         {
+            case JustifyContent.FlexStart:
+                // FlexStart with remaining space - no offset, preserve gap
+                spacing = 0;
+                break;
             case JustifyContent.FlexEnd:
                 offset = remainingSpace;
                 break;
@@ -477,7 +493,14 @@ public class BoxInstance : ViewInstance
                 child.Layout.Y = currentPos;
             }
             
-            currentPos += childSize + spacing;
+            // For non-FlexStart justifications, use justification spacing
+            // For FlexStart, preserve the original gap
+            var effectiveSpacing = _box.JustifyContent == JustifyContent.FlexStart ? gap : spacing;
+            currentPos += childSize;
+            if (i < _childInstances.Count - 1)
+            {
+                currentPos += effectiveSpacing;
+            }
         }
     }
     

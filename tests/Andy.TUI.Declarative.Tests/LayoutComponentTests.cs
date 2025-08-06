@@ -279,7 +279,7 @@ public class LayoutComponentTests
         
         // Spacer should fill the gap
         Assert.True(spacer.Layout.Width > 0);
-        Assert.True(spacer.Layout.X > start.Layout.X + start.Layout.Width);
+        Assert.True(spacer.Layout.X >= start.Layout.X + start.Layout.Width);
         Assert.True(spacer.Layout.X + spacer.Layout.Width <= end.Layout.X);
     }
     

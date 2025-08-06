@@ -227,9 +227,10 @@ public class HStackInstance : ViewInstance
             var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) = childInfos[i];
             
             // Recalculate child with final width constraint
+            // For HStack (row layout), children should fill the container height by default
             var childConstraints = new LayoutConstraints(
                 finalWidth, finalWidth,
-                constraints.MinHeight, constraints.MaxHeight
+                layout.Height, layout.Height
             );
             child.CalculateLayout(childConstraints);
             
