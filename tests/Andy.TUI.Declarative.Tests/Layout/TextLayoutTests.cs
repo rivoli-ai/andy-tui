@@ -125,7 +125,7 @@ public class TextLayoutTests
         
         // Assert
         LayoutTestHelper.AssertNotInfinite(result.RootLayout.Width, "Width should not be infinite");
-        Assert.Equal(52, result.RootLayout.Width); // Full text width
+        Assert.Equal(51, result.RootLayout.Width); // Full text width
         Assert.Equal(1, result.RootLayout.Height); // Single line
     }
     

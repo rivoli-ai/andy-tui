@@ -145,6 +145,48 @@ public class BoxInstance : ViewInstance
                     layout.Height = Math.Min(layout.Height, _box.MaxHeight.ToPixels(constraints.MaxHeight));
             }
         }
+        else
+        {
+            // Empty box with auto dimensions
+            if (_box.Width.IsAuto)
+            {
+                // If we have tight constraints, use them (likely from a flex container)
+                if (isTightWidth)
+                {
+                    layout.Width = constraints.MinWidth;
+                }
+                else
+                {
+                    // For empty auto-sized boxes, use padding as minimum size
+                    layout.Width = _box.Padding.Left.Value + _box.Padding.Right.Value;
+                }
+                
+                // Apply min/max constraints
+                if (!_box.MinWidth.IsAuto)
+                    layout.Width = Math.Max(layout.Width, _box.MinWidth.ToPixels(constraints.MaxWidth));
+                if (!_box.MaxWidth.IsAuto)
+                    layout.Width = Math.Min(layout.Width, _box.MaxWidth.ToPixels(constraints.MaxWidth));
+            }
+            if (_box.Height.IsAuto)
+            {
+                // If we have tight constraints, use them (likely from a flex container)
+                if (isTightHeight)
+                {
+                    layout.Height = constraints.MinHeight;
+                }
+                else
+                {
+                    // For empty auto-sized boxes, use padding as minimum size
+                    layout.Height = _box.Padding.Top.Value + _box.Padding.Bottom.Value;
+                }
+                
+                // Apply min/max constraints
+                if (!_box.MinHeight.IsAuto)
+                    layout.Height = Math.Max(layout.Height, _box.MinHeight.ToPixels(constraints.MaxHeight));
+                if (!_box.MaxHeight.IsAuto)
+                    layout.Height = Math.Min(layout.Height, _box.MaxHeight.ToPixels(constraints.MaxHeight));
+            }
+        }
         
         return layout;
     }
@@ -368,11 +410,15 @@ public class BoxInstance : ViewInstance
             }
         }
         
-        // Calculate total size of children (without gaps) for justification
+        // Calculate total size of children including gaps for justification
         var totalChildrenSize = 0f;
         for (int i = 0; i < finalSizes.Count; i++)
         {
             totalChildrenSize += finalSizes[i];
+            if (i < finalSizes.Count - 1)
+            {
+                totalChildrenSize += gap;
+            }
         }
         
         // Apply justification and alignment
@@ -414,19 +460,24 @@ public class BoxInstance : ViewInstance
                 break;
         }
         
-        // Apply offset and spacing
-        foreach (var child in _childInstances)
+        // Reposition children based on justification
+        float currentPos = offset;
+        
+        for (int i = 0; i < _childInstances.Count; i++)
         {
+            var child = _childInstances[i];
+            var childSize = isRow ? child.Layout.Width : child.Layout.Height;
+            
             if (isRow)
             {
-                child.Layout.X += offset;
-                offset += spacing;
+                child.Layout.X = currentPos;
             }
             else
             {
-                child.Layout.Y += offset;
-                offset += spacing;
+                child.Layout.Y = currentPos;
             }
+            
+            currentPos += childSize + spacing;
         }
     }
     

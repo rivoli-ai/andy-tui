@@ -44,12 +44,26 @@ public class TextInstance : ViewInstance
     
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
-        var maxWidth = _maxWidth.HasValue 
-            ? Math.Min(_maxWidth.Value, (int)constraints.MaxWidth) 
+        // Handle infinite constraints - don't wrap if we have infinite space
+        var effectiveMaxWidth = float.IsPositiveInfinity(constraints.MaxWidth) 
+            ? int.MaxValue 
             : (int)constraints.MaxWidth;
+            
+        var maxWidth = _maxWidth.HasValue 
+            ? Math.Min(_maxWidth.Value, effectiveMaxWidth) 
+            : effectiveMaxWidth;
         
         // Apply text wrapping
         _wrappedLines = WrapText(_content, maxWidth, _wrap);
+        
+        // Apply truncation if enabled and maxWidth is specified
+        if (_truncationMode != TruncationMode.None && _maxWidth.HasValue)
+        {
+            for (int i = 0; i < _wrappedLines.Count; i++)
+            {
+                _wrappedLines[i] = ApplyTruncation(_wrappedLines[i], maxWidth);
+            }
+        }
         
         // Apply max lines constraint
         if (_maxLines.HasValue && _wrappedLines.Count > _maxLines.Value)
@@ -57,7 +71,7 @@ public class TextInstance : ViewInstance
             _wrappedLines = _wrappedLines.Take(_maxLines.Value).ToList();
             
             // Apply truncation to the last line if needed
-            if (_wrappedLines.Count > 0)
+            if (_wrappedLines.Count > 0 && _truncationMode != TruncationMode.None)
             {
                 var lastIndex = _wrappedLines.Count - 1;
                 _wrappedLines[lastIndex] = ApplyTruncation(_wrappedLines[lastIndex], maxWidth);
@@ -70,9 +84,10 @@ public class TextInstance : ViewInstance
             : 0;
         var height = _wrappedLines.Count;
         
-        // If maxWidth is specified, use it as the layout width
-        // Otherwise use the actual content width
-        var width = _maxWidth.HasValue ? maxWidth : contentWidth;
+        // For wrapped text, if any line would have exceeded maxWidth, use maxWidth as layout width
+        // This ensures proper alignment and space usage when text wraps
+        var wouldExceedWidth = _wrap != TextWrap.NoWrap && _content.Length > maxWidth;
+        var width = wouldExceedWidth ? maxWidth : contentWidth;
         
         var layout = new LayoutBox
         {
@@ -138,6 +153,9 @@ public class TextInstance : ViewInstance
     
     private List<string> WrapText(string text, int maxWidth, TextWrap wrap)
     {
+        // Expand tabs to spaces (4 spaces per tab)
+        text = text.Replace("\t", "    ");
+        
         // First split by newlines
         var inputLines = text.Split('\n');
         var allLines = new List<string>();

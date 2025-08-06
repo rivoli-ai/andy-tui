@@ -437,12 +437,14 @@ public class StackLayoutTests
         var children = stackInstance!.GetChildInstances();
         Assert.Equal(3, children.Count);
         
-        // Each child should have non-zero dimensions
-        foreach (var child in children)
-        {
-            Assert.True(child.Layout.Width > 0);
-            Assert.True(child.Layout.Height > 0);
-        }
+        // Text children should have non-zero dimensions
+        // Empty Box should be 0x0
+        Assert.True(children[0].Layout.Width > 0); // Text
+        Assert.True(children[0].Layout.Height > 0);
+        Assert.True(children[1].Layout.Width > 0); // Text  
+        Assert.True(children[1].Layout.Height > 0);
+        Assert.Equal(0, children[2].Layout.Width); // Empty Box
+        Assert.Equal(0, children[2].Layout.Height);
     }
     
     [Fact]
@@ -507,13 +509,14 @@ public class StackLayoutTests
         // Stack should be constrained to 300 height
         Assert.Equal(300, result.RootLayout.Height);
         
-        // Children should still be positioned even if they overflow
+        // Children should shrink proportionally to fit
         var stackInstance = root as VStackInstance;
         var children = stackInstance!.GetChildInstances();
         
+        // With flexShrink=1 (default), each child shrinks from 150 to 100
         Assert.Equal(0, children[0].Layout.Y);
-        Assert.Equal(150, children[1].Layout.Y);
-        Assert.Equal(300, children[2].Layout.Y); // This will be clipped/overflow
+        Assert.Equal(100, children[1].Layout.Y);
+        Assert.Equal(200, children[2].Layout.Y);
     }
     
     [Fact]

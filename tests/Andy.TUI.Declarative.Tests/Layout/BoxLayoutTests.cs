@@ -478,7 +478,7 @@ public class BoxLayoutTests
             (JustifyContent.Center, new[] { 75f, 125f, 175f }),
             (JustifyContent.SpaceBetween, new[] { 0f, 125f, 250f }),
             (JustifyContent.SpaceAround, new[] { 25f, 125f, 225f }),
-            (JustifyContent.SpaceEvenly, new[] { 75f, 150f, 225f })
+            (JustifyContent.SpaceEvenly, new[] { 37.5f, 125f, 212.5f })
         };
         
         foreach (var (justifyContent, expectedPositions) in scenarios)
