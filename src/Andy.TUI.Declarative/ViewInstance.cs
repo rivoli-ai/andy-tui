@@ -186,6 +186,19 @@ public class ViewInstanceManager
     }
     
     /// <summary>
+    /// Clears the instance cache to force recreation of all components.
+    /// </summary>
+    public void ClearCache()
+    {
+        // Dispose all cached instances
+        foreach (var instance in _instances.Values)
+        {
+            instance.Dispose();
+        }
+        _instances.Clear();
+    }
+    
+    /// <summary>
     /// Creates a new view instance for the given declaration.
     /// </summary>
     private ViewInstance CreateInstance(ISimpleComponent viewDeclaration, string id)

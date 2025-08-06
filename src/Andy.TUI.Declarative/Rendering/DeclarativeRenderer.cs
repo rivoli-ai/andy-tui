@@ -41,9 +41,6 @@ public class DeclarativeRenderer
         inputHandler.KeyPressed += OnKeyPressed;
         inputHandler.Start();
         
-        // Create the root component once
-        var root = createRoot();
-        
         try
         {
             while (true)
@@ -51,6 +48,8 @@ public class DeclarativeRenderer
                 if (_needsRender)
                 {
                     _logger.Debug("Render requested, executing render cycle");
+                    // Recreate the root component tree on each render to capture fresh state
+                    var root = createRoot();
                     Render(root);
                     _needsRender = false;
                 }
@@ -93,9 +92,18 @@ public class DeclarativeRenderer
         var newTree = rootInstance.Render();
         _logger.Debug("Virtual DOM rendered");
         
-        // For now, always do a full render until patch application is fixed
-        _logger.Debug("Performing full render");
-        _virtualDomRenderer.Render(newTree);
+        // Apply diff-based rendering
+        if (_previousTree == null)
+        {
+            _logger.Debug("Performing initial full render");
+            _virtualDomRenderer.Render(newTree);
+        }
+        else
+        {
+            _logger.Debug("Performing diff-based render");
+            var patches = _diffEngine.Diff(_previousTree, newTree);
+            _virtualDomRenderer.ApplyPatches(patches);
+        }
         
         // Force the rendering system to flush changes to screen
         if (_renderingSystem is RenderingSystem rs)

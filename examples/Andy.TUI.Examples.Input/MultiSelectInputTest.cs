@@ -15,9 +15,9 @@ namespace Andy.TUI.Examples.Input;
 
 class MultiSelectInputTestApp
 {
-    private HashSet<string> selectedLanguages = new() { "C#", "TypeScript" };
-    private HashSet<string> selectedColors = new();
-    private HashSet<int> selectedNumbers = new();
+    private ISet<string> selectedLanguages = new HashSet<string> { "C#", "TypeScript" };
+    private ISet<string> selectedColors = new HashSet<string>();
+    private ISet<int> selectedNumbers = new HashSet<int>();
     
     public void Run()
     {
@@ -47,7 +47,7 @@ class MultiSelectInputTestApp
                     new Box {
                         new MultiSelectInput<string>(
                             languages,
-                            new Binding<ISet<string>>(() => selectedLanguages, v => { selectedLanguages = (HashSet<string>)v; })
+                            this.Bind(() => selectedLanguages)
                         )
                     }
                     .WithPadding(1),
@@ -56,11 +56,12 @@ class MultiSelectInputTestApp
                 },
                 
                 new VStack {
+                    
                     new Text("Favorite Colors:").Bold(),
                     new Box {
                         new MultiSelectInput<string>(
                             colors,
-                            new Binding<ISet<string>>(() => selectedColors, v => { selectedColors = (HashSet<string>)v; }),
+                            this.Bind(() => selectedColors),
                             checkedMark: "[✓]",
                             uncheckedMark: "[ ]"
                         )
@@ -75,7 +76,7 @@ class MultiSelectInputTestApp
                     new Box {
                         new MultiSelectInput<int>(
                             numbers,
-                            new Binding<ISet<int>>(() => selectedNumbers, v => { selectedNumbers = (HashSet<int>)v; }),
+                            this.Bind(() => selectedNumbers),
                             item => $"Number {item}"
                         )
                     }
@@ -88,7 +89,7 @@ class MultiSelectInputTestApp
             new Newline(),
             new Text("Real-world Example: Task Selection").Bold().Color(Color.Yellow),
             new Box {
-                new TaskSelector()
+                CreateTaskSelector()
             }
             .WithPadding(1),
             
@@ -96,9 +97,38 @@ class MultiSelectInputTestApp
             new Text("Press Ctrl+C to exit...").Color(Color.DarkGray)
         };
     }
+    
+    private ISet<TaskSelector.Task> selectedTasks = new HashSet<TaskSelector.Task>();
+    
+    private ISimpleComponent CreateTaskSelector()
+    {
+        var tasks = new[]
+        {
+            new TaskSelector.Task("Fix login bug", "High", "Open"),
+            new TaskSelector.Task("Update documentation", "Medium", "Open"),
+            new TaskSelector.Task("Refactor database layer", "Low", "Open"),
+            new TaskSelector.Task("Add unit tests", "High", "In Progress"),
+            new TaskSelector.Task("Deploy to staging", "Medium", "Blocked")
+        };
+        
+        return new HStack(spacing: 2) {
+            new MultiSelectInput<TaskSelector.Task>(
+                tasks,
+                this.Bind(() => selectedTasks),
+                task => $"{task.Name} [{task.Priority}] - {task.Status}"
+            ),
+            new VStack {
+                new Text("Selected Tasks:").Bold(),
+                new Newline(),
+                selectedTasks.Count == 0 
+                    ? new Text("No tasks selected").Color(Color.DarkGray)
+                    : new Text($"Selected: {string.Join(", ", selectedTasks.Select(t => t.Name))}")
+            }
+        };
+    }
 }
 
-class TaskSelector : ISimpleComponent
+class TaskSelector
 {
     public class Task
     {
@@ -116,36 +146,7 @@ class TaskSelector : ISimpleComponent
         public override string ToString() => Name;
     }
     
-    private HashSet<Task> selectedTasks = new();
-    
-    public VirtualNode Render()
-    {
-        var tasks = new[]
-        {
-            new Task("Fix login bug", "High", "Open"),
-            new Task("Update documentation", "Medium", "Open"),
-            new Task("Refactor database layer", "Low", "Open"),
-            new Task("Add unit tests", "High", "In Progress"),
-            new Task("Deploy to staging", "Medium", "Blocked")
-        };
-        
-        return new HStack(spacing: 2) {
-            new MultiSelectInput<Task>(
-                tasks,
-                new Binding<ISet<Task>>(() => selectedTasks, v => { selectedTasks = (HashSet<Task>)v; }),
-                task => $"{task.Name} [{task.Priority}] - {task.Status}"
-            ),
-            new VStack {
-                new Text("Selected Tasks:").Bold(),
-                new Newline(),
-                selectedTasks.Count == 0 
-                    ? new Text("No tasks selected").Color(Color.DarkGray)
-                    : new Text($"Selected: {string.Join(", ", selectedTasks.Select(t => t.Name))}")
-            }
-        }.Render();
-    }
-    
-    private Color GetPriorityColor(string priority) => priority switch
+    private static Color GetPriorityColor(string priority) => priority switch
     {
         "High" => Color.Red,
         "Medium" => Color.Yellow,

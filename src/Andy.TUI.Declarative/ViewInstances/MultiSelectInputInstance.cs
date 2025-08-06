@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Terminal;
@@ -21,6 +22,7 @@ public class MultiSelectInputInstance<T> : ViewInstance, IFocusable
     private string _checkedMark = "[×]";
     private string _uncheckedMark = "[ ]";
     private int _currentIndex = 0;
+    private IDisposable? _bindingSubscription;
     
     public MultiSelectInputInstance(string id) : base(id)
     {
@@ -39,6 +41,16 @@ public class MultiSelectInputInstance<T> : ViewInstance, IFocusable
         _itemRenderer = multiSelect.GetItemRenderer();
         _checkedMark = multiSelect.GetCheckedMark();
         _uncheckedMark = multiSelect.GetUncheckedMark();
+        
+        // Subscribe to binding changes
+        if (_selectedItemsBinding != null)
+        {
+            // Unsubscribe from old binding
+            _bindingSubscription?.Dispose();
+            
+            // Subscribe to new binding
+            _bindingSubscription = new BindingSubscription<ISet<T>>(_selectedItemsBinding, () => InvalidateView());
+        }
         
         // If items changed, validate current index
         if (itemsChanged && _currentIndex >= _items.Count)
@@ -226,6 +238,36 @@ public class MultiSelectInputInstance<T> : ViewInstance, IFocusable
                 
             default:
                 return false;
+        }
+    }
+    
+    public override void Dispose()
+    {
+        _bindingSubscription?.Dispose();
+        base.Dispose();
+    }
+    
+    // Helper class for binding subscriptions
+    private class BindingSubscription<TValue> : IDisposable
+    {
+        private readonly Binding<TValue> _binding;
+        private readonly Action _callback;
+        
+        public BindingSubscription(Binding<TValue> binding, Action callback)
+        {
+            _binding = binding;
+            _callback = callback;
+            _binding.PropertyChanged += OnPropertyChanged;
+        }
+        
+        private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            _callback();
+        }
+        
+        public void Dispose()
+        {
+            _binding.PropertyChanged -= OnPropertyChanged;
         }
     }
 }

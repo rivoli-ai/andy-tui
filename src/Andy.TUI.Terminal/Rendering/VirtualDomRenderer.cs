@@ -276,18 +276,42 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     {
         if (_renderedElements.TryGetValue(patch.Path, out var element))
         {
+            // Mark old position as dirty (for clearing)
             _dirtyRegionTracker.MarkDirty(new Rectangle(element.X, element.Y, element.Width, element.Height));
             
-            // Update props
+            // Track if position or size properties changed
+            bool positionChanged = false;
+            int newX = element.X, newY = element.Y;
+            int newWidth = element.Width, newHeight = element.Height;
+            
+            // Update props and check for position/size changes
             foreach (var (key, value) in patch.PropsToSet)
             {
                 element.Node.Props[key] = value;
+                
+                // Check for position/size property changes
+                if (key == "x" && value is int x) { newX = x; positionChanged = true; }
+                else if (key == "y" && value is int y) { newY = y; positionChanged = true; }
+                else if (key == "width" && value is int w) { newWidth = w; positionChanged = true; }
+                else if (key == "height" && value is int h) { newHeight = h; positionChanged = true; }
             }
             
             // Remove props
             foreach (var key in patch.PropsToRemove)
             {
                 element.Node.Props.Remove(key);
+            }
+            
+            // If position/size changed, update element and mark new area as dirty
+            if (positionChanged)
+            {
+                element.X = newX;
+                element.Y = newY; 
+                element.Width = newWidth;
+                element.Height = newHeight;
+                
+                // Mark new position as dirty (for rendering)
+                _dirtyRegionTracker.MarkDirty(new Rectangle(newX, newY, newWidth, newHeight));
             }
         }
     }
