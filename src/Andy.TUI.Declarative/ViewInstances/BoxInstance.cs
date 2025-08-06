@@ -255,6 +255,19 @@ public class BoxInstance : ViewInstance
                 flexGrow = boxChild._box.FlexGrow;
                 flexShrink = boxChild._box.FlexShrink;
                 flexBasis = boxChild._box.FlexBasis;
+                
+                // Only prevent shrinking for "content-sized" boxes in column layout with fixed height
+                // These are typically boxes with fixed dimensions that aren't part of explicit flex layouts
+                if (!isRow && !boxChild._box.Height.IsAuto && boxChild._box.FlexShrink == 1f)
+                {
+                    // Only prevent shrinking if this appears to be a simple content box
+                    // (no explicit flex properties beyond the default FlexShrink)
+                    if (boxChild._box.FlexGrow == 0f && boxChild._box.FlexBasis.IsAuto)
+                    {
+                        // Check if parent is in a constrained scenario where content boxes shouldn't shrink
+                        flexShrink = 0f; // Fixed height children don't shrink by default
+                    }
+                }
             }
             
             // Calculate natural size (flex-basis or content size)

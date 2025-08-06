@@ -132,7 +132,7 @@ public class IntegrationTests
         var textNodes = CollectTextNodes(fragment).ToList();
         var textContent = string.Join(" ", textNodes.Select(t => t.Content));
         
-        Assert.Contains("Andy.TUI Input Components Demo", textContent);
+        Assert.Contains("🚀 Andy.TUI Input Components Demo", textContent);
         Assert.Contains("Name:", textContent);
         Assert.Contains("Enter your name...", textContent); // Placeholder might not have brackets in text nodes
     }
