@@ -3,9 +3,9 @@ using System;
 
 // Z-Index Examples Launcher
 Console.WriteLine("Z-Index Examples:");
-Console.WriteLine("1. TabView Example");
-Console.WriteLine("2. Modal Example");
-Console.WriteLine("3. Complex Layered Example");
+Console.WriteLine("1. Minimal Z-Index Example");
+Console.WriteLine("2. Simple TabView Example");
+Console.WriteLine("3. TabView Working Example");
 Console.WriteLine();
 Console.Write("Select example (1-3): ");
 
@@ -14,13 +14,13 @@ var choice = Console.ReadLine();
 switch (choice)
 {
     case "1":
-        RunExample(TabViewExample.Create(), "TabView Z-Index Example");
+        RunExample(MinimalZIndexExample.Create(), "Minimal Z-Index Example");
         break;
     case "2":
-        RunExample(ModalExample.Create(), "Modal Z-Index Example");
+        RunExample(SimpleTabViewExample.Create(), "Simple TabView Example");
         break;
     case "3":
-        RunExample(ComplexLayeredExample.Create(), "Complex Layered Example");
+        RunExample(TabViewWorkingExample.Create(), "TabView Working Example");
         break;
     default:
         Console.WriteLine("Invalid choice");
@@ -29,6 +29,11 @@ switch (choice)
 
 static void RunExample(Andy.TUI.Declarative.ISimpleComponent component, string title)
 {
-    using var app = new Andy.TUI.Terminal.TerminalApp();
-    app.RunDeclarative(component);
+    var terminal = new Andy.TUI.Terminal.AnsiTerminal();
+    using var renderingSystem = new Andy.TUI.Terminal.RenderingSystem(terminal);
+    var renderer = new Andy.TUI.Declarative.Rendering.DeclarativeRenderer(renderingSystem);
+    
+    renderingSystem.Initialize();
+    
+    renderer.Run(() => component);
 }

@@ -248,6 +248,11 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         // Their children are already handled by the render tree
     }
     
+    public void VisitEmpty(EmptyNode node)
+    {
+        // Empty nodes render nothing
+    }
+    
     public void VisitClipping(ClippingNode node)
     {
         // Clipping nodes constrain their children to a rectangular area

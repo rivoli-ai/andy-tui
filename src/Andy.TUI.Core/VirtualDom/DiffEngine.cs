@@ -63,6 +63,10 @@ public class DiffEngine
             case VirtualNodeType.Component:
                 DiffComponentNodes((ComponentNode)oldNode, (ComponentNode)newNode, path, patches);
                 break;
+                
+            case VirtualNodeType.Empty:
+                // Empty nodes are immutable, nothing to diff
+                break;
         }
     }
     

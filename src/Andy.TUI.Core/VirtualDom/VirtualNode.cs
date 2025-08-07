@@ -73,7 +73,12 @@ public enum VirtualNodeType
     /// <summary>
     /// A clipping node that constrains children to a rectangular area.
     /// </summary>
-    Clipping
+    Clipping,
+    
+    /// <summary>
+    /// An empty node that renders nothing.
+    /// </summary>
+    Empty
 }
 
 /// <summary>
@@ -86,4 +91,5 @@ public interface IVirtualNodeVisitor
     void VisitComponent(ComponentNode node);
     void VisitFragment(FragmentNode node);
     void VisitClipping(ClippingNode node);
+    void VisitEmpty(EmptyNode node);
 }

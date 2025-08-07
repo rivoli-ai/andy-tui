@@ -20,6 +20,7 @@ public class DeclarativeRenderer
     private readonly ILogger _logger;
     private VirtualNode? _previousTree;
     private bool _needsRender = true;
+    private bool _hasSetInitialFocus = false;
     
     public DeclarativeRenderer(IRenderingSystem renderingSystem, object? owner = null)
     {
@@ -88,6 +89,10 @@ public class DeclarativeRenderer
         rootInstance.Layout.AbsoluteY = 0;
         _logger.Debug("Set root absolute position to (0, 0)");
         
+        // Update absolute z-indices from root
+        rootInstance.UpdateAbsoluteZIndex(0);
+        _logger.Debug("Updated absolute z-indices");
+        
         // Render the virtual DOM from instances
         var newTree = rootInstance.Render();
         _logger.Debug("Virtual DOM rendered");
@@ -119,6 +124,16 @@ public class DeclarativeRenderer
         
         _previousTree = newTree;
         _logger.Debug("Render complete");
+        
+        // Set initial focus if not already done
+        if (!_hasSetInitialFocus)
+        {
+            _logger.Debug("Setting initial focus");
+            _context.FocusManager.MoveFocus(Focus.FocusDirection.Next);
+            _hasSetInitialFocus = true;
+            _logger.Debug("Initial focus set to: {0}", 
+                _context.FocusManager.FocusedComponent?.GetType().Name ?? "null");
+        }
     }
     
     private void OnKeyPressed(object? sender, KeyEventArgs e)

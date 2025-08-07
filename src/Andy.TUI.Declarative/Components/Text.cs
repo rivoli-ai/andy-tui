@@ -23,17 +23,62 @@ public class Text : ISimpleComponent
 
     public Text Color(Color color)
     {
-        return new Text(_content) { _style = _style.WithForegroundColor(color) };
+        return new Text(_content) 
+        { 
+            _style = _style.WithForegroundColor(color),
+            _wrap = _wrap,
+            _maxLines = _maxLines,
+            _truncationMode = _truncationMode,
+            _maxWidth = _maxWidth
+        };
     }
 
     public Text Bold()
     {
-        return new Text(_content) { _style = _style.WithBold(true) };
+        return new Text(_content) 
+        { 
+            _style = _style.WithBold(true),
+            _wrap = _wrap,
+            _maxLines = _maxLines,
+            _truncationMode = _truncationMode,
+            _maxWidth = _maxWidth
+        };
     }
 
     public Text Title()
     {
-        return new Text(_content) { _style = _style.WithBold(true).WithForegroundColor(Terminal.Color.White) };
+        return new Text(_content) 
+        { 
+            _style = _style.WithBold(true).WithForegroundColor(Terminal.Color.White),
+            _wrap = _wrap,
+            _maxLines = _maxLines,
+            _truncationMode = _truncationMode,
+            _maxWidth = _maxWidth
+        };
+    }
+
+    public Text Dim()
+    {
+        return new Text(_content) 
+        { 
+            _style = _style.WithDim(true),
+            _wrap = _wrap,
+            _maxLines = _maxLines,
+            _truncationMode = _truncationMode,
+            _maxWidth = _maxWidth
+        };
+    }
+
+    public Text Underline()
+    {
+        return new Text(_content) 
+        { 
+            _style = _style.WithUnderline(true),
+            _wrap = _wrap,
+            _maxLines = _maxLines,
+            _truncationMode = _truncationMode,
+            _maxWidth = _maxWidth
+        };
     }
 
     public Text Center()

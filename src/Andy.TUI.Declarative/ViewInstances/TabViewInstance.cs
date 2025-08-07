@@ -7,6 +7,7 @@ using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.Focus;
 using Andy.TUI.Core.Rendering;
+using Andy.TUI.Core.Diagnostics;
 using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative.ViewInstances;
@@ -21,6 +22,7 @@ public class TabViewInstance : ViewInstance, IFocusable
     private readonly List<ViewInstance> _contentInstances = new();
     private int _selectedIndex;
     private bool _hasFocus;
+    private readonly ILogger _logger;
     
     // Z-index constants for tab layering
     private const int UnselectedTabZIndex = 1;
@@ -31,8 +33,10 @@ public class TabViewInstance : ViewInstance, IFocusable
     {
         _tabView = tabView ?? throw new ArgumentNullException(nameof(tabView));
         _selectedIndex = Math.Clamp(tabView.SelectedIndex, 0, Math.Max(0, tabView.Tabs.Count - 1));
+        _logger = DebugContext.Logger.ForCategory("TabViewInstance");
         
         // Note: Child instances will be created during OnUpdate
+        _logger.Debug("Created TabViewInstance with {0} tabs", tabView.Tabs.Count);
     }
     
     #region Tab Selection
@@ -117,114 +121,112 @@ public class TabViewInstance : ViewInstance, IFocusable
         if (_tabView.Tabs.Count == 0)
             return Fragment();
             
-        var elements = new List<VirtualNode>();
+        var childElements = new List<VirtualNode>();
         
-        // Calculate layout for headers
-        var headerHeight = 3; // Fixed height for tab headers
-        var headerY = 0;
-        var contentY = headerHeight;
-        
-        // Available space for content
-        var contentHeight = Math.Max(0, layout.ContentHeight - headerHeight);
-        
-        // Layout and render tab headers
-        var headerX = 0;
+        // Render all tab headers
         for (int i = 0; i < _headerInstances.Count; i++)
         {
             var header = _headerInstances[i];
-            var tab = _tabView.Tabs[i];
-            var isSelected = i == _selectedIndex;
             
-            // Calculate header width - fixed width for now
-            var headerWidth = 15; // Fixed width for tab headers
+            // Update header's absolute position (calculated in PerformLayout)
+            header.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(header.Layout.X);
+            header.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(header.Layout.Y);
             
-            // Arrange header
-            var headerLayout = new LayoutBox
-            {
-                X = headerX,
-                Y = headerY,
-                Width = headerWidth,
-                Height = headerHeight,
-                AbsoluteX = layout.AbsoluteX + headerX,
-                AbsoluteY = layout.AbsoluteY + headerY
-            };
+            // Update z-index based on selection
+            header.RelativeZIndex = i == _selectedIndex ? SelectedTabZIndex : UnselectedTabZIndex;
             
-            // Layout will be calculated in PerformLayout
-            
-            // Create header wrapper with selection styling
-            var headerContent = header.Render();
-            // Create header wrapper with selection styling
-            var headerNode = Fragment(headerContent);
-            
-            elements.Add(headerNode);
-            headerX += headerWidth + 1; // 1 char spacing
+            // Render header with its layout
+            var headerNode = header.Render();
+            childElements.Add(headerNode);
         }
         
-        // Layout and render selected content
+        // Render selected content
         if (_selectedIndex < _contentInstances.Count)
         {
             var content = _contentInstances[_selectedIndex];
             
-            // Arrange content
-            var contentLayout = new LayoutBox
-            {
-                X = 0,
-                Y = contentY,
-                Width = layout.ContentWidth,
-                Height = contentHeight,
-                AbsoluteX = layout.AbsoluteX,
-                AbsoluteY = layout.AbsoluteY + contentY
-            };
+            // Update content's absolute position (calculated in PerformLayout)
+            content.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(content.Layout.X);
+            content.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(content.Layout.Y);
             
-            // Layout will be calculated in PerformLayout
+            // Set higher z-index for content
+            content.RelativeZIndex = TabContentZIndex;
             
-            // Render content with appropriate z-index
+            // Render content with its layout
             var contentNode = content.Render();
-            if (contentNode is ElementNode elem)
-            {
-                var props = new Dictionary<string, object?>(elem.Props)
-                {
-                    ["z-index"] = AbsoluteZIndex + TabContentZIndex
-                };
-                contentNode = new ElementNode(elem.TagName, props, elem.Children.ToArray());
-            }
-            
-            elements.Add(contentNode);
+            childElements.Add(contentNode);
         }
         
-        return Fragment(elements.ToArray());
+        return Fragment(childElements.ToArray());
     }
     
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
         var layout = new LayoutBox();
         
+        if (_tabView.Tabs.Count == 0)
+        {
+            layout.Width = 0;
+            layout.Height = 0;
+            return layout;
+        }
+        
         // Fixed header height
         var headerHeight = 3;
+        var headerY = 0;
+        var contentY = headerHeight;
         
-        // Measure headers
-        var headerWidth = 0f;
-        foreach (var header in _headerInstances)
+        // Calculate available space for content
+        var contentMaxHeight = Math.Max(0, constraints.MaxHeight - headerHeight);
+        
+        // First pass: measure and position headers
+        var headerX = 0f;
+        var totalHeaderWidth = 0f;
+        
+        for (int i = 0; i < _headerInstances.Count; i++)
         {
-            var headerConstraints = LayoutConstraints.Loose(20, headerHeight);
+            var header = _headerInstances[i];
+            var isSelected = i == _selectedIndex;
+            
+            // Create wrapper for header with selection indicator
+            var headerConstraints = LayoutConstraints.Tight(15, headerHeight); // Fixed size headers
             header.CalculateLayout(headerConstraints);
-            headerWidth += Math.Max(10, header.Layout.Width + 4) + 1; // Min width + spacing
+            
+            // Position header
+            header.Layout.X = headerX;
+            header.Layout.Y = headerY;
+            
+            headerX += header.Layout.Width + 1; // 1 char spacing between tabs
+            totalHeaderWidth = headerX - 1; // Don't count last spacing
         }
         
-        // Measure selected content
+        // Second pass: measure and position all content (but only selected will be rendered)
+        var contentWidth = constraints.MaxWidth;
         var contentHeight = 0f;
-        if (_selectedIndex < _contentInstances.Count)
+        
+        // Calculate layout for all content instances
+        for (int i = 0; i < _contentInstances.Count; i++)
         {
-            var contentConstraints = LayoutConstraints.Loose(
-                constraints.MaxWidth,
-                Math.Max(0, constraints.MaxHeight - headerHeight)
-            );
-            _contentInstances[_selectedIndex].CalculateLayout(contentConstraints);
-            contentHeight = _contentInstances[_selectedIndex].Layout.Height;
+            var content = _contentInstances[i];
+            
+            // Content gets full width and remaining height
+            var contentConstraints = LayoutConstraints.Loose(contentWidth, contentMaxHeight);
+            content.CalculateLayout(contentConstraints);
+            
+            // Position content below headers
+            content.Layout.X = 0;
+            content.Layout.Y = contentY;
+            
+            // Track height of selected content
+            if (i == _selectedIndex)
+            {
+                contentHeight = content.Layout.Height;
+            }
         }
         
-        layout.Width = Math.Max(headerWidth, constraints.MaxWidth);
-        layout.Height = headerHeight + contentHeight;
+        // Calculate final dimensions
+        layout.Width = constraints.ConstrainWidth(Math.Max(totalHeaderWidth, contentWidth));
+        layout.Height = constraints.ConstrainHeight(headerHeight + contentHeight);
         
         return layout;
     }
@@ -242,8 +244,11 @@ public class TabViewInstance : ViewInstance, IFocusable
     public bool CanFocus => _tabView.Tabs.Count > 0;
     public bool IsFocused => _hasFocus;
     
+    public bool CanReceiveFocus => _tabView.Tabs.Count > 0;
+    
     public void OnGotFocus()
     {
+        _logger.Debug("OnGotFocus called for TabView");
         _hasFocus = true;
         InvalidateView();
     }
@@ -256,6 +261,8 @@ public class TabViewInstance : ViewInstance, IFocusable
     
     public bool HandleKeyPress(ConsoleKeyInfo key)
     {
+        _logger.Debug("HandleKeyPress called with key: {0}, hasFocus: {1}", key.Key, _hasFocus);
+        
         switch (key.Key)
         {
             case ConsoleKey.LeftArrow:
@@ -264,12 +271,24 @@ public class TabViewInstance : ViewInstance, IFocusable
                     SelectTab(_selectedIndex - 1);
                     return true;
                 }
+                else if (_tabView.Tabs.Count > 0)
+                {
+                    // Wrap to last tab
+                    SelectTab(_tabView.Tabs.Count - 1);
+                    return true;
+                }
                 break;
                 
             case ConsoleKey.RightArrow:
                 if (_selectedIndex < _tabView.Tabs.Count - 1)
                 {
                     SelectTab(_selectedIndex + 1);
+                    return true;
+                }
+                else if (_tabView.Tabs.Count > 0)
+                {
+                    // Wrap to first tab
+                    SelectTab(0);
                     return true;
                 }
                 break;

@@ -142,6 +142,7 @@ public class TextInstance : ViewInstance
                     .WithProp("style", _style)
                     .WithProp("x", layout.AbsoluteX)
                     .WithProp("y", layout.AbsoluteY + i)
+                    .WithProp("z-index", AbsoluteZIndex)
                     .WithChild(new TextNode(line))
                     .Build()
             );

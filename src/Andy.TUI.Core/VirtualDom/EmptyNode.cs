@@ -15,7 +15,7 @@ public class EmptyNode : VirtualNode
     /// </summary>
     public static EmptyNode Instance => _instance;
     
-    public override VirtualNodeType Type => VirtualNodeType.Fragment; // Treat as empty fragment
+    public override VirtualNodeType Type => VirtualNodeType.Empty;
     
     public override IReadOnlyList<VirtualNode> Children => _emptyChildren;
     
@@ -34,8 +34,7 @@ public class EmptyNode : VirtualNode
     
     public override void Accept(IVirtualNodeVisitor visitor)
     {
-        // Empty node doesn't need to be visited
-        visitor.VisitFragment(new FragmentNode(Array.Empty<VirtualNode>()));
+        visitor.VisitEmpty(this);
     }
     
     public override string ToString() => "EmptyNode";
