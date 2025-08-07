@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Core.Diagnostics;
 using Andy.TUI.Declarative.Components;
@@ -81,6 +82,51 @@ public abstract class ViewInstance
         _needsUpdate = true;
         Context?.RequestRender();
     }
+    
+    #region Z-Index Support
+    
+    private int _relativeZIndex = 0;
+    private int _absoluteZIndex = 0;
+    
+    /// <summary>
+    /// Gets or sets the z-index relative to the parent component.
+    /// </summary>
+    public virtual int RelativeZIndex
+    {
+        get => _relativeZIndex;
+        set => _relativeZIndex = value;
+    }
+    
+    /// <summary>
+    /// Gets the computed absolute z-index after hierarchical resolution.
+    /// </summary>
+    public virtual int AbsoluteZIndex => _absoluteZIndex;
+    
+    /// <summary>
+    /// Updates the absolute z-index based on the parent's context.
+    /// </summary>
+    /// <param name="parentAbsoluteZ">The parent's absolute z-index.</param>
+    public virtual void UpdateAbsoluteZIndex(int parentAbsoluteZ)
+    {
+        _absoluteZIndex = parentAbsoluteZ + _relativeZIndex;
+        
+        // Propagate to children if any
+        foreach (var child in GetChildren())
+        {
+            child.UpdateAbsoluteZIndex(_absoluteZIndex);
+        }
+    }
+    
+    /// <summary>
+    /// Gets the child instances for z-index propagation.
+    /// Override in container components.
+    /// </summary>
+    protected virtual IEnumerable<ViewInstance> GetChildren()
+    {
+        return Enumerable.Empty<ViewInstance>();
+    }
+    
+    #endregion
     
     /// <summary>
     /// Marks this view as needing layout recalculation.
@@ -226,6 +272,7 @@ public class ViewInstanceManager
             BigText bigText => new BigTextInstance(id),
             Slider slider => new SliderInstance(id),
             Badge badge => new BadgeInstance(id),
+            TabView tabView => new TabViewInstance(tabView),
             _ => CreateGenericInstance(viewDeclaration, id)
         };
     }

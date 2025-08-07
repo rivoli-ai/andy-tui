@@ -15,6 +15,7 @@ public readonly struct Rectangle
     
     public int Right => X + Width;
     public int Bottom => Y + Height;
+    public bool IsEmpty => Width == 0 || Height == 0;
     
     public Rectangle(int x, int y, int width, int height)
     {
@@ -67,6 +68,22 @@ public readonly struct Rectangle
     /// Calculates the area of this rectangle.
     /// </summary>
     public int Area => Width * Height;
+    
+    /// <summary>
+    /// Returns the intersection of two rectangles, or empty if they don't intersect.
+    /// </summary>
+    public static Rectangle Intersect(Rectangle a, Rectangle b)
+    {
+        int left = Math.Max(a.X, b.X);
+        int top = Math.Max(a.Y, b.Y);
+        int right = Math.Min(a.Right, b.Right);
+        int bottom = Math.Min(a.Bottom, b.Bottom);
+        
+        if (right <= left || bottom <= top)
+            return new Rectangle(0, 0, 0, 0); // Empty rectangle
+            
+        return new Rectangle(left, top, right - left, bottom - top);
+    }
     
     public override string ToString() => $"({X},{Y},{Width}x{Height})";
     
