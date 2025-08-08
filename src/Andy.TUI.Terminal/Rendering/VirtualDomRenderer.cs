@@ -44,6 +44,12 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         _renderedElements.Clear();
         _dirtyRegionTracker.Clear();
 
+        // Clear the entire render area to remove any stale content from previous frames
+        for (int y = 0; y < _renderingSystem.Height; y++)
+        {
+            _renderingSystem.FillRect(0, y, _renderingSystem.Width, 1, ' ', Style.Default);
+        }
+
         // First pass: build the render tree with positions and z-indices
         _rootElement = BuildRenderTree(tree, 0, 0, Array.Empty<int>());
 
