@@ -230,8 +230,8 @@ public class VirtualDomRendererTests
         {
             new UpdatePropsPatch(
                 new[] { 0 }, 
-                new Dictionary<string, object> { { "style", Style.Default.WithForegroundColor(Color.Yellow) } },
-                new string[0])
+                new Dictionary<string, object?> { { "style", Style.Default.WithForegroundColor(Color.Yellow) } },
+                new HashSet<string>())
         };
         
         // Act
