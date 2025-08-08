@@ -11,7 +11,7 @@ namespace Andy.TUI.Terminal.Rendering;
 public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 {
     private readonly IRenderingSystem _renderingSystem;
-    private readonly Dictionary<int[], RenderedElement> _renderedElements = new();
+    private readonly Dictionary<int[], RenderedElement> _renderedElements = new(new PathComparer());
     private readonly DirtyRegionTracker _dirtyRegionTracker = new();
     private VirtualNode? _currentTree;
     private RenderedElement? _rootElement;
@@ -59,9 +59,12 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         if (_currentTree == null)
             throw new InvalidOperationException("No tree has been rendered yet.");
         
+        Console.Error.WriteLine($"[VirtualDomRenderer] ApplyPatches: {patches.Count} patches");
+        
         // Apply patches and track dirty regions
         foreach (var patch in patches)
         {
+            Console.Error.WriteLine($"[VirtualDomRenderer] Applying patch: {patch.GetType().Name}");
             patch.Accept(this);
         }
         
@@ -89,6 +92,27 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             element.Height = height;
         if (node.Props.TryGetValue("z-index", out var zProp) && zProp is int zIndex)
             element.ZIndex = zIndex;
+        
+        // For text elements without explicit dimensions, compute based on content
+        if (element.Width == 0 && node is ElementNode elementNode && elementNode.TagName.ToLower() == "text")
+        {
+            // Calculate dimensions based on text content
+            var textContent = GetTextContent(node);
+            if (!string.IsNullOrEmpty(textContent))
+            {
+                var lines = textContent.Split('\n');
+                element.Height = Math.Max(1, lines.Length);
+                element.Width = lines.Max(line => line.Length);
+            }
+            else
+            {
+                // Default minimum size for empty text elements
+                element.Height = 1;
+                element.Width = 1;
+            }
+            
+            Console.Error.WriteLine($"[VirtualDomRenderer] Text element at ({element.X},{element.Y}) computed size: {element.Width}x{element.Height}, content: '{textContent}'");
+        }
         
         _renderedElements[path] = element;
         
@@ -151,15 +175,22 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private void RenderElement(RenderedElement element, int x, int y)
     {
         _currentRenderContext = new RenderContext { X = x, Y = y, Element = element };
+        Console.Error.WriteLine($"[VirtualDomRenderer] RenderElement: node type={element.Node.GetType().Name}, context pos=({x},{y})");
         element.Node.Accept(this);
         _currentRenderContext = null;
     }
     
     private void RenderDirtyRegions()
     {
-        foreach (var region in _dirtyRegionTracker.GetDirtyRegions())
+        var dirtyRegions = _dirtyRegionTracker.GetDirtyRegions().ToList();
+        Console.Error.WriteLine($"[VirtualDomRenderer] RenderDirtyRegions: {dirtyRegions.Count} dirty regions");
+        
+        foreach (var region in dirtyRegions)
         {
+            Console.Error.WriteLine($"[VirtualDomRenderer] Processing dirty region: ({region.X},{region.Y}) {region.Width}x{region.Height}");
+            
             // Clear the dirty region
+            Console.Error.WriteLine($"[VirtualDomRenderer] Clearing region from y={region.Y} to y={region.Y + region.Height - 1}");
             for (int y = region.Y; y < region.Y + region.Height; y++)
             {
                 _renderingSystem.FillRect(region.X, y, region.Width, 1, ' ', Style.Default);
@@ -181,6 +212,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         var elementBounds = new Rectangle(element.X, element.Y, element.Width, element.Height);
         if (elementBounds.IntersectsWith(region))
         {
+            Console.Error.WriteLine($"[VirtualDomRenderer] Re-rendering element at ({element.X},{element.Y}) {element.Width}x{element.Height}");
             RenderElement(element, element.X, element.Y);
         }
         
@@ -214,8 +246,15 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     
     public void VisitElement(ElementNode node)
     {
+        var tagName = node.TagName.ToLower();
+        Console.Error.WriteLine($"[VirtualDomRenderer] VisitElement: tag={tagName}, has x prop={node.Props.ContainsKey("x")}, has y prop={node.Props.ContainsKey("y")}");
+        if (node.Props.ContainsKey("x") && node.Props.ContainsKey("y"))
+        {
+            Console.Error.WriteLine($"[VirtualDomRenderer] Element props: x={node.Props["x"]}, y={node.Props["y"]}");
+        }
+        
         // Handle different element types
-        switch (node.TagName.ToLower())
+        switch (tagName)
         {
             case "rect":
                 RenderRect(node);
@@ -307,6 +346,9 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                 element.Node.Props.Remove(key);
             }
             
+            // Check if style property changed (requires re-render even if position didn't change)
+            bool styleChanged = patch.PropsToSet.Any(p => p.Key == "style");
+            
             // If position/size changed, update element and mark new area as dirty
             if (positionChanged)
             {
@@ -318,6 +360,13 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                 // Mark new position as dirty (for rendering)
                 _dirtyRegionTracker.MarkDirty(new Rectangle(newX, newY, newWidth, newHeight));
             }
+            else if (styleChanged || patch.PropsToSet.Count > 0 || patch.PropsToRemove.Count > 0)
+            {
+                // Even if position didn't change, we need to re-render if any props changed
+                var rect = new Rectangle(element.X, element.Y, element.Width, element.Height);
+                Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateProps marking dirty: ({rect.X},{rect.Y}) {rect.Width}x{rect.Height}");
+                _dirtyRegionTracker.MarkDirty(rect);
+            }
         }
     }
     
@@ -325,13 +374,18 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     {
         // Text nodes are not stored directly in _renderedElements
         // We need to find the parent element that contains this text node
+        Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateText: path length={patch.Path.Length}, newText='{patch.NewText}'");
+        
         if (patch.Path.Length > 0)
         {
             var parentPath = patch.Path.Take(patch.Path.Length - 1).ToArray();
+            Console.Error.WriteLine($"[VirtualDomRenderer] Looking for parent at path: [{string.Join(",", parentPath)}]");
+            
             if (_renderedElements.TryGetValue(parentPath, out var parentElement))
             {
-                _dirtyRegionTracker.MarkDirty(new Rectangle(parentElement.X, parentElement.Y, 
-                    parentElement.Width, parentElement.Height));
+                var rect = new Rectangle(parentElement.X, parentElement.Y, parentElement.Width, parentElement.Height);
+                Console.Error.WriteLine($"[VirtualDomRenderer] Found parent, marking dirty: ({rect.X},{rect.Y}) {rect.Width}x{rect.Height}");
+                _dirtyRegionTracker.MarkDirty(rect);
                 
                 // Update the text node in the parent's children
                 var childIndex = patch.Path[patch.Path.Length - 1];
@@ -442,16 +496,20 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     
     private void RenderText(ElementNode node)
     {
+        // Get position from node props, falling back to context position
+        var x = GetIntProp(node, "x", _currentRenderContext?.X ?? 0);
+        var y = GetIntProp(node, "y", _currentRenderContext?.Y ?? 0);
+        
         // Render text element and its children
         var style = GetStyleProp(node, "style", Style.Default);
         
         // Render all text content from child nodes
         foreach (var child in node.Children)
         {
-            if (child is TextNode textNode && _currentRenderContext != null)
+            if (child is TextNode textNode)
             {
-                _renderingSystem.WriteText(_currentRenderContext.X, _currentRenderContext.Y, 
-                    textNode.Content, style);
+                Console.Error.WriteLine($"[VirtualDomRenderer] Writing text at ({x},{y}): '{textNode.Content}', style: fg={style.Foreground}, bg={style.Background}");
+                _renderingSystem.WriteText(x, y, textNode.Content, style);
             }
         }
     }
@@ -481,6 +539,26 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     
     #region Helper Methods
     
+    private string GetTextContent(VirtualNode node)
+    {
+        if (node is TextNode textNode)
+            return textNode.Content;
+            
+        if (node is ElementNode elementNode)
+        {
+            var textParts = new List<string>();
+            foreach (var child in elementNode.Children)
+            {
+                var childText = GetTextContent(child);
+                if (!string.IsNullOrEmpty(childText))
+                    textParts.Add(childText);
+            }
+            return string.Join("", textParts);
+        }
+        
+        return string.Empty;
+    }
+    
     private int GetIntProp(VirtualNode node, string key, int defaultValue)
     {
         return node.Props.TryGetValue(key, out var value) && value is int intValue 
@@ -507,4 +585,36 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     
     
     #endregion
+    
+    /// <summary>
+    /// Comparer for int[] paths used as dictionary keys.
+    /// </summary>
+    private class PathComparer : IEqualityComparer<int[]>
+    {
+        public bool Equals(int[]? x, int[]? y)
+        {
+            if (x == null && y == null) return true;
+            if (x == null || y == null) return false;
+            if (x.Length != y.Length) return false;
+            
+            for (int i = 0; i < x.Length; i++)
+            {
+                if (x[i] != y[i]) return false;
+            }
+            
+            return true;
+        }
+        
+        public int GetHashCode(int[] obj)
+        {
+            if (obj == null) return 0;
+            
+            int hash = 17;
+            foreach (var item in obj)
+            {
+                hash = hash * 31 + item.GetHashCode();
+            }
+            return hash;
+        }
+    }
 }

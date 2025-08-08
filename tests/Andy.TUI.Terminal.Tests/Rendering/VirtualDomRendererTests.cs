@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Terminal.Rendering;
 using Moq;
@@ -208,5 +209,97 @@ public class VirtualDomRendererTests
         var regions = tracker.GetDirtyRegions();
         Assert.Single(regions);
         Assert.Equal(new Rectangle(0, 0, 30, 30), regions[0]);
+    }
+    
+    [Fact]
+    public void ApplyPatches_UpdatePropsWithStyleChange_MarksCorrectDirtyRegion()
+    {
+        // Arrange
+        var oldTree = Element("text")
+            .WithProp("x", 10)
+            .WithProp("y", 5)
+            .WithProp("style", Style.Default.WithForegroundColor(Color.White))
+            .WithChild(Text("Button"))
+            .Build();
+            
+        _renderer.Render(oldTree);
+        _mockRenderingSystem.Invocations.Clear();
+        
+        // Create patch to update style
+        var patches = new List<Patch>
+        {
+            new UpdatePropsPatch(
+                new[] { 0 }, 
+                new Dictionary<string, object> { { "style", Style.Default.WithForegroundColor(Color.Yellow) } },
+                new string[0])
+        };
+        
+        // Act
+        _renderer.ApplyPatches(patches);
+        
+        // Assert - Should mark dirty and re-render with new style
+        _mockRenderingSystem.Verify(r => r.FillRect(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), ' ', Style.Default), Times.AtLeastOnce);
+        _mockRenderingSystem.Verify(r => r.WriteText(10, 5, "Button", It.Is<Style>(s => s.Foreground == Color.Yellow)), Times.Once);
+    }
+    
+    [Fact]
+    public void ApplyPatches_UpdateTextInNestedElement_FindsCorrectParent()
+    {
+        // Arrange
+        var oldTree = Element("container")
+            .WithProp("x", 0)
+            .WithProp("y", 0)
+            .WithChildren(
+                Element("text")
+                    .WithProp("x", 10)
+                    .WithProp("y", 5)
+                    .WithChild(Text("Old"))
+            )
+            .Build();
+            
+        _renderer.Render(oldTree);
+        _mockRenderingSystem.Invocations.Clear();
+        
+        // Patch to update nested text
+        var patches = new List<Patch>
+        {
+            new UpdateTextPatch(new[] { 0, 0, 0 }, "New")
+        };
+        
+        // Act
+        _renderer.ApplyPatches(patches);
+        
+        // Assert - Should find parent and re-render
+        _mockRenderingSystem.Verify(r => r.WriteText(10, 5, "New", It.IsAny<Style>()), Times.Once);
+    }
+    
+    [Fact]
+    public void TextElement_WithoutExplicitDimensions_ComputesSizeFromContent()
+    {
+        // This test verifies the fix for 0x0 dirty regions
+        // Arrange
+        var tree = Element("text")
+            .WithProp("x", 10)
+            .WithProp("y", 5)
+            // Note: No width/height props
+            .WithChild(Text("Hello World"))
+            .Build();
+            
+        _renderer.Render(tree);
+        _mockRenderingSystem.Invocations.Clear();
+        
+        // Create patch to update the text
+        var patches = new List<Patch>
+        {
+            new UpdateTextPatch(new[] { 0, 0 }, "Updated Text")
+        };
+        
+        // Act
+        _renderer.ApplyPatches(patches);
+        
+        // Assert - Should successfully mark dirty and re-render
+        // even though the text element has no explicit width/height
+        _mockRenderingSystem.Verify(r => r.FillRect(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), ' ', Style.Default), Times.AtLeastOnce);
+        _mockRenderingSystem.Verify(r => r.WriteText(10, 5, "Updated Text", It.IsAny<Style>()), Times.Once);
     }
 }

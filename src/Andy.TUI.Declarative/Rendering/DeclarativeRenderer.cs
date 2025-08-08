@@ -107,6 +107,7 @@ public class DeclarativeRenderer
         {
             _logger.Debug("Performing diff-based render");
             var patches = _diffEngine.Diff(_previousTree, newTree);
+            _logger.Debug("Generated {0} patches", patches.Count);
             _virtualDomRenderer.ApplyPatches(patches);
         }
         

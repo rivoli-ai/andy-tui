@@ -1,5 +1,6 @@
 using System;
 using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.Core.Diagnostics;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Terminal;
@@ -17,9 +18,11 @@ public class ButtonInstance : ViewInstance, IFocusable
     private Color _backgroundColor = Color.Gray;
     private Color _textColor = Color.White;
     private bool _isFocused;
+    private readonly ILogger _logger;
     
     public ButtonInstance(string id) : base(id)
     {
+        _logger = DebugContext.Logger.ForCategory("ButtonInstance");
     }
     
     // IFocusable implementation
@@ -28,12 +31,15 @@ public class ButtonInstance : ViewInstance, IFocusable
     
     public void OnGotFocus()
     {
+        _logger.Debug("Button {0} got focus", Id);
         _isFocused = true;
         InvalidateView();
+        _logger.Debug("Button {0} InvalidateView called", Id);
     }
     
     public void OnLostFocus()
     {
+        _logger.Debug("Button {0} lost focus", Id);
         _isFocused = false;
         InvalidateView();
     }
@@ -87,6 +93,9 @@ public class ButtonInstance : ViewInstance, IFocusable
         
         // Visual indication of focus
         var prefix = _isFocused ? "> " : "  ";
+        
+        _logger.Debug("Button {0} rendering: focused={1}, bgColor={2}, text='{3}'", 
+            Id, _isFocused, bgColor, $"{prefix}[ {_title} ]");
             
         return Element("text")
             .WithProp("style", style)

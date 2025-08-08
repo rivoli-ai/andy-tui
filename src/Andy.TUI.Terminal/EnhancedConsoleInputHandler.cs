@@ -1,11 +1,15 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Andy.TUI.Core.Diagnostics;
 
 namespace Andy.TUI.Terminal;
 
 /// <summary>
-/// Basic console input handler that supports keyboard input.
+/// Enhanced console input handler that works around Console.KeyAvailable issues
+/// in alternate screen mode on macOS/Unix platforms.
 /// </summary>
-public class ConsoleInputHandler : IInputHandler
+public class EnhancedConsoleInputHandler : IInputHandler
 {
     private readonly CancellationTokenSource _cancellationTokenSource;
     private Task? _inputTask;
@@ -23,10 +27,10 @@ public class ConsoleInputHandler : IInputHandler
     
     public bool SupportsMouseInput => false;
     
-    public ConsoleInputHandler()
+    public EnhancedConsoleInputHandler()
     {
         _cancellationTokenSource = new CancellationTokenSource();
-        _logger = DebugContext.Logger.ForCategory("ConsoleInputHandler");
+        _logger = DebugContext.Logger.ForCategory("EnhancedConsoleInputHandler");
     }
     
     public void Start()
@@ -35,39 +39,49 @@ public class ConsoleInputHandler : IInputHandler
             return;
             
         _isRunning = true;
-        _logger.Info("Starting console input handler");
+        _logger.Info("Starting enhanced console input handler");
         
-        // Start a background task to read console input
+        // Use a different approach for reading input that doesn't rely on Console.KeyAvailable
         _inputTask = Task.Run(async () =>
         {
+            _logger.Debug("Input task started");
+            
             while (!_cancellationTokenSource.Token.IsCancellationRequested)
             {
                 try
                 {
-                    // Check if key is available without blocking
-                    if (Console.KeyAvailable)
+                    // Create a task that reads a key
+                    var readKeyTask = Task.Run(() => Console.ReadKey(intercept: true));
+                    
+                    // Wait for either the key or cancellation
+                    var completedTask = await Task.WhenAny(
+                        readKeyTask,
+                        Task.Delay(50, _cancellationTokenSource.Token)
+                    );
+                    
+                    if (completedTask == readKeyTask && readKeyTask.IsCompletedSuccessfully)
                     {
-                        _logger.Debug("Key available");
-                        var keyInfo = Console.ReadKey(intercept: true);
+                        var keyInfo = readKeyTask.Result;
                         _logger.Debug("Read key: {0} (Char: '{1}')", keyInfo.Key, keyInfo.KeyChar);
                         KeyPressed?.Invoke(this, new KeyEventArgs(keyInfo));
                         _logger.Debug("Key event fired");
                     }
-                    else
-                    {
-                        // Small delay to prevent busy waiting
-                        await Task.Delay(10, _cancellationTokenSource.Token);
-                    }
+                    // If it was the delay task, just continue the loop
                 }
                 catch (OperationCanceledException)
                 {
+                    _logger.Debug("Input task cancelled");
                     break;
                 }
                 catch (Exception ex)
                 {
                     _logger.Error("Error in input handling: {0}", ex.Message);
+                    // Small delay to prevent tight error loop
+                    await Task.Delay(10, _cancellationTokenSource.Token);
                 }
             }
+            
+            _logger.Debug("Input task ended");
         }, _cancellationTokenSource.Token);
     }
     
@@ -77,6 +91,7 @@ public class ConsoleInputHandler : IInputHandler
             return;
             
         _isRunning = false;
+        _logger.Info("Stopping enhanced console input handler");
         _cancellationTokenSource.Cancel();
         
         try

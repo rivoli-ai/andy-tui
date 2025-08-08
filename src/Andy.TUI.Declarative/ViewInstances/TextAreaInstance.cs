@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.Core.Diagnostics;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.State;
@@ -26,9 +27,11 @@ public class TextAreaInstance : ViewInstance, IFocusable
     private int _scrollOffset;
     private List<string> _lines = new();
     private IDisposable? _bindingSubscription;
+    private readonly ILogger _logger;
     
     public TextAreaInstance(string id) : base(id)
     {
+        _logger = DebugContext.Logger.ForCategory("TextAreaInstance");
     }
     
     // IFocusable implementation
@@ -196,12 +199,16 @@ public class TextAreaInstance : ViewInstance, IFocusable
     
     private void InsertCharacter(char ch)
     {
+        _logger.Debug("InsertCharacter: '{0}' at ({1},{2})", ch, _cursorRow, _cursorCol);
+        
         if (_cursorRow >= _lines.Count)
         {
             _lines.Add("");
         }
         
+        var oldLine = _lines[_cursorRow];
         _lines[_cursorRow] = _lines[_cursorRow].Insert(_cursorCol, ch.ToString());
+        _logger.Debug("Line {0} changed from '{1}' to '{2}'", _cursorRow, oldLine, _lines[_cursorRow]);
         _cursorCol++;
         
         // Handle word wrap if enabled
@@ -338,7 +345,9 @@ public class TextAreaInstance : ViewInstance, IFocusable
     {
         if (_textBinding != null)
         {
-            _textBinding.Value = string.Join("\n", _lines);
+            var newText = string.Join("\n", _lines);
+            _textBinding.Value = newText;
+            _logger.Debug("TextArea content updated: '{0}'", newText.Replace("\n", "\\n"));
         }
     }
     
@@ -387,6 +396,7 @@ public class TextAreaInstance : ViewInstance, IFocusable
     
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
+        _logger.Debug("TextArea rendering with {0} lines, cursor at ({1},{2})", _lines.Count, _cursorRow, _cursorCol);
         var elements = new List<VirtualNode>();
         
         // Draw border

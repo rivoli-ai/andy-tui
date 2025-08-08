@@ -1,0 +1,6 @@
+[Andy.TUI] ANDY_TUI_DEBUG = 'debug'
+[Andy.TUI] Debug logging enabled. Logs: /var/folders/0p/czbxsr7j4dv07j9ql3dc8xhm0000gn/T/andy-tui-debug/20250807_145615
+Press any key to continue...
+Unhandled exception. System.InvalidOperationException: Cannot read keys when either application does not have a console or when console input has been redirected. Try Console.Read.
+   at System.ConsolePal.ReadKey(Boolean intercept)
+   at Andy.TUI.Examples.Input.Program.Main(String[] args) in /Users/samibengrine/Devel/rivoli-ai/andy-tui/examples/Andy.TUI.Examples.Input/Program.cs:line 27
