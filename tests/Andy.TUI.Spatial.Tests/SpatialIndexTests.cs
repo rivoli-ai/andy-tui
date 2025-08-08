@@ -1,7 +1,7 @@
 using Xunit;
 using Andy.TUI.Spatial;
 
-namespace Andy.TUI.Core.Tests.Spatial;
+namespace Andy.TUI.Spatial.Tests;
 
 /// <summary>
 /// Core tests for spatial index functionality including Rectangle operations
