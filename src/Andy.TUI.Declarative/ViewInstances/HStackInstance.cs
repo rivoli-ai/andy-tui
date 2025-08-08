@@ -109,12 +109,12 @@ public class HStackInstance : ViewInstance
                     
                     // For auto-width children that end up with 0 width, give them a minimum size
                     // This prevents layout issues in flex containers
-                    if (naturalWidth == 0 && child is BoxInstance boxInstance && boxInstance.GetBox() != null)
+                    if (naturalWidth == 0 && child is BoxInstance boxInstanceZero && boxInstanceZero.GetBox() != null)
                     {
-                        var box = boxInstance.GetBox()!;
-                        if (box.Width.IsAuto)
+                        var zeroBox = boxInstanceZero.GetBox()!;
+                        if (zeroBox.Width.IsAuto)
                         {
-                            naturalWidth = Math.Max(1, box.Padding.Left.Value + box.Padding.Right.Value);
+                            naturalWidth = Math.Max(1, zeroBox.Padding.Left.Value + zeroBox.Padding.Right.Value);
                         }
                     }
                 }
@@ -250,6 +250,8 @@ public class HStackInstance : ViewInstance
                 ? new LayoutConstraints(finalWidth, finalWidth, constraints.MinHeight, constraints.MaxHeight)
                 : new LayoutConstraints(finalWidth, finalWidth, layout.Height, layout.Height);
             child.CalculateLayout(childConstraints);
+            // Force the final width to honor flex shrink distribution even if child enforces MinWidth
+            child.Layout.Width = finalWidth;
             
             // Center children vertically if they're smaller than the container
             child.Layout.X = currentX;

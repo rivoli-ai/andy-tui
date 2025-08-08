@@ -12,17 +12,17 @@ public class TerminalBuffer
     private readonly object _swapLock = new();
     private readonly HashSet<(int x, int y)> _dirtyRegions = new();
     private readonly object _dirtyLock = new();
-    
+
     /// <summary>
     /// Gets the width of the buffer.
     /// </summary>
     public int Width => _backBuffer.Width;
-    
+
     /// <summary>
     /// Gets the height of the buffer.
     /// </summary>
     public int Height => _backBuffer.Height;
-    
+
     /// <summary>
     /// Gets whether there are any dirty regions that need rendering.
     /// </summary>
@@ -36,7 +36,7 @@ public class TerminalBuffer
             }
         }
     }
-    
+
     /// <summary>
     /// Creates a new terminal buffer with the specified dimensions.
     /// </summary>
@@ -45,7 +45,7 @@ public class TerminalBuffer
         _frontBuffer = new Buffer(width, height);
         _backBuffer = new Buffer(width, height);
     }
-    
+
     /// <summary>
     /// Sets a cell in the back buffer and marks the region as dirty.
     /// </summary>
@@ -56,7 +56,7 @@ public class TerminalBuffer
             MarkDirty(x, y);
         }
     }
-    
+
     /// <summary>
     /// Sets a cell in the back buffer and marks the region as dirty.
     /// </summary>
@@ -64,7 +64,7 @@ public class TerminalBuffer
     {
         SetCell(x, y, new Cell(character, style));
     }
-    
+
     /// <summary>
     /// Writes text starting at the specified position.
     /// </summary>
@@ -72,7 +72,7 @@ public class TerminalBuffer
     {
         if (string.IsNullOrEmpty(text))
             return;
-            
+
         int currentX = x;
         foreach (char ch in text)
         {
@@ -82,29 +82,29 @@ public class TerminalBuffer
                 currentX = x;
                 continue;
             }
-            
+
             if (ch == '\r')
             {
                 currentX = x;
                 continue;
             }
-            
+
             SetCell(currentX, y, ch, style);
             currentX++;
-            
+
             // Wrap to next line if needed
             if (currentX >= Width)
             {
                 currentX = 0;
                 y++;
             }
-            
+
             // Stop if we've gone past the bottom
             if (y >= Height)
                 break;
         }
     }
-    
+
     /// <summary>
     /// Clears the entire buffer.
     /// </summary>
@@ -123,15 +123,26 @@ public class TerminalBuffer
                 }
             }
         }
+        // Force inequality so that all marked cells are returned on next swap
+        lock (_swapLock)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    _frontBuffer.TrySetCell(x, y, new Cell('\uffff', new Style { Foreground = Color.FromRgb(255, 255, 255) }));
+                }
+            }
+        }
     }
-    
+
     /// <summary>
     /// Clears a rectangular region in the buffer.
     /// </summary>
     public void ClearRect(int x, int y, int width, int height)
     {
         _backBuffer.ClearRect(x, y, width, height);
-        
+
         // Mark the cleared region as dirty
         for (int row = y; row < Math.Min(y + height, Height); row++)
         {
@@ -144,14 +155,14 @@ public class TerminalBuffer
             }
         }
     }
-    
+
     /// <summary>
     /// Fills a rectangular region with the specified cell.
     /// </summary>
     public void FillRect(int x, int y, int width, int height, Cell cell)
     {
         _backBuffer.FillRect(x, y, width, height, cell);
-        
+
         // Mark the filled region as dirty
         for (int row = y; row < Math.Min(y + height, Height); row++)
         {
@@ -164,19 +175,19 @@ public class TerminalBuffer
             }
         }
     }
-    
+
     /// <summary>
     /// Swaps the front and back buffers and returns the dirty regions.
     /// </summary>
     public IEnumerable<DirtyRegion> SwapBuffers()
     {
         List<DirtyRegion> regions;
-        
+
         lock (_swapLock)
         {
             // Get dirty regions with their old and new cells
             regions = new List<DirtyRegion>();
-            
+
             lock (_dirtyLock)
             {
                 foreach (var (x, y) in _dirtyRegions)
@@ -191,20 +202,20 @@ public class TerminalBuffer
                         }
                     }
                 }
-                
+
                 _dirtyRegions.Clear();
             }
-            
+
             // Swap buffers
             (_frontBuffer, _backBuffer) = (_backBuffer, _frontBuffer);
-            
+
             // Copy front buffer content to back buffer
             _backBuffer.CopyFrom(_frontBuffer);
         }
-        
+
         return regions;
     }
-    
+
     /// <summary>
     /// Resizes the buffers to the new dimensions.
     /// </summary>
@@ -213,14 +224,14 @@ public class TerminalBuffer
         lock (_swapLock)
         {
             var oldFront = _frontBuffer;
-            
+
             // Create new buffers with new dimensions
             _frontBuffer = new Buffer(width, height);
             _backBuffer = new Buffer(width, height);
-            
+
             // Copy old content to back buffer (what we want to display)
             _backBuffer.CopyFrom(oldFront);
-            
+
             // Force front buffer to have different content to ensure all cells are detected as changed
             // We'll fill it with a special "invalid" cell that will never match normal content
             for (int y = 0; y < height; y++)
@@ -230,7 +241,7 @@ public class TerminalBuffer
                     _frontBuffer.TrySetCell(x, y, new Cell('\uffff', new Style { Foreground = Color.FromRgb(255, 255, 255) }));
                 }
             }
-            
+
             // Mark everything as dirty after resize
             lock (_dirtyLock)
             {
@@ -245,7 +256,7 @@ public class TerminalBuffer
             }
         }
     }
-    
+
     /// <summary>
     /// Gets the current front buffer for reading.
     /// </summary>
@@ -256,7 +267,7 @@ public class TerminalBuffer
             return _frontBuffer.Clone();
         }
     }
-    
+
     /// <summary>
     /// Marks a specific cell as dirty.
     /// </summary>
@@ -267,7 +278,7 @@ public class TerminalBuffer
             _dirtyRegions.Add((x, y));
         }
     }
-    
+
     /// <summary>
     /// Marks all cells as dirty, forcing a full redraw.
     /// </summary>
@@ -284,6 +295,17 @@ public class TerminalBuffer
                 }
             }
         }
+        // Force inequality similar to Clear
+        lock (_swapLock)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    _frontBuffer.TrySetCell(x, y, new Cell('\uffff', new Style { Foreground = Color.FromRgb(255, 255, 255) }));
+                }
+            }
+        }
     }
 }
 
@@ -296,22 +318,22 @@ public readonly struct DirtyRegion
     /// Gets the X coordinate of the dirty cell.
     /// </summary>
     public int X { get; }
-    
+
     /// <summary>
     /// Gets the Y coordinate of the dirty cell.
     /// </summary>
     public int Y { get; }
-    
+
     /// <summary>
     /// Gets the old cell value before the change.
     /// </summary>
     public Cell OldCell { get; }
-    
+
     /// <summary>
     /// Gets the new cell value after the change.
     /// </summary>
     public Cell NewCell { get; }
-    
+
     public DirtyRegion(int x, int y, Cell oldCell, Cell newCell)
     {
         X = x;

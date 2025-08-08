@@ -14,41 +14,41 @@ public class RenderScheduler : IDisposable
     private readonly Queue<Action> _renderQueue = new();
     private readonly ManualResetEventSlim _renderEvent = new(false);
     private readonly CancellationTokenSource _cancellationTokenSource = new();
-    
+
     private Thread? _renderThread;
     private volatile bool _isRunning;
     private volatile bool _forceRender;
-    
+
     /// <summary>
     /// Gets or sets the target frames per second.
     /// </summary>
     public int TargetFps { get; set; } = 60;
-    
+
     /// <summary>
     /// Gets or sets the maximum time to wait for batching updates (in milliseconds).
     /// </summary>
     public int MaxBatchWaitMs { get; set; } = 16;
-    
+
     /// <summary>
     /// Gets the actual frames per second achieved.
     /// </summary>
     public double ActualFps { get; private set; }
-    
+
     /// <summary>
     /// Gets the average render time in milliseconds.
     /// </summary>
     public double AverageRenderTimeMs { get; private set; }
-    
+
     /// <summary>
     /// Event raised before each frame is rendered.
     /// </summary>
     public event EventHandler<RenderFrameEventArgs>? BeforeRender;
-    
+
     /// <summary>
     /// Event raised after each frame is rendered.
     /// </summary>
     public event EventHandler<RenderFrameEventArgs>? AfterRender;
-    
+
     /// <summary>
     /// Creates a new render scheduler.
     /// </summary>
@@ -58,7 +58,7 @@ public class RenderScheduler : IDisposable
         _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
     }
-    
+
     /// <summary>
     /// Starts the render scheduler.
     /// </summary>
@@ -66,7 +66,7 @@ public class RenderScheduler : IDisposable
     {
         if (_isRunning)
             return;
-            
+
         _isRunning = true;
         _renderThread = new Thread(RenderLoop)
         {
@@ -75,7 +75,7 @@ public class RenderScheduler : IDisposable
         };
         _renderThread.Start();
     }
-    
+
     /// <summary>
     /// Stops the render scheduler.
     /// </summary>
@@ -83,15 +83,15 @@ public class RenderScheduler : IDisposable
     {
         if (!_isRunning)
             return;
-            
+
         _isRunning = false;
         _cancellationTokenSource.Cancel();
         _renderEvent.Set();
-        
+
         _renderThread?.Join(1000);
         _renderThread = null;
     }
-    
+
     /// <summary>
     /// Queues a render update.
     /// </summary>
@@ -106,7 +106,7 @@ public class RenderScheduler : IDisposable
             _renderEvent.Set();
         }
     }
-    
+
     /// <summary>
     /// Forces an immediate render on the next frame.
     /// </summary>
@@ -115,7 +115,7 @@ public class RenderScheduler : IDisposable
         _forceRender = true;
         _renderEvent.Set();
     }
-    
+
     /// <summary>
     /// The main render loop.
     /// </summary>
@@ -125,21 +125,21 @@ public class RenderScheduler : IDisposable
         var fpsStopwatch = new Stopwatch();
         var renderTimes = new Queue<double>();
         var targetFrameTime = TimeSpan.FromSeconds(1.0 / TargetFps);
-        
+
         int frameCount = 0;
         fpsStopwatch.Start();
-        
+
         while (_isRunning)
         {
             frameStopwatch.Restart();
-            
+
             try
             {
                 // Wait for render event or timeout
                 var waitTime = Math.Max(1, (int)(targetFrameTime.TotalMilliseconds - frameStopwatch.ElapsedMilliseconds));
                 _renderEvent.Wait(waitTime, _cancellationTokenSource.Token);
                 _renderEvent.Reset();
-                
+
                 // Process all queued updates
                 var updates = new List<Action>();
                 lock (_renderLock)
@@ -149,20 +149,20 @@ public class RenderScheduler : IDisposable
                         updates.Add(_renderQueue.Dequeue());
                     }
                 }
-                
+
                 // Execute updates
                 foreach (var update in updates)
                 {
                     update();
                 }
-                
+
                 // Check if we need to render
                 if (_buffer.IsDirty || _forceRender)
                 {
                     RenderFrame();
                     _forceRender = false;
                 }
-                
+
                 // Update FPS counter
                 frameCount++;
                 if (fpsStopwatch.ElapsedMilliseconds >= 1000)
@@ -170,14 +170,14 @@ public class RenderScheduler : IDisposable
                     ActualFps = frameCount / (fpsStopwatch.ElapsedMilliseconds / 1000.0);
                     frameCount = 0;
                     fpsStopwatch.Restart();
-                    
+
                     // Update average render time
                     if (renderTimes.Count > 0)
                     {
                         AverageRenderTimeMs = renderTimes.Average();
                     }
                 }
-                
+
                 // Track render time
                 var renderTime = frameStopwatch.ElapsedMilliseconds;
                 renderTimes.Enqueue(renderTime);
@@ -185,7 +185,7 @@ public class RenderScheduler : IDisposable
                 {
                     renderTimes.Dequeue();
                 }
-                
+
                 // Frame rate limiting
                 var elapsed = frameStopwatch.Elapsed;
                 if (elapsed < targetFrameTime)
@@ -204,61 +204,63 @@ public class RenderScheduler : IDisposable
             }
         }
     }
-    
+
     /// <summary>
     /// Renders a single frame.
     /// </summary>
     private void RenderFrame()
     {
         var frameArgs = new RenderFrameEventArgs();
-        
+
         // Raise before render event
         BeforeRender?.Invoke(this, frameArgs);
-        
+
         if (frameArgs.Cancel)
             return;
-            
+
         var renderStopwatch = Stopwatch.StartNew();
-        
+
         // Get dirty regions and swap buffers
         var dirtyRegions = _buffer.SwapBuffers().ToList();
-        
-        if (dirtyRegions.Count > 0)
+
+        // Always begin/end a frame when force-rendering, even if there are no dirty cells
+        var shouldBeginFrame = dirtyRegions.Count > 0 || _forceRender;
+        if (shouldBeginFrame)
         {
-            // Begin render
             _renderer.BeginFrame();
-            
             try
             {
-                // Render dirty cells
-                if (_renderer is AnsiRenderer ansiRenderer)
+                if (dirtyRegions.Count > 0)
                 {
-                    ansiRenderer.RenderCells(dirtyRegions);
-                }
-                else
-                {
-                    // Fallback to individual cell rendering
-                    foreach (var region in dirtyRegions)
+                    // Render dirty cells
+                    if (_renderer is AnsiRenderer ansiRenderer)
                     {
-                        _renderer.DrawChar(region.X, region.Y, region.NewCell.Character, region.NewCell.Style);
+                        ansiRenderer.RenderCells(dirtyRegions);
+                    }
+                    else
+                    {
+                        // Fallback to individual cell rendering
+                        foreach (var region in dirtyRegions)
+                        {
+                            _renderer.DrawChar(region.X, region.Y, region.NewCell.Character, region.NewCell.Style);
+                        }
                     }
                 }
             }
             finally
             {
-                // End render
                 _renderer.EndFrame();
             }
         }
-        
+
         renderStopwatch.Stop();
         frameArgs.RenderTimeMs = renderStopwatch.ElapsedMilliseconds;
         frameArgs.DirtyCellCount = dirtyRegions.Count;
-        
+
         // Raise after render event
         AfterRender?.Invoke(this, frameArgs);
     }
-    
+
     /// <summary>
     /// Disposes the render scheduler.
     /// </summary>
@@ -279,12 +281,12 @@ public class RenderFrameEventArgs : EventArgs
     /// Gets or sets whether to cancel the render.
     /// </summary>
     public bool Cancel { get; set; }
-    
+
     /// <summary>
     /// Gets the render time in milliseconds.
     /// </summary>
     public double RenderTimeMs { get; internal set; }
-    
+
     /// <summary>
     /// Gets the number of dirty cells rendered.
     /// </summary>
