@@ -59,12 +59,12 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         if (_currentTree == null)
             throw new InvalidOperationException("No tree has been rendered yet.");
         
-        Console.Error.WriteLine($"[VirtualDomRenderer] ApplyPatches: {patches.Count} patches");
+        // Console.Error.WriteLine($"[VirtualDomRenderer] ApplyPatches: {patches.Count} patches");
         
         // Apply patches and track dirty regions
         foreach (var patch in patches)
         {
-            Console.Error.WriteLine($"[VirtualDomRenderer] Applying patch: {patch.GetType().Name}");
+            // Console.Error.WriteLine($"[VirtualDomRenderer] Applying patch: {patch.GetType().Name}");
             patch.Accept(this);
         }
         
@@ -111,7 +111,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                 element.Width = 1;
             }
             
-            Console.Error.WriteLine($"[VirtualDomRenderer] Text element at ({element.X},{element.Y}) computed size: {element.Width}x{element.Height}, content: '{textContent}'");
+            // Console.Error.WriteLine($"[VirtualDomRenderer] Text element at ({element.X},{element.Y}) computed size: {element.Width}x{element.Height}, content: '{textContent}'");
         }
         
         _renderedElements[path] = element;
@@ -148,10 +148,19 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private void CollectElements(RenderedElement element, int parentX, int parentY, 
         List<(RenderedElement, int, int)> allElements)
     {
+        // Check if this node has explicit position props (absolute positioning)
+        bool hasExplicitX = element.Node.Props.ContainsKey("x");
+        bool hasExplicitY = element.Node.Props.ContainsKey("y");
+        
         // For fragment nodes, don't accumulate position since they're just containers
         var isFragment = element.Node is FragmentNode;
-        var absX = isFragment ? element.X : parentX + element.X;
-        var absY = isFragment ? element.Y : parentY + element.Y;
+        
+        // If node has explicit x/y, use those as absolute positions
+        // Otherwise, compute relative to parent
+        var absX = hasExplicitX ? element.X : (isFragment ? element.X : parentX + element.X);
+        var absY = hasExplicitY ? element.Y : (isFragment ? element.Y : parentY + element.Y);
+        
+        // Debug logging removed for clarity
         
         // Don't add fragment nodes to the render list
         // Also don't add text nodes separately - they'll be rendered as part of their parent
@@ -166,8 +175,8 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         {
             foreach (var child in element.Children)
             {
-                // Pass 0,0 for fragments since children have absolute positions
-                CollectElements(child, isFragment ? 0 : absX, isFragment ? 0 : absY, allElements);
+                // Pass the computed absolute position as parent position for children
+                CollectElements(child, absX, absY, allElements);
             }
         }
     }
@@ -175,7 +184,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private void RenderElement(RenderedElement element, int x, int y)
     {
         _currentRenderContext = new RenderContext { X = x, Y = y, Element = element };
-        Console.Error.WriteLine($"[VirtualDomRenderer] RenderElement: node type={element.Node.GetType().Name}, context pos=({x},{y})");
+        // Debug: RenderElement at ({x},{y})
         element.Node.Accept(this);
         _currentRenderContext = null;
     }
@@ -183,14 +192,14 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private void RenderDirtyRegions()
     {
         var dirtyRegions = _dirtyRegionTracker.GetDirtyRegions().ToList();
-        Console.Error.WriteLine($"[VirtualDomRenderer] RenderDirtyRegions: {dirtyRegions.Count} dirty regions");
+        // Console.Error.WriteLine($"[VirtualDomRenderer] RenderDirtyRegions: {dirtyRegions.Count} dirty regions");
         
         foreach (var region in dirtyRegions)
         {
-            Console.Error.WriteLine($"[VirtualDomRenderer] Processing dirty region: ({region.X},{region.Y}) {region.Width}x{region.Height}");
+            // Console.Error.WriteLine($"[VirtualDomRenderer] Processing dirty region: ({region.X},{region.Y}) {region.Width}x{region.Height}");
             
             // Clear the dirty region
-            Console.Error.WriteLine($"[VirtualDomRenderer] Clearing region from y={region.Y} to y={region.Y + region.Height - 1}");
+            // Console.Error.WriteLine($"[VirtualDomRenderer] Clearing region from y={region.Y} to y={region.Y + region.Height - 1}");
             for (int y = region.Y; y < region.Y + region.Height; y++)
             {
                 _renderingSystem.FillRect(region.X, y, region.Width, 1, ' ', Style.Default);
@@ -199,27 +208,41 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             // Re-render elements that intersect with the dirty region
             if (_rootElement != null)
             {
-                RenderElementsInRegion(_rootElement, region);
+                RenderElementsInRegion(_rootElement, region, 0, 0);
             }
         }
         
         _dirtyRegionTracker.Clear();
     }
     
-    private void RenderElementsInRegion(RenderedElement element, Rectangle region)
+    private void RenderElementsInRegion(RenderedElement element, Rectangle region, int parentX = 0, int parentY = 0)
     {
-        // Check if element intersects with region
-        var elementBounds = new Rectangle(element.X, element.Y, element.Width, element.Height);
-        if (elementBounds.IntersectsWith(region))
+        // Check if this node has explicit position props (absolute positioning)
+        bool hasExplicitX = element.Node.Props.ContainsKey("x");
+        bool hasExplicitY = element.Node.Props.ContainsKey("y");
+        var isFragment = element.Node is FragmentNode;
+        
+        // Compute absolute position using same logic as CollectElements
+        var absX = hasExplicitX ? element.X : (isFragment ? element.X : parentX + element.X);
+        var absY = hasExplicitY ? element.Y : (isFragment ? element.Y : parentY + element.Y);
+        
+        // Debug: RenderElementsInRegion computed position ({absX},{absY})
+        
+        // Check if element intersects with region using absolute position
+        var elementBounds = new Rectangle(absX, absY, element.Width, element.Height);
+        if (elementBounds.IntersectsWith(region) && !isFragment && !(element.Node is TextNode))
         {
-            Console.Error.WriteLine($"[VirtualDomRenderer] Re-rendering element at ({element.X},{element.Y}) {element.Width}x{element.Height}");
-            RenderElement(element, element.X, element.Y);
+            // Debug: Re-rendering element at ({absX},{absY})
+            RenderElement(element, absX, absY);
         }
         
-        // Check children
-        foreach (var child in element.Children)
+        // Check children if this is a container
+        if (isFragment || (element.Node is ElementNode elem && elem.TagName.ToLower() != "text"))
         {
-            RenderElementsInRegion(child, region);
+            foreach (var child in element.Children)
+            {
+                RenderElementsInRegion(child, region, absX, absY);
+            }
         }
     }
     
@@ -247,11 +270,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     public void VisitElement(ElementNode node)
     {
         var tagName = node.TagName.ToLower();
-        Console.Error.WriteLine($"[VirtualDomRenderer] VisitElement: tag={tagName}, has x prop={node.Props.ContainsKey("x")}, has y prop={node.Props.ContainsKey("y")}");
-        if (node.Props.ContainsKey("x") && node.Props.ContainsKey("y"))
-        {
-            Console.Error.WriteLine($"[VirtualDomRenderer] Element props: x={node.Props["x"]}, y={node.Props["y"]}");
-        }
+        // Debug: VisitElement {tagName}
         
         // Handle different element types
         switch (tagName)
@@ -364,7 +383,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             {
                 // Even if position didn't change, we need to re-render if any props changed
                 var rect = new Rectangle(element.X, element.Y, element.Width, element.Height);
-                Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateProps marking dirty: ({rect.X},{rect.Y}) {rect.Width}x{rect.Height}");
+                // Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateProps marking dirty: ({rect.X},{rect.Y}) {rect.Width}x{rect.Height}");
                 _dirtyRegionTracker.MarkDirty(rect);
             }
         }
@@ -374,17 +393,17 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     {
         // Text nodes are not stored directly in _renderedElements
         // We need to find the parent element that contains this text node
-        Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateText: path length={patch.Path.Length}, newText='{patch.NewText}'");
+        // Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateText: path length={patch.Path.Length}, newText='{patch.NewText}'");
         
         if (patch.Path.Length > 0)
         {
             var parentPath = patch.Path.Take(patch.Path.Length - 1).ToArray();
-            Console.Error.WriteLine($"[VirtualDomRenderer] Looking for parent at path: [{string.Join(",", parentPath)}]");
+            // Console.Error.WriteLine($"[VirtualDomRenderer] Looking for parent at path: [{string.Join(",", parentPath)}]");
             
             if (_renderedElements.TryGetValue(parentPath, out var parentElement))
             {
                 var rect = new Rectangle(parentElement.X, parentElement.Y, parentElement.Width, parentElement.Height);
-                Console.Error.WriteLine($"[VirtualDomRenderer] Found parent, marking dirty: ({rect.X},{rect.Y}) {rect.Width}x{rect.Height}");
+                // Console.Error.WriteLine($"[VirtualDomRenderer] Found parent, marking dirty: ({rect.X},{rect.Y}) {rect.Width}x{rect.Height}");
                 _dirtyRegionTracker.MarkDirty(rect);
                 
                 // Update the text node in the parent's children
@@ -508,7 +527,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         {
             if (child is TextNode textNode)
             {
-                Console.Error.WriteLine($"[VirtualDomRenderer] Writing text at ({x},{y}): '{textNode.Content}', style: fg={style.Foreground}, bg={style.Background}");
+                // Debug: Writing text at ({x},{y})
                 _renderingSystem.WriteText(x, y, textNode.Content, style);
             }
         }
