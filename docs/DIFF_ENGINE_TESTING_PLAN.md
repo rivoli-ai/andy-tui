@@ -15,7 +15,7 @@ The current diff engine generates correct patches (UpdatePropsPatch) when elemen
 
 ### Category 1: Single Element Operations
 
-#### 1.1 Simple Position Movement 🚫
+#### 1.1 Simple Position Movement
 
 **Test**: `SingleElement_MoveRight_DetailedScenario`
 
@@ -95,7 +95,7 @@ Terminal Grid (20x5):
 4 ·····················
 ```
 
-#### 1.2 Element Resize Operations 🚫
+#### 1.2 Element Resize Operations
 
 **Test**: `SingleElement_ExpandWidth_DetailedScenario`
 
@@ -138,7 +138,7 @@ Terminal Grid (20x5):
 
 ### Category 2: Two Element Interactions
 
-#### 2.1 Non-Overlapping Movement 🚫
+#### 2.1 Non-Overlapping Movement
 
 **Test**: `TwoElements_BothMove_NoOverlap_DetailedScenario`
 

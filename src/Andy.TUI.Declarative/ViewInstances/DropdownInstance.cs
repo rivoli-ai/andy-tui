@@ -179,7 +179,13 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
         // Check if we have a value - for strings, also check if not empty
         bool hasValue = currentValue != null && (currentValue is not string str || !string.IsNullOrEmpty(str));
 
-        if (hasValue)
+        // When open, show the highlighted item as the current display to reflect navigation
+        if (_isOpen && _highlightedIndex >= 0 && _highlightedIndex < _items.Count)
+        {
+            var highlighted = _items[_highlightedIndex];
+            displayText = _displayText?.Invoke(highlighted) ?? highlighted?.ToString() ?? _placeholder;
+        }
+        else if (hasValue)
         {
             displayText = _displayText?.Invoke(currentValue!) ?? currentValue!.ToString() ?? "";
         }

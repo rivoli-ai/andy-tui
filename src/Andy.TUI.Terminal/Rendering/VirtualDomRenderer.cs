@@ -413,7 +413,8 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         if (_renderedElements.TryGetValue(parentPath, out var parent))
         {
             var newElement = BuildRenderTree(patch.Node, parent.X, parent.Y, patch.Path);
-            parent.Children.Insert(patch.Index, newElement);
+            var insertIndex = Math.Max(0, Math.Min(patch.Index, parent.Children.Count));
+            parent.Children.Insert(insertIndex, newElement);
 
             // Mark the area of the newly inserted element as dirty
             // Use its measured bounds so we actually render it even if the parent has 0x0 size

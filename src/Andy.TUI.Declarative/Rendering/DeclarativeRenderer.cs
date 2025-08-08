@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Andy.TUI.Core.VirtualDom;
 using Andy.TUI.Core.Diagnostics;
 using Andy.TUI.Terminal;
@@ -108,7 +109,17 @@ public class DeclarativeRenderer
             _logger.Debug("Performing diff-based render");
             var patches = _diffEngine.Diff(_previousTree, newTree);
             _logger.Debug("Generated {0} patches", patches.Count);
-            _virtualDomRenderer.ApplyPatches(patches);
+
+            // If structure changes occurred, fall back to full render to keep renderer's path map coherent
+            if (patches.Any(p => p.Type == PatchType.Insert || p.Type == PatchType.Remove || p.Type == PatchType.Replace || p.Type == PatchType.Reorder))
+            {
+                _logger.Debug("Structural patches detected, using full render");
+                _virtualDomRenderer.Render(newTree);
+            }
+            else
+            {
+                _virtualDomRenderer.ApplyPatches(patches);
+            }
         }
 
         // Force the rendering system to flush changes to screen

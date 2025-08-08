@@ -8,7 +8,7 @@ The Terminal abstraction layer provides a cross-platform interface for terminal 
 
 ### ITerminal Interface
 
-The main interface for terminal operations:
+The main interface for terminal operations (current):
 
 ```csharp
 public interface ITerminal
@@ -18,19 +18,23 @@ public interface ITerminal
     (int Column, int Row) CursorPosition { get; set; }
     bool CursorVisible { get; set; }
     bool SupportsColor { get; }
-    event EventHandler<TerminalSizeChangedEventArgs>? SizeChanged;
+    bool SupportsAnsi { get; }
     
     void Clear();
     void ClearLine();
     void MoveCursor(int column, int row);
     void Write(string text);
     void WriteLine(string text);
-    void SetColors(Color foreground, Color background);
+    void SetForegroundColor(ConsoleColor color);
+    void SetBackgroundColor(ConsoleColor color);
     void ResetColors();
-    void ApplyStyle(Style style);
-    void Flush();
     void SaveCursorPosition();
     void RestoreCursorPosition();
+    void EnterAlternateScreen();
+    void ExitAlternateScreen();
+    void Flush();
+    
+    event EventHandler<TerminalSizeChangedEventArgs>? SizeChanged;
 }
 ```
 
@@ -42,6 +46,7 @@ Cross-platform terminal implementation using ANSI escape sequences:
 - Efficient buffered output
 - Size change detection
 - Full ANSI escape sequence support
+- Style application via `ApplyStyle(Style style)`
 
 ```csharp
 using var terminal = new AnsiTerminal();
@@ -118,14 +123,14 @@ High-level rendering API with automatic double buffering and frame rate control:
 using var renderingSystem = new RenderingSystem(terminal);
 renderingSystem.Initialize();
 
-// Drawing operations (no need for explicit frame management)
+// Drawing operations (batched via scheduler)
 renderingSystem.Clear();
 renderingSystem.WriteText(10, 5, "Hello", style);
-renderingSystem.DrawChar(20, 10, '█', style);
-renderingSystem.DrawLine(0, 15, 80, 15, '─', style);
+// Single character: set directly on buffer
+renderingSystem.Buffer.SetCell(20, 10, '█', style);
 renderingSystem.DrawBox(0, 0, 80, 24, style, BoxStyle.Double);
 
-// Automatic rendering happens through the scheduler
+// Flush pending changes
 renderingSystem.Render();
 ```
 
@@ -206,7 +211,8 @@ terminal.Clear();
 terminal.MoveCursor(10, 5);
 
 // Write colored text
-terminal.SetColors(Color.Green, Color.Black);
+terminal.SetForegroundColor(ConsoleColor.Green);
+terminal.SetBackgroundColor(ConsoleColor.Black);
 terminal.WriteLine("Success!");
 terminal.ResetColors();
 
@@ -225,15 +231,15 @@ using var renderingSystem = new RenderingSystem(terminal);
 renderingSystem.Initialize();
 
 int frame = 0;
-Action renderFrame = null;
+Action? renderFrame = null;
 renderFrame = () => {
     if (frame >= 100) return;
     
     renderingSystem.Clear();
     
     // Animate a moving box
-    int x = frame % (renderingSystem.Terminal.Width - 10);
-    renderingSystem.DrawBox(x, 5, 10, 5, BoxStyle.Single);
+    int x = frame % (renderingSystem.Width - 10);
+    renderingSystem.DrawBox(x, 5, 10, 5, Style.Default, BoxStyle.Single);
     
     frame++;
     renderingSystem.Scheduler.QueueRender(renderFrame);

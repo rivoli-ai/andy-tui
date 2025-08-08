@@ -14,77 +14,24 @@ See [DECLARATIVE_ARCHITECTURE.md](docs/DECLARATIVE_ARCHITECTURE.md) for the comp
 
 ## Current Status
 
-### Phase 1 - Core Foundation (Completed)
+This repository provides three core layers with working examples:
 
-#### Completed Features
+- Core (Andy.TUI.Core)
+  - Observable system: `ObservableProperty<T>`, `ComputedProperty<T>`, `ObservableCollection<T>`, `DependencyTracker`.
+  - Virtual DOM: node types (Text, Element, Fragment, Component), `VirtualDomBuilder`, `DiffEngine` with keyed reconciliation and patches.
 
-- **Observable System** (100% implemented, 89.7% test coverage)
-  - `ObservableProperty<T>` - Thread-safe properties with change notifications
-  - `ComputedProperty<T>` - Automatically recalculates when dependencies change
-  - `ObservableCollection<T>` - Observable collections with batch operations
-  - `DependencyTracker` - Automatic dependency tracking for computed properties
-  - Comprehensive unit tests (67 tests, all passing)
-  - Full API documentation and examples
+- Terminal and Rendering (Andy.TUI.Terminal)
+  - Terminal abstraction: `ITerminal`, `AnsiTerminal` with ANSI control, cursor, colors, and styles.
+  - Rendering: `TerminalBuffer` (double buffering, dirty regions), `RenderScheduler` (FPS, batching), `RenderingSystem`, `AnsiRenderer`.
+  - Input: `ConsoleInputHandler`, `EnhancedConsoleInputHandler`, cross‑platform key handling utilities.
 
-- **Virtual DOM System** (100% implemented)
-  - Virtual node types (Text, Element, Fragment, Component)
-  - Efficient diff algorithm with keyed reconciliation
-  - Fluent builder API for declarative UI construction
-  - Comprehensive patch generation for minimal updates
-  - Full test coverage (51 tests, all passing)
-  - Examples demonstrating basic, advanced, and reactive scenarios
+- Declarative UI (Andy.TUI.Declarative)
+  - Declarative renderer (`DeclarativeRenderer`) with retained view instances and Virtual DOM diffing.
+  - Layout: `VStack`, `HStack`, `ZStack`, `Grid`, `Spacer`, constraints and absolute positioning.
+  - Components: `Text`, `Button`, `TextField`, `TextArea`, `Dropdown<T>`, `SelectInput<T>`, `MultiSelectInput<T>`, `Table<T>`, `Checkbox`, `RadioGroup<T>`, `List`, `ProgressBar`, `Spinner`, `Gradient`, `BigText`, `Slider`, `Badge`, `Modal`, `TabView`.
+  - Focus and events: `FocusManager`, `EventRouter`, tab navigation, basic hit testing.
 
-### Phase 2 - Terminal Abstraction (Completed)
-
-- **Terminal Abstraction Layer** (100% implemented)
-  - Cross-platform terminal interface with ANSI escape sequence support
-  - Double-buffered rendering for smooth animations
-  - Comprehensive color support (16-color, 256-color, and 24-bit RGB)
-  - Text styling (bold, italic, underline, strikethrough, dim, inverse, blink)
-  - Input handling with keyboard event support
-  - Efficient cell-based buffer management
-  - Platform-specific handling for Windows and Unix-like systems
-  - Full test coverage with unit tests
-  - Interactive examples demonstrating all features
-
-- **Rendering System** (100% implemented)
-  - High-level rendering API with automatic double buffering
-  - Frame rate control and render scheduling
-  - ANSI escape sequence generation
-  - Cell-based dirty region tracking for optimal performance
-  - Comprehensive animation support with smooth transitions
-  - Interactive examples including games, animations, and visual effects
-
-### Phase 3.1 - Component Base Infrastructure (Completed)
-
-- **Component System** (100% implemented)
-  - `IComponent` interface with full lifecycle management
-  - `ComponentBase` abstract class with state management
-  - Observable property binding with automatic re-rendering
-  - Component Context system for parent/child relationships
-  - Service injection via `IServiceProvider`
-  - Event handling framework with propagation and bubbling
-  - `SharedStateManager` for cross-component state sharing
-  - `ThemeProvider` for theming and styling support
-  - Comprehensive test coverage (252 tests passing)
-  - Working examples demonstrating all component features
-
-### Phase 3 - Declarative UI Framework (Completed)
-
-- **Declarative UI Framework** (100% implemented)
-  - SwiftUI-style declarative syntax with collection initializers
-  - Flexbox layout engine with Yoga-style properties
-  - Type-safe `Length` type supporting pixels, percentages, and auto
-  - `Spacing` type for margin/padding with individual side control
-  - Layout components: `Box`, `VStack`, `HStack`, `ZStack`, `Grid`, `Spacer`
-  - Input components: `TextField`, `Button`, `Dropdown<T>`, `Text`
-  - State management with `Binding<T>` for two-way data binding
-  - Focus management and keyboard navigation
-  - Overflow handling with clipping support
-  - CSS Grid-like behavior with fr units and spanning
-  - Full test coverage with comprehensive examples
-  - Full test coverage (112 tests, all passing)
-  - Comprehensive examples demonstrating all input components
+See docs/README.md for API references and examples.
 
 ## Getting Started
 
@@ -107,32 +54,23 @@ dotnet test
 ### Running Examples
 
 ```bash
-# View available examples
-dotnet run --project examples/Andy.TUI.Examples
-
-# Run specific example
+# Observable examples (properties, collections)
+dotnet run --project examples/Andy.TUI.Examples           # lists available
 dotnet run --project examples/Andy.TUI.Examples observable
 dotnet run --project examples/Andy.TUI.Examples collection
 
-# Run all observable examples
-dotnet run --project examples/Andy.TUI.Examples all
-
-# Run Virtual DOM examples
+# Virtual DOM examples
 dotnet run --project examples/VirtualDom basic
 dotnet run --project examples/VirtualDom advanced
 dotnet run --project examples/VirtualDom reactive
 
-# Run Terminal examples
+# Terminal and rendering examples
+dotnet run --project examples/Andy.TUI.Examples.Terminal   # lists available
 dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-basic
-dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-style
-dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-buffer
-dotnet run --project examples/Andy.TUI.Examples.Terminal terminal-input
+dotnet run --project examples/Andy.TUI.Examples.Terminal rendering-basic
 
-# Run Declarative examples
+# Declarative input showcase menu
 dotnet run --project examples/Andy.TUI.Examples.Input
-
-# Run Layout examples
-dotnet run --project examples/Andy.TUI.Examples.Layout
 ```
 
 ## Example Usage
@@ -242,97 +180,30 @@ using Andy.TUI.Declarative;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
 
-// Create a grid layout
-var grid = new Grid();
-grid.SetColumns(GridLength.Absolute(200), GridLength.Star(1), GridLength.Absolute(150));
-grid.SetRows(GridLength.Auto, GridLength.Star(1));
+// Minimal declarative layout (static example)
+var terminal = new AnsiTerminal();
+using var renderingSystem = new RenderingSystem(terminal);
+var renderer = new DeclarativeRenderer(renderingSystem);
 
-// Add header spanning all columns
-var header = new Box
-{
-    Content = new TextNode("Application Header"),
-    BackgroundColor = Color.DarkBlue,
-    ForegroundColor = Color.White,
-    Padding = new Spacing(1, 3),
-    ContentHorizontalAlignment = Alignment.Center
-};
-grid.AddChild(header, row: 0, column: 0, columnSpan: 3);
+renderingSystem.Initialize();
 
-// Add main content with scrolling
-var scrollView = new ScrollView
-{
-    Content = new TextNode(longContent),
-    ShowVerticalScrollbar = true
-};
-grid.AddChild(scrollView, row: 1, column: 1);
-
-// Add sidebar with menu items
-var sidebar = new Stack
-{
-    Orientation = Orientation.Vertical,
-    Spacing = 2,
-    Padding = new Spacing(2)
-};
-sidebar.AddChild(new TextNode("Menu Item 1"));
-sidebar.AddChild(new TextNode("Menu Item 2"));
-sidebar.AddChild(new TextNode("Menu Item 3"));
-grid.AddChild(sidebar, row: 1, column: 2);
+renderer.Run(() =>
+    new VStack(spacing: 1) {
+        new Text("Andy.TUI Demo").Bold().Color(Color.Cyan),
+        new HStack(spacing: 2) {
+            new Text("Welcome to the demo"),
+            new Button("OK", () => Environment.Exit(0))
+        }
+    }
+);
 ```
 
 ### Declarative Input
 
-```csharp
-using Andy.TUI.Declarative.Components;
+See a complete, working menu that exercises `TextField`, `Dropdown`, `Button`, `TextArea`, `SelectInput`, `Table`, `Modal`, and more:
 
-// TextInput for single-line text entry
-var nameInput = new TextInput
-{
-    Placeholder = "Enter your name...",
-    MaxLength = 50,
-    ValidationFunc = value => !string.IsNullOrWhiteSpace(value)
-};
-
-// TextArea for multi-line text
-var commentArea = new TextArea
-{
-    MinHeight = 5,
-    MaxHeight = 10,
-    WordWrap = true,
-    ShowLineNumbers = true
-};
-
-// Button with different styles
-var saveButton = new Button
-{
-    Text = "Save Changes",
-    Style = ButtonStyle.Primary,
-    MinWidth = 15
-};
-saveButton.Click += (s, e) => SaveData();
-
-// Select dropdown with custom items
-var countrySelect = new Select<string>
-{
-    Placeholder = "Select a country...",
-    AllowFiltering = true,
-    MaxDisplayItems = 10
-};
-countrySelect.Items = new[]
-{
-    new SelectItem<string>("United States"),
-    new SelectItem<string>("Canada"),
-    new SelectItem<string>("United Kingdom")
-};
-
-// Form example combining all input types
-var form = new Stack { Orientation = Orientation.Vertical, Spacing = 2 };
-form.AddChild(new TextNode("Name:"));
-form.AddChild(nameInput);
-form.AddChild(new TextNode("Comments:"));
-form.AddChild(commentArea);
-form.AddChild(new TextNode("Country:"));
-form.AddChild(countrySelect);
-form.AddChild(saveButton);
+```bash
+dotnet run --project examples/Andy.TUI.Examples.Input
 ```
 
 ## Debugging
@@ -428,16 +299,17 @@ The library is organized into several key components:
 
 ### Documentation
 
-- [Architecture Overview](docs/ARCHITECTURE.md) - Detailed architecture and design decisions
-- [Observable API Reference](docs/OBSERVABLE_API.md) - Complete API documentation for the Observable system
-- [Virtual DOM API Reference](docs/VIRTUAL_DOM_API.md) - Complete API documentation for the Virtual DOM system
-- [Terminal API Reference](docs/TERMINAL_API.md) - Complete API documentation for the Terminal abstraction layer
-- [Debug Logging Guide](docs/DEBUG_LOGGING.md) - How to use the debug logging system
-- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Roadmap and development phases
+- Documentation Index: docs/README.md — Entry point for all docs
+- Architecture Overview: docs/DECLARATIVE_ARCHITECTURE.md — Declarative architecture and pipeline
+- Observable API Reference: docs/OBSERVABLE_API.md — Observable properties/collections
+- Virtual DOM API Reference: docs/VIRTUAL_DOM_API.md — Virtual nodes, diff, patches
+- Terminal API Reference: docs/TERMINAL_API.md — Terminal, styles, buffers
+- Debug Logging Guide: docs/DEBUG_LOGGING.md — Enabling and using logs
+- Comparison: docs/andy-vs-bubbletea.md — Feature-by-feature comparison with Bubble Tea
 
 ## Contributing
 
-This project is in early development. For the implementation roadmap, see [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+This project is in early development. For the implementation roadmap, see docs/DECLARATIVE_IMPLEMENTATION_PLAN.md.
 
 ## License
 
