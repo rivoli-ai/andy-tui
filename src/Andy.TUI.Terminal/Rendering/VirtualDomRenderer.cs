@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.VirtualDom;
 
 namespace Andy.TUI.Terminal.Rendering;
 

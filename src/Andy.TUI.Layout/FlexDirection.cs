@@ -1,4 +1,4 @@
-namespace Andy.TUI.Declarative.Layout;
+namespace Andy.TUI.Layout;
 
 /// <summary>
 /// Defines the direction of the main axis in a flex container.

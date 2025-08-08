@@ -1,4 +1,4 @@
-namespace Andy.TUI.Declarative.Layout;
+namespace Andy.TUI.Layout;
 
 /// <summary>
 /// Defines how content is justified along the main axis of a flex container.

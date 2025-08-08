@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Andy.TUI.Core.Spatial;
+namespace Andy.TUI.Spatial;
 
 /// <summary>
 /// Represents an element in the spatial index with position, size, and z-index information.

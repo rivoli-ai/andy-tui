@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Andy.TUI.Core.Spatial;
+namespace Andy.TUI.Spatial;
 
 /// <summary>
 /// Calculates occlusion and visibility for spatial elements based on their z-index and bounds.

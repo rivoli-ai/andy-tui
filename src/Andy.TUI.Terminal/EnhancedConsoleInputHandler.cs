@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Andy.TUI.Core.Diagnostics;
+using Andy.TUI.Diagnostics;
 
 namespace Andy.TUI.Terminal;
 

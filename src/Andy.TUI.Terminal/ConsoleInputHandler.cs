@@ -1,4 +1,4 @@
-using Andy.TUI.Core.Diagnostics;
+using Andy.TUI.Diagnostics;
 
 namespace Andy.TUI.Terminal;
 

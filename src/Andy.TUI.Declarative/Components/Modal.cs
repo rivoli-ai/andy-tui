@@ -1,5 +1,6 @@
-using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.VirtualDom;
 using Andy.TUI.Declarative.State;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Terminal;
 

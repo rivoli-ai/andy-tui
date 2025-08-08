@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Andy.TUI.Core.VirtualDom;
+namespace Andy.TUI.VirtualDom;
 
 public class DiffEngine
 {

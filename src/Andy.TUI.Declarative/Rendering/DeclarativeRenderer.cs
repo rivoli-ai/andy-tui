@@ -1,11 +1,11 @@
 using System;
 using System.Linq;
-using Andy.TUI.Core.VirtualDom;
-using Andy.TUI.Core.Diagnostics;
+using Andy.TUI.VirtualDom;
+using Andy.TUI.Diagnostics;
 using Andy.TUI.Terminal;
 using Andy.TUI.Terminal.Rendering;
 using Andy.TUI.Declarative.Components;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 
 namespace Andy.TUI.Declarative.Rendering;
 

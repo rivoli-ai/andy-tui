@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Andy.TUI.Core.VirtualDom;
-using Andy.TUI.Core.Diagnostics;
+using Andy.TUI.VirtualDom;
+using Andy.TUI.Diagnostics;
 using Andy.TUI.Declarative.Components;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Terminal;
-using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
+using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative;
 

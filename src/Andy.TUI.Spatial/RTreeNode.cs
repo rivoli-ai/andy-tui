@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Andy.TUI.Core.Spatial;
+namespace Andy.TUI.Spatial;
 
 /// <summary>
 /// Represents a node in the R-Tree spatial index.

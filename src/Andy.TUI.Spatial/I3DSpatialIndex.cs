@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Andy.TUI.Core.Spatial;
+namespace Andy.TUI.Spatial;
 
 /// <summary>
 /// Enhanced spatial index interface with z-index support for 3D UI element management.

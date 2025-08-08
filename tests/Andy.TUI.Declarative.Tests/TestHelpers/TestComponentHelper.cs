@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.VirtualDom;
 using Andy.TUI.Declarative;
+using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.ViewInstances;
-using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
+using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative.Tests.TestHelpers;
 

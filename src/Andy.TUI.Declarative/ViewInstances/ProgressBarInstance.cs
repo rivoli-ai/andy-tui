@@ -1,9 +1,9 @@
 using System;
-using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.VirtualDom;
 using Andy.TUI.Terminal;
 using Andy.TUI.Declarative.Components;
-using Andy.TUI.Declarative.Layout;
-using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
+using Andy.TUI.Layout;
+using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative.ViewInstances;
 

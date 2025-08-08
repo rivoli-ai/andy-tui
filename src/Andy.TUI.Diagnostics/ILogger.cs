@@ -1,6 +1,6 @@
 using System;
 
-namespace Andy.TUI.Core.Diagnostics;
+namespace Andy.TUI.Diagnostics;
 
 /// <summary>
 /// Defines the interface for logging in the Andy.TUI framework.

@@ -1,9 +1,10 @@
 using System;
 using Xunit;
-using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.VirtualDom;
 using Andy.TUI.Declarative;
-using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Declarative.Components;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Declarative.Extensions;
 

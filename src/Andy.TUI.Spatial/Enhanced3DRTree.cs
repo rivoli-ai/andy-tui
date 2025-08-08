@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Andy.TUI.Core.Spatial;
+namespace Andy.TUI.Spatial;
 
 /// <summary>
 /// Enhanced R-Tree implementation with 3D support (x, y, z-index) and optimizations for terminal UI.

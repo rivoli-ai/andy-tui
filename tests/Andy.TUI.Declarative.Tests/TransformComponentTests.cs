@@ -1,6 +1,6 @@
 using Xunit;
 using Andy.TUI.Declarative.Components;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 using Andy.TUI.Terminal;
 
 namespace Andy.TUI.Declarative.Tests;

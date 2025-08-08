@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.VirtualDom;
 
-namespace Andy.TUI.Core.Spatial;
+namespace Andy.TUI.Spatial;
 
 /// <summary>
 /// Represents a 2D rectangle for spatial indexing operations.

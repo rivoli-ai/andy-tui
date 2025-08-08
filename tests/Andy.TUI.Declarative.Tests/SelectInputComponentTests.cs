@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 using Andy.TUI.Declarative.Components;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.State;
 
 namespace Andy.TUI.Declarative.Tests;

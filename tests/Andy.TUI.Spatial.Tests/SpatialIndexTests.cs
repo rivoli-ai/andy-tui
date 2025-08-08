@@ -1,5 +1,5 @@
 using Xunit;
-using Andy.TUI.Core.Spatial;
+using Andy.TUI.Spatial;
 
 namespace Andy.TUI.Core.Tests.Spatial;
 

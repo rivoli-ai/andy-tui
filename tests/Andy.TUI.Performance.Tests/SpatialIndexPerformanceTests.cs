@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
-using Andy.TUI.Core.Spatial;
+using Andy.TUI.Spatial;
 
 namespace Andy.TUI.Performance.Tests;
 

@@ -1,7 +1,8 @@
 using System;
 using Andy.TUI.Declarative;
-using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Declarative.Components;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.ViewInstances;
 
 class TestSpacers

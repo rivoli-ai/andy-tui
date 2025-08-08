@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace Andy.TUI.Core.Observable;
+namespace Andy.TUI.Observable;
 
 /// <summary>
 /// Extension methods for ObservableCollection to ensure proper dependency tracking with LINQ operations.

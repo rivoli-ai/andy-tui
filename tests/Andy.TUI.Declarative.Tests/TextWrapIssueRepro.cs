@@ -4,9 +4,10 @@ using Xunit.Abstractions;
 using Andy.TUI.Terminal;
 using Andy.TUI.Terminal.Rendering;
 using Andy.TUI.Declarative;
+using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Extensions;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.Rendering;
 
 namespace Andy.TUI.Declarative.Tests;

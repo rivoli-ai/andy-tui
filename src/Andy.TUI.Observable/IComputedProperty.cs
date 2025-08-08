@@ -1,4 +1,4 @@
-namespace Andy.TUI.Core.Observable;
+namespace Andy.TUI.Observable;
 
 /// <summary>
 /// Represents a computed property that automatically updates when its dependencies change.

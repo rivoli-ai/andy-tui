@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.VirtualDom;
 using Andy.TUI.Core;
 using Andy.TUI.Declarative.Components;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.Focus;
 using Andy.TUI.Core.Rendering;
-using Andy.TUI.Core.Diagnostics;
-using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
+using Andy.TUI.Diagnostics;
+using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative.ViewInstances;
 

@@ -1,6 +1,6 @@
 using System;
 
-namespace Andy.TUI.Declarative.Layout;
+namespace Andy.TUI.Layout;
 
 /// <summary>
 /// Represents a length value that can be absolute (pixels) or relative (percentage).

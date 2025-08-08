@@ -1,6 +1,6 @@
 using System;
 
-namespace Andy.TUI.Core.VirtualDom;
+namespace Andy.TUI.VirtualDom;
 
 public sealed class TextNode : VirtualNode
 {

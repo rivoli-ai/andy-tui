@@ -1,14 +1,15 @@
 using System;
 using System.Threading;
-using Andy.TUI.Core.VirtualDom;
-using Andy.TUI.Core.Diagnostics;
+using Andy.TUI.VirtualDom;
+using Andy.TUI.Diagnostics;
 using Andy.TUI.Terminal;
 using Andy.TUI.Terminal.Rendering;
 using Andy.TUI.Declarative.Rendering;
 using Andy.TUI.Declarative;
+using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Extensions;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.State;
 
 namespace Andy.TUI.Examples.Input;

@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Collections.Concurrent;
 
-namespace Andy.TUI.Core.Diagnostics;
+namespace Andy.TUI.Diagnostics;
 
 /// <summary>
 /// A logger that writes to files with rotation and categorization.

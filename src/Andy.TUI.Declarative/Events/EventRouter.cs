@@ -1,5 +1,5 @@
 using System;
-using Andy.TUI.Core.Diagnostics;
+using Andy.TUI.Diagnostics;
 using Andy.TUI.Declarative.Focus;
 
 namespace Andy.TUI.Declarative.Events;

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Andy.TUI.Layout provides a comprehensive flexbox-based layout system for terminal user interfaces. This module implements a constraint-based layout engine inspired by CSS Flexbox and Yoga, enabling sophisticated and responsive terminal UI layouts with precise control over positioning, spacing, and alignment.
+Andy.TUI.Layout provides a comprehensive flexbox-based layout system for terminal user interfaces. This module implements a constraint-based layout engine inspired by CSS Flexbox and Yoga, enabling responsive terminal UI layouts with precise control over positioning, spacing, and alignment.
 
 ## Project Configuration
 
@@ -31,7 +31,7 @@ Integrates with Virtual DOM for layout calculations on virtual nodes.
              │
     ┌────────┼────────┐
     │        │        │
-Constraints  Box    Flexbox
+Constraints Box     Flexbox
     │      Model    Engine
     │        │        │
     └────────┼────────┘

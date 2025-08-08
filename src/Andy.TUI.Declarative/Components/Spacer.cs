@@ -1,5 +1,5 @@
-using Andy.TUI.Core.VirtualDom;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.VirtualDom;
+using Andy.TUI.Layout;
 
 namespace Andy.TUI.Declarative.Components;
 

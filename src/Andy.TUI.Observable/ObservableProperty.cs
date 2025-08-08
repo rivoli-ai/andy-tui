@@ -1,4 +1,4 @@
-namespace Andy.TUI.Core.Observable;
+namespace Andy.TUI.Observable;
 
 /// <summary>
 /// Implementation of an observable property that notifies observers when its value changes.

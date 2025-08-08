@@ -5,10 +5,11 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using Andy.TUI.Declarative.Components;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.Rendering;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Declarative;
+using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Terminal;
 
 namespace Andy.TUI.Examples.Input;

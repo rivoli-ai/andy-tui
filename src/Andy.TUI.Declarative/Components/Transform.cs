@@ -1,4 +1,4 @@
-using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.VirtualDom;
 using Andy.TUI.Terminal;
 
 namespace Andy.TUI.Declarative.Components;

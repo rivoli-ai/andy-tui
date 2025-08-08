@@ -1,4 +1,4 @@
-namespace Andy.TUI.Declarative.Layout;
+namespace Andy.TUI.Layout;
 
 /// <summary>
 /// Defines how items are aligned along the cross axis of a flex container.

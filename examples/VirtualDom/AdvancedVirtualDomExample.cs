@@ -1,5 +1,5 @@
-using Andy.TUI.Core.VirtualDom;
-using static Andy.TUI.Core.VirtualDom.VirtualDomBuilder;
+using Andy.TUI.VirtualDom;
+using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Examples.VirtualDom;
 

@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace Andy.TUI.Core.Diagnostics;
+namespace Andy.TUI.Diagnostics;
 
 /// <summary>
 /// Provides global debug context and logging for the Andy.TUI framework.

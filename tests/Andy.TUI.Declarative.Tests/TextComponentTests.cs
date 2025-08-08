@@ -1,7 +1,7 @@
 using System.Linq;
 using Xunit;
 using Andy.TUI.Declarative.Components;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.Rendering;
 using Andy.TUI.Declarative.State;
 

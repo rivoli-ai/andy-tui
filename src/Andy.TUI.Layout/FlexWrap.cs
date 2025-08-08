@@ -1,4 +1,4 @@
-namespace Andy.TUI.Declarative.Layout;
+namespace Andy.TUI.Layout;
 
 /// <summary>
 /// Defines whether flex items should wrap to new lines.

@@ -1,6 +1,6 @@
 using System;
 
-namespace Andy.TUI.Declarative.Layout;
+namespace Andy.TUI.Layout;
 
 /// <summary>
 /// Represents spacing values for margin or padding with individual side control.

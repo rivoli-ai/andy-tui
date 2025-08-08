@@ -2,8 +2,9 @@ using System;
 using Xunit;
 using Xunit.Abstractions;
 using Andy.TUI.Declarative;
-using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Declarative.Components;
+using Andy.TUI.Layout;
 using Andy.TUI.Declarative.Tests.TestHelpers;
 
 namespace Andy.TUI.Declarative.Tests.Layout;

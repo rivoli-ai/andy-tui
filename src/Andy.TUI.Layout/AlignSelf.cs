@@ -1,4 +1,4 @@
-namespace Andy.TUI.Declarative.Layout;
+namespace Andy.TUI.Layout;
 
 /// <summary>
 /// Defines how an individual item aligns itself along the cross axis, overriding the container's align-items.

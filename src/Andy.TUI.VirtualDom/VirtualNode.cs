@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Andy.TUI.Core.VirtualDom;
+namespace Andy.TUI.VirtualDom;
 
 public abstract class VirtualNode : IEquatable<VirtualNode>
 {

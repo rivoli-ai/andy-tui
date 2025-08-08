@@ -1,4 +1,4 @@
-using Andy.TUI.Core.VirtualDom;
+using Andy.TUI.VirtualDom;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Terminal;
 

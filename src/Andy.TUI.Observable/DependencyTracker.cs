@@ -1,4 +1,4 @@
-namespace Andy.TUI.Core.Observable;
+namespace Andy.TUI.Observable;
 
 /// <summary>
 /// Tracks dependencies between observable properties for computed properties.

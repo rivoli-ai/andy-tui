@@ -2,7 +2,7 @@ using System;
 using Xunit;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.State;
-using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Layout;
 using Andy.TUI.Terminal;
 using Andy.TUI.Declarative.ViewInstances;
 

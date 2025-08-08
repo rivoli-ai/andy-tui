@@ -5,7 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>Andy.TUI.VirtualDom</AssemblyName>
-    <RootNamespace>Andy.TUI.Core.VirtualDom</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

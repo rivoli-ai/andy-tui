@@ -1,6 +1,6 @@
 using System;
 
-namespace Andy.TUI.Core.Diagnostics;
+namespace Andy.TUI.Diagnostics;
 
 /// <summary>
 /// A no-op logger for when logging is disabled.

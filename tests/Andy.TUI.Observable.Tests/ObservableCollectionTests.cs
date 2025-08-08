@@ -1,4 +1,4 @@
-using Andy.TUI.Core.Observable;
+using Andy.TUI.Observable;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
@@ -298,7 +298,7 @@ public class ObservableCollectionTests
         public bool WasNotified { get; private set; }
         public string? LastPropertyName { get; private set; }
         
-        public void OnPropertyChanged(IObservableProperty property, Andy.TUI.Core.Observable.PropertyChangedEventArgs args)
+        public void OnPropertyChanged(IObservableProperty property, Andy.TUI.Observable.PropertyChangedEventArgs args)
         {
             WasNotified = true;
             LastPropertyName = args.PropertyName;

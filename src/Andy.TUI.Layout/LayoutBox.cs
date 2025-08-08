@@ -1,6 +1,6 @@
 using System;
 
-namespace Andy.TUI.Declarative.Layout;
+namespace Andy.TUI.Layout;
 
 /// <summary>
 /// Represents the calculated layout box for a component after layout computation.
