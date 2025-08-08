@@ -47,7 +47,14 @@ public class DropdownVisualTests
         instance.CalculateLayout(LayoutConstraints.Loose(80, 24));
         var openTree = instance.Render();
         var openPatches = diff.Diff(initialTree, openTree);
-        renderer.ApplyPatches(openPatches);
+        if (openPatches.Any(p => p.Type == PatchType.Insert || p.Type == PatchType.Remove || p.Type == PatchType.Replace || p.Type == PatchType.Reorder))
+        {
+            renderer.Render(openTree);
+        }
+        else
+        {
+            renderer.ApplyPatches(openPatches);
+        }
         renderingSystem.Render();
 
         // Helpers
@@ -98,7 +105,14 @@ public class DropdownVisualTests
         instance.CalculateLayout(LayoutConstraints.Loose(80, 24));
         var treeAfterDown1 = instance.Render();
         var patches1 = diff.Diff(openTree, treeAfterDown1);
-        renderer.ApplyPatches(patches1);
+        if (patches1.Any(p => p.Type == PatchType.Insert || p.Type == PatchType.Remove || p.Type == PatchType.Replace || p.Type == PatchType.Reorder))
+        {
+            renderer.Render(treeAfterDown1);
+        }
+        else
+        {
+            renderer.ApplyPatches(patches1);
+        }
         renderingSystem.Render();
 
         // Assert: second item highlighted and trigger text reflects it (▼ Canada)
@@ -116,7 +130,14 @@ public class DropdownVisualTests
         instance.CalculateLayout(LayoutConstraints.Loose(80, 24));
         var treeAfterDown2 = instance.Render();
         var patches2 = diff.Diff(treeAfterDown1, treeAfterDown2);
-        renderer.ApplyPatches(patches2);
+        if (patches2.Any(p => p.Type == PatchType.Insert || p.Type == PatchType.Remove || p.Type == PatchType.Replace || p.Type == PatchType.Reorder))
+        {
+            renderer.Render(treeAfterDown2);
+        }
+        else
+        {
+            renderer.ApplyPatches(patches2);
+        }
         renderingSystem.Render();
 
         // Assert: third item highlighted and trigger text reflects it (▼ United Kingdom)
