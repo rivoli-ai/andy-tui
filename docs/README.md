@@ -4,7 +4,19 @@ A guided index of the documentation for Andy.TUI. This page lists the most usefu
 
 ## Getting Oriented
 - Architecture: DECLARATIVE_ARCHITECTURE.md — Overview of the declarative architecture, components, layout, and pipeline.
-- Comparison: andy-vs-bubbletea.md — Side-by-side feature comparison with Charm’s Bubble Tea.
+- Comparison: andy-vs-bubbletea.md — Side-by-side feature comparison with Charm's Bubble Tea.
+
+## Project Documentation
+Detailed documentation for each project in the framework:
+- [Andy.TUI.Core](../src/Andy.TUI.Core/Andy.TUI.Core.md) — Core orchestration and framework integration
+- [Andy.TUI.Terminal](../src/Andy.TUI.Terminal/Andy.TUI.Terminal.md) — Low-level terminal operations and rendering
+- [Andy.TUI.Declarative](../src/Andy.TUI.Declarative/Andy.TUI.Declarative.md) — SwiftUI-inspired declarative API
+- [Andy.TUI.Layout](../src/Andy.TUI.Layout/Andy.TUI.Layout.md) — Flexbox-based layout engine with constraints
+- [Andy.TUI.VirtualDom](../src/Andy.TUI.VirtualDom/Andy.TUI.VirtualDom.md) — Virtual DOM diffing and patching
+- [Andy.TUI.Observable](../src/Andy.TUI.Observable/Andy.TUI.Observable.md) — Reactive state management
+- [Andy.TUI.Spatial](../src/Andy.TUI.Spatial/Andy.TUI.Spatial.md) — Spatial indexing and occlusion culling
+- [Andy.TUI.Diagnostics](../src/Andy.TUI.Diagnostics/Andy.TUI.Diagnostics.md) — Logging and debugging tools
+- [Andy.TUI](../src/Andy.TUI/Andy.TUI.md) — Main distribution package
 
 ## Core APIs
 - Virtual DOM API: VIRTUAL_DOM_API.md — Virtual nodes, builder API, diff engine, patches, and usage patterns.

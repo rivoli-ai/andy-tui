@@ -1,10 +1,23 @@
 # Andy.TUI
 
-A powerful declarative terminal UI framework for .NET that combines the best of Ink, Yoga, SwiftUI, and WPF.
+A declarative terminal UI framework for .NET that combines the best of Ink, Yoga, SwiftUI, and WPF.
+
+> ⚠️ **Early Development Warning**
+> 
+> Andy.TUI is currently in active development and is **not ready for production use**. The library is incomplete with many features that are partially implemented or don't work correctly yet. APIs are subject to breaking changes without notice. 
+> 
+> **Known Issues:**
+> - Some layout edge cases may cause incorrect rendering
+> - Certain components have incomplete implementations
+> - Performance optimizations are ongoing
+> - Cross-platform compatibility is still being refined
+> 
+> We welcome contributors and early adopters who are interested in helping shape the framework, but please be aware of its experimental nature.
 
 ## Overview
 
-Andy.TUI is a modern terminal user interface library that brings declarative UI patterns to console applications. It combines:
+Andy.TUI is a terminal user interface library that brings declarative UI patterns to console applications. It combines:
+
 - **Ink's rich component library** and developer experience
 - **Yoga's flexbox layout engine** for precise positioning
 - **SwiftUI's type safety** and declarative syntax
@@ -12,26 +25,46 @@ Andy.TUI is a modern terminal user interface library that brings declarative UI 
 
 See [DECLARATIVE_ARCHITECTURE.md](docs/DECLARATIVE_ARCHITECTURE.md) for the complete architecture overview.
 
-## Current Status
+## Project Structure
 
-This repository provides three core layers with working examples:
+The framework is organized into modular projects, each with specific responsibilities:
 
-- Core (Andy.TUI.Core)
-  - Observable system: `ObservableProperty<T>`, `ComputedProperty<T>`, `ObservableCollection<T>`, `DependencyTracker`.
-  - Virtual DOM: node types (Text, Element, Fragment, Component), `VirtualDomBuilder`, `DiffEngine` with keyed reconciliation and patches.
+### Core Libraries
 
-- Terminal and Rendering (Andy.TUI.Terminal)
-  - Terminal abstraction: `ITerminal`, `AnsiTerminal` with ANSI control, cursor, colors, and styles.
-  - Rendering: `TerminalBuffer` (double buffering, dirty regions), `RenderScheduler` (FPS, batching), `RenderingSystem`, `AnsiRenderer`.
-  - Input: `ConsoleInputHandler`, `EnhancedConsoleInputHandler`, cross‑platform key handling utilities.
+- **[Andy.TUI.Core](src/Andy.TUI.Core/Andy.TUI.Core.md)** - Core orchestration layer
 
-- Declarative UI (Andy.TUI.Declarative)
-  - Declarative renderer (`DeclarativeRenderer`) with retained view instances and Virtual DOM diffing.
-  - Layout: `VStack`, `HStack`, `ZStack`, `Grid`, `Spacer`, constraints and absolute positioning.
-  - Components: `Text`, `Button`, `TextField`, `TextArea`, `Dropdown<T>`, `SelectInput<T>`, `MultiSelectInput<T>`, `Table<T>`, `Checkbox`, `RadioGroup<T>`, `List`, `ProgressBar`, `Spinner`, `Gradient`, `BigText`, `Slider`, `Badge`, `Modal`, `TabView`.
-  - Focus and events: `FocusManager`, `EventRouter`, tab navigation, basic hit testing.
+  - Observable system: `ObservableProperty<T>`, `ComputedProperty<T>`, `ObservableCollection<T>`, `DependencyTracker`
+  - Virtual DOM: node types (Text, Element, Fragment, Component), `VirtualDomBuilder`, `DiffEngine` with keyed reconciliation
 
-See docs/README.md for API references and examples.
+- **[Andy.TUI.Terminal](src/Andy.TUI.Terminal/Andy.TUI.Terminal.md)** - Terminal interaction layer
+
+  - Terminal abstraction: `ITerminal`, `AnsiTerminal` with ANSI control, cursor, colors, and styles
+  - Rendering: `TerminalBuffer` (double buffering, dirty regions), `RenderScheduler` (FPS, batching), `RenderingSystem`
+  - Input: `ConsoleInputHandler`, `EnhancedConsoleInputHandler`, cross‑platform key handling
+
+- **[Andy.TUI.Declarative](src/Andy.TUI.Declarative/Andy.TUI.Declarative.md)** - Declarative UI framework
+  - SwiftUI-inspired declarative renderer with retained view instances and Virtual DOM diffing
+  - Components: `Text`, `Button`, `TextField`, `TextArea`, `Dropdown<T>`, `SelectInput<T>`, `MultiSelectInput<T>`, `Table<T>`, `Checkbox`, `RadioGroup<T>`, `List`, `ProgressBar`, `Spinner`, `Gradient`, `BigText`, `Slider`, `Badge`, `Modal`, `TabView`
+  - Focus and events: `FocusManager`, `EventRouter`, tab navigation, basic hit testing
+  - Integrates with Andy.TUI.Layout for positioning and layout management
+
+### Supporting Libraries
+
+- **[Andy.TUI.Layout](src/Andy.TUI.Layout/Andy.TUI.Layout.md)** - Flexbox-based layout system with constraints
+  - Stack layouts: `VStack`, `HStack`, `ZStack` for organizing components
+  - Flexbox properties: `FlexDirection`, `JustifyContent`, `AlignItems`, `FlexWrap`
+  - Layout constraints: min/max dimensions, flex grow/shrink, spacing and padding
+  - Layout box model with absolute and relative positioning
+- **[Andy.TUI.VirtualDom](src/Andy.TUI.VirtualDom/Andy.TUI.VirtualDom.md)** - Virtual DOM implementation with efficient diffing
+- **[Andy.TUI.Observable](src/Andy.TUI.Observable/Andy.TUI.Observable.md)** - Reactive state management system
+- **[Andy.TUI.Spatial](src/Andy.TUI.Spatial/Andy.TUI.Spatial.md)** - Spatial indexing and occlusion culling
+- **[Andy.TUI.Diagnostics](src/Andy.TUI.Diagnostics/Andy.TUI.Diagnostics.md)** - Logging and debugging capabilities
+
+### Main Package
+
+- **[Andy.TUI](src/Andy.TUI/Andy.TUI.md)** - Main NuGet package that bundles all components
+
+See [docs/README.md](docs/README.md) for API references and additional documentation.
 
 ## Getting Started
 
@@ -83,7 +116,7 @@ var firstName = new ObservableProperty<string>("John");
 var lastName = new ObservableProperty<string>("Doe");
 
 // Create a computed property that depends on other observables
-var fullName = new ComputedProperty<string>(() => 
+var fullName = new ComputedProperty<string>(() =>
     $"{firstName.Value} {lastName.Value}");
 
 // Subscribe to changes
@@ -101,7 +134,7 @@ var tasks = new ObservableCollection<string>();
 
 // Create computed properties based on the collection
 var taskCount = new ComputedProperty<int>(() => tasks.Count);
-var summary = new ComputedProperty<string>(() => 
+var summary = new ComputedProperty<string>(() =>
     $"You have {tasks.Count} tasks");
 
 // Batch operations
@@ -166,9 +199,9 @@ renderingSystem.Render();
 
 // Handle input
 var inputHandler = new ConsoleInputHandler();
-inputHandler.KeyPressed += (_, e) => 
+inputHandler.KeyPressed += (_, e) =>
 {
-    if (e.Key == ConsoleKey.Escape) 
+    if (e.Key == ConsoleKey.Escape)
         Environment.Exit(0);
 };
 ```
@@ -228,10 +261,12 @@ dotnet run --project examples/Andy.TUI.Examples.Input
 ### Debug Output Location
 
 By default, debug logs are written to timestamped directories in your system's temp folder:
+
 - **macOS/Linux**: `/tmp/andy-tui-debug/YYYYMMDD_HHMMSS/`
 - **Windows**: `%TEMP%\andy-tui-debug\YYYYMMDD_HHMMSS\`
 
 You can customize the log directory:
+
 ```bash
 export ANDY_TUI_DEBUG_DIR=/path/to/custom/logs
 ```
@@ -239,6 +274,7 @@ export ANDY_TUI_DEBUG_DIR=/path/to/custom/logs
 ### Log Categories
 
 The debug system organizes logs by category:
+
 - **DeclarativeRenderer**: Rendering cycles, virtual DOM updates, and patch application
 - **FocusManager**: Focus changes and keyboard navigation
 - **EventRouter**: Event routing and handling
@@ -248,6 +284,7 @@ The debug system organizes logs by category:
 ### Reading Debug Logs
 
 Each category gets its own log file:
+
 ```
 /tmp/andy-tui-debug/20250804_175311/
 ├── DeclarativeRenderer.log
@@ -257,6 +294,7 @@ Each category gets its own log file:
 ```
 
 Example log output:
+
 ```
 [2025-08-04 17:53:11.123] [DEBUG] [DeclarativeRenderer] Render requested, executing render cycle
 [2025-08-04 17:53:11.124] [DEBUG] [DeclarativeRenderer] Virtual DOM rendered
