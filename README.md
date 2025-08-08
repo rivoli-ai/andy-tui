@@ -66,6 +66,78 @@ The framework is organized into modular projects, each with specific responsibil
 
 See [docs/README.md](docs/README.md) for API references and additional documentation.
 
+## Project Dependencies
+
+The following diagram shows the dependencies between the framework libraries:
+
+```mermaid
+graph TD
+    %% Main distribution package
+    Andy.TUI["Andy.TUI<br/>(Main Package)"]
+    
+    %% Core libraries
+    Core["Andy.TUI.Core<br/>(Orchestration)"]
+    Terminal["Andy.TUI.Terminal<br/>(Terminal I/O)"]
+    Declarative["Andy.TUI.Declarative<br/>(UI Framework)"]
+    
+    %% Supporting libraries
+    VirtualDom["Andy.TUI.VirtualDom<br/>(Virtual DOM)"]
+    Observable["Andy.TUI.Observable<br/>(State Management)"]
+    Spatial["Andy.TUI.Spatial<br/>(Spatial Indexing)"]
+    Layout["Andy.TUI.Layout<br/>(Layout Engine)"]
+    Diagnostics["Andy.TUI.Diagnostics<br/>(Logging)"]
+    
+    %% Dependencies
+    Andy.TUI --> Core
+    Andy.TUI --> Terminal
+    Andy.TUI --> Declarative
+    
+    Core --> VirtualDom
+    Core --> Observable
+    Core --> Spatial
+    Core --> Diagnostics
+    
+    Terminal --> Core
+    
+    Declarative --> Core
+    Declarative --> Terminal
+    Declarative --> Layout
+    
+    Layout --> VirtualDom
+    
+    Spatial --> VirtualDom
+    
+    %% Styling
+    classDef main fill:#e1f5fe,stroke:#01579b,stroke-width:3px
+    classDef core fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef support fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
+    class Andy.TUI main
+    class Core,Terminal,Declarative core
+    class VirtualDom,Observable,Spatial,Layout,Diagnostics support
+```
+
+### Dependency Layers
+
+1. **Foundation Layer** (No dependencies)
+   - `Andy.TUI.Diagnostics` - Logging infrastructure
+   - `Andy.TUI.Observable` - Reactive state management
+   - `Andy.TUI.VirtualDom` - Virtual DOM implementation
+
+2. **Infrastructure Layer** 
+   - `Andy.TUI.Spatial` - Depends on VirtualDom for spatial elements
+   - `Andy.TUI.Layout` - Depends on VirtualDom for layout nodes
+
+3. **Core Layer**
+   - `Andy.TUI.Core` - Orchestrates VirtualDom, Observable, Spatial, and Diagnostics
+
+4. **Application Layer**
+   - `Andy.TUI.Terminal` - Depends on Core for rendering abstractions
+   - `Andy.TUI.Declarative` - Depends on Core, Terminal, and Layout
+
+5. **Distribution Layer**
+   - `Andy.TUI` - Main package that bundles Core, Terminal, and Declarative
+
 ## Getting Started
 
 ### Prerequisites
