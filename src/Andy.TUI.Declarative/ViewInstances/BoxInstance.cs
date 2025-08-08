@@ -609,37 +609,10 @@ public class BoxInstance : ViewInstance
             child.Layout.AbsoluteY = absoluteY;
             
             // Position the child node
-            if (childNode is ElementNode element)
-            {
-                var props = new Dictionary<string, object?>(element.Props)
-                {
-                    ["x"] = absoluteX,
-                    ["y"] = absoluteY
-                };
-                childNode = new ElementNode(element.TagName, props, element.Children.ToArray());
-            }
-            else if (childNode is FragmentNode fragment)
-            {
-                // For fragments, position each child element
-                var fragmentChildren = new List<VirtualNode>();
-                foreach (var fragChild in fragment.Children)
-                {
-                    if (fragChild is ElementNode fragElement)
-                    {
-                        var props = new Dictionary<string, object?>(fragElement.Props)
-                        {
-                            ["x"] = absoluteX + (int)(fragElement.Props.GetValueOrDefault("x") ?? 0),
-                            ["y"] = absoluteY + (int)(fragElement.Props.GetValueOrDefault("y") ?? 0)
-                        };
-                        fragmentChildren.Add(new ElementNode(fragElement.TagName, props, fragElement.Children.ToArray()));
-                    }
-                    else
-                    {
-                        fragmentChildren.Add(fragChild);
-                    }
-                }
-                childNode = Fragment(fragmentChildren.ToArray());
-            }
+            // IMPORTANT: Child instances already render absolute positions based on
+            // Layout.AbsoluteX/AbsoluteY set above. Do not re-offset children here,
+            // as that can double-apply parent offsets (especially for Fragment children).
+            // Pass the child node through unchanged.
             
             elements.Add(childNode);
         }

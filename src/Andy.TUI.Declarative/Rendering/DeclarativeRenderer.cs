@@ -21,7 +21,7 @@ public class DeclarativeRenderer
     private VirtualNode? _previousTree;
     private bool _needsRender = true;
     private bool _hasSetInitialFocus = false;
-    
+
     public DeclarativeRenderer(IRenderingSystem renderingSystem, object? owner = null)
     {
         _renderingSystem = renderingSystem ?? throw new ArgumentNullException(nameof(renderingSystem));
@@ -29,10 +29,10 @@ public class DeclarativeRenderer
         _context = new DeclarativeContext(() => _needsRender = true);
         _diffEngine = new DiffEngine();
         _logger = DebugContext.Logger.ForCategory("DeclarativeRenderer");
-        
+
         _logger.Info("DeclarativeRenderer initialized");
     }
-    
+
     /// <summary>
     /// Runs the declarative UI with event handling.
     /// </summary>
@@ -41,7 +41,7 @@ public class DeclarativeRenderer
         var inputHandler = new ConsoleInputHandler();
         inputHandler.KeyPressed += OnKeyPressed;
         inputHandler.Start();
-        
+
         try
         {
             while (true)
@@ -54,7 +54,7 @@ public class DeclarativeRenderer
                     Render(root);
                     _needsRender = false;
                 }
-                
+
                 System.Threading.Thread.Sleep(16); // ~60 FPS
             }
         }
@@ -63,40 +63,40 @@ public class DeclarativeRenderer
             inputHandler.Stop();
         }
     }
-    
+
     /// <summary>
     /// Renders a single frame.
     /// </summary>
     public void Render(ISimpleComponent root)
     {
         _logger.Debug("Render() called");
-        
+
         // Get or create the root view instance
         var rootInstance = _context.ViewInstanceManager.GetOrCreateInstance(root, "root");
         _logger.Debug("Root instance: {0}", rootInstance.GetType().Name);
-        
+
         // Calculate layout with terminal constraints
         var terminalWidth = _renderingSystem.Width;
         var terminalHeight = _renderingSystem.Height;
         var constraints = LayoutConstraints.Loose(terminalWidth, terminalHeight);
         _logger.Debug("Layout constraints: {0}x{1}", terminalWidth, terminalHeight);
-        
+
         rootInstance.CalculateLayout(constraints);
         _logger.Debug("Layout calculated");
-        
+
         // Set the root's absolute position BEFORE rendering
         rootInstance.Layout.AbsoluteX = 0;
         rootInstance.Layout.AbsoluteY = 0;
         _logger.Debug("Set root absolute position to (0, 0)");
-        
+
         // Update absolute z-indices from root
         rootInstance.UpdateAbsoluteZIndex(0);
         _logger.Debug("Updated absolute z-indices");
-        
+
         // Render the virtual DOM from instances
         var newTree = rootInstance.Render();
         _logger.Debug("Virtual DOM rendered");
-        
+
         // Apply diff-based rendering
         if (_previousTree == null)
         {
@@ -110,43 +110,45 @@ public class DeclarativeRenderer
             _logger.Debug("Generated {0} patches", patches.Count);
             _virtualDomRenderer.ApplyPatches(patches);
         }
-        
+
         // Force the rendering system to flush changes to screen
         if (_renderingSystem is RenderingSystem rs)
         {
             _logger.Debug("Buffer dirty state before flush: {0}", rs.Buffer.IsDirty);
             rs.Render();
             _logger.Debug("Forced render flush");
-            
+
             // Give the render thread time to process
             System.Threading.Thread.Sleep(10);
             _logger.Debug("Buffer dirty state after flush: {0}", rs.Buffer.IsDirty);
         }
-        
+
         _previousTree = newTree;
         _logger.Debug("Render complete");
-        
+
         // Set initial focus if not already done
         if (!_hasSetInitialFocus)
         {
             _logger.Debug("Setting initial focus");
             _context.FocusManager.MoveFocus(Focus.FocusDirection.Next);
             _hasSetInitialFocus = true;
-            _logger.Debug("Initial focus set to: {0}", 
+            _logger.Debug("Initial focus set to: {0}",
                 _context.FocusManager.FocusedComponent?.GetType().Name ?? "null");
+            // Request another render so focus styles are visible immediately
+            _needsRender = true;
         }
     }
-    
+
     private void OnKeyPressed(object? sender, KeyEventArgs e)
     {
         _logger.Debug("Key pressed: {0} (Modifiers: {1})", e.Key, e.Modifiers);
-        
+
         if (e.Key == ConsoleKey.C && e.Modifiers.HasFlag(System.ConsoleModifiers.Control))
         {
             _logger.Info("Ctrl+C detected, exiting");
             Environment.Exit(0);
         }
-        
+
         var keyInfo = new ConsoleKeyInfo(
             e.KeyChar,
             e.Key,
@@ -154,8 +156,8 @@ public class DeclarativeRenderer
             e.Modifiers.HasFlag(System.ConsoleModifiers.Alt),
             e.Modifiers.HasFlag(System.ConsoleModifiers.Control)
         );
-        
+
         _context.EventRouter.RouteKeyPress(keyInfo);
     }
-    
+
 }

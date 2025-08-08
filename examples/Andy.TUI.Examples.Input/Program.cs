@@ -19,14 +19,9 @@ class Program
     {
         // Initialize debug logging if enabled
         DebugContext.Initialize();
-        
-        // Only pause if debug mode is enabled
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_DEBUG")))
-        {
-            Console.Error.WriteLine("Press any key to continue...");
-            Console.ReadKey(true);
-        }
-        
+
+        // Remove Console.Error writes to avoid corrupting terminal output
+
         Console.Clear();
         Console.WriteLine("Andy.TUI Declarative Examples");
         Console.WriteLine("==============================\n");
@@ -50,10 +45,10 @@ class Program
         Console.WriteLine("17. UI Components Showcase (Checkbox, RadioGroup, List, ProgressBar, Spinner)");
         Console.WriteLine("\n0. Exit");
         Console.Write("\nEnter your choice (0-17): ");
-        
+
         var choice = Console.ReadLine();
         Console.Clear();
-        
+
         switch (choice)
         {
             case "1":
@@ -122,7 +117,7 @@ class InputDemoApp
     private string name = "";
     private string password = "";
     private string selectedCountry = "";
-    
+
     private readonly string[] countries = { "United States", "Canada", "United Kingdom", "Germany", "France" };
 
     public void Run()
@@ -130,12 +125,12 @@ class InputDemoApp
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
         var renderer = new DeclarativeRenderer(renderingSystem);
-        
+
         renderingSystem.Initialize();
-        
+
         renderer.Run(() => CreateDeclarativeUI());
     }
-    
+
     private ISimpleComponent CreateDeclarativeUI()
     {
         // 🎉 TRUE SWIFTUI-STYLE DECLARATIVE SYNTAX! 🎉
@@ -145,7 +140,7 @@ class InputDemoApp
             new Text("🚀 Andy.TUI Input Components Demo")
                 .Title()
                 .Color(Color.Cyan),
-            
+
             " ", // Empty line
             
             // Form rows using nested layouts - pure declarative composition!
@@ -153,19 +148,19 @@ class InputDemoApp
                 new Text("  Name:").Bold().Color(Color.White),
                 new TextField("Enter your name...", this.Bind(() => name))
             },
-            
+
             new HStack(spacing: 2) {
                 new Text("  Pass:").Bold().Color(Color.White),
                 new TextField("Enter password...", this.Bind(() => password)).Secure()
             },
-            
+
             new HStack(spacing: 2) {
                 new Text("Country:").Bold().Color(Color.White),
                 new Dropdown<string>("Select a country...", countries, this.Bind(() => selectedCountry))
                     .Color(Color.White)
                     .PlaceholderColor(Color.Gray)
             },
-            
+
             " ", // Empty line
             
             // Button row with method chaining for styling
@@ -173,32 +168,32 @@ class InputDemoApp
                 new Button("Submit", HandleSubmit).Primary(),
                 new Button("Cancel", HandleCancel).Secondary()
             },
-            
+
             " ", // Empty line
             
             // Status and information section
             new Text("✅ SUCCESS: SwiftUI-like Collection Initializer Syntax!")
                 .Bold()
                 .Color(Color.Green),
-                
+
             new Text("This is EXACTLY like SwiftUI syntax:")
                 .Color(Color.Yellow),
-                
+
             new Text("  • VStack(spacing: 1) { ... } collection initializers")
                 .Color(Color.White),
-                
+
             new Text("  • Method chaining: .Bold().Color(Color.Red)")
                 .Color(Color.White),
-                
+
             new Text("  • Nested layouts: HStack inside VStack")
                 .Color(Color.White),
-                
+
             new Text("  • Two-way binding: this.Bind(() => property)")
                 .Color(Color.White),
-                
+
             new Text("  • Zero AddChild() calls - pure declarative!")
                 .Color(Color.White),
-            
+
             " ", // Empty line
             
             // Live state display
@@ -210,13 +205,13 @@ class InputDemoApp
                 .Color(Color.Gray),
             new Text($"  Country: '{(string.IsNullOrEmpty(selectedCountry) ? "Not selected" : selectedCountry)}'")
                 .Color(Color.Gray),
-                
+
             " ", // Empty line
             new Text("Use [Tab] to navigate between fields, [Enter] to submit")
                 .Color(Color.Yellow),
             new Text("Press Ctrl+C to exit")
                 .Color(Color.DarkGray)
-                
+
         };
     }
 
