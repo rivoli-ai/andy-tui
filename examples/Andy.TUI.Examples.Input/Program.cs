@@ -43,6 +43,7 @@ class Program
         Console.WriteLine("15. Transform Test (Text transformation)");
         Console.WriteLine("16. MultiSelectInput Test (Multiple selection lists)");
         Console.WriteLine("17. UI Components Showcase (Checkbox, RadioGroup, List, ProgressBar, Spinner)");
+        Console.WriteLine("18. Code Assistant (Simulated agentic CLI)");
         Console.WriteLine("\n0. Exit");
         Console.Write("\nEnter your choice (0-17): ");
 
@@ -101,6 +102,9 @@ class Program
                 break;
             case "17":
                 new UIComponentsShowcaseApp().Run();
+                break;
+            case "18":
+                new CodeAssistantExample("").Run();
                 break;
             case "0":
                 return;
