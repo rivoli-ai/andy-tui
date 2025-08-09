@@ -16,6 +16,158 @@ public class Enhanced3DRTreeTests
     }
 
     [Fact]
+    public void GetMinMaxZIndex_EmptyTree_ReturnsZero()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        Assert.Equal(0, tree.GetMinZIndex());
+        Assert.Equal(0, tree.GetMaxZIndex());
+    }
+
+    [Fact]
+    public void Update_OnlyZIndex_ChangesZButKeepsPosition()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var element = new TestElement("e1");
+        var bounds = new Rectangle(10, 10, 10, 10);
+
+        tree.Insert(bounds, 1, element);
+
+        // Move only z-index via Update (paths into UpdateZIndex)
+        tree.Update(bounds, 1, bounds, 5, element);
+
+        // Still queryable at same position
+        Assert.Contains(element, tree.Query(bounds));
+        // And topmost at the point should reflect new z
+        var topmost = tree.QueryTopmost(12, 12).FirstOrDefault();
+        Assert.Same(element, topmost);
+        Assert.Equal(5, tree.GetMaxZIndex());
+    }
+
+    [Fact]
+    public void BringToFront_WhenAlreadyTop_DoesNothing()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var e1 = new TestElement("e1");
+        tree.Insert(new Rectangle(0, 0, 5, 5), 10, e1);
+
+        var before = tree.GetMaxZIndex();
+        tree.BringToFront(e1);
+        var after = tree.GetMaxZIndex();
+
+        Assert.Equal(10, before);
+        Assert.Equal(before, after);
+    }
+
+    [Fact]
+    public void SendToBack_WhenAlreadyBottom_DoesNothing()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var e1 = new TestElement("e1");
+        tree.Insert(new Rectangle(0, 0, 5, 5), -3, e1);
+
+        var before = tree.GetMinZIndex();
+        tree.SendToBack(e1);
+        var after = tree.GetMinZIndex();
+
+        Assert.Equal(-3, before);
+        Assert.Equal(before, after);
+    }
+
+    [Fact]
+    public void QueryTopmost_NoElements_ReturnsEmpty()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        Assert.Empty(tree.QueryTopmost(0, 0));
+    }
+
+    [Fact]
+    public void UpdateZIndex_ElementNotFound_Throws()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var ghost = new TestElement("ghost");
+        Assert.Throws<ArgumentException>(() => tree.UpdateZIndex(ghost, 1, 2));
+    }
+
+    [Fact]
+    public void Update_ElementNotFound_Throws()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var ghost = new TestElement("ghost");
+        var r = new Rectangle(0, 0, 1, 1);
+        Assert.Throws<ArgumentException>(() => tree.Update(r, 0, r, 1, ghost));
+    }
+
+    [Fact]
+    public void Remove_IgnoresProvidedBoundsAndZ_RemovesByElement()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var e = new TestElement("e");
+        var actualBounds = new Rectangle(10, 10, 5, 5);
+        tree.Insert(actualBounds, 3, e);
+
+        // Provide incorrect bounds/z – implementation removes by element mapping
+        var removed = tree.Remove(new Rectangle(0, 0, 1, 1), 999, e);
+
+        Assert.True(removed);
+        Assert.Equal(0, tree.Count);
+        Assert.Empty(tree.Query(actualBounds));
+    }
+
+    [Fact]
+    public void Query_ReturnsSortedByZAscending()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var e1 = new TestElement("z5");
+        var e2 = new TestElement("z1");
+        var area = new Rectangle(0, 0, 10, 10);
+        tree.Insert(area, 5, e1);
+        tree.Insert(area, 1, e2);
+
+        var results = tree.Query(area).ToList();
+        Assert.Equal(new[] { e2, e1 }, results);
+    }
+
+    [Fact]
+    public void QueryPoint_ReturnsSortedByZDescending()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var e1 = new TestElement("z1");
+        var e2 = new TestElement("z5");
+        var area = new Rectangle(0, 0, 10, 10);
+        tree.Insert(area, 1, e1);
+        tree.Insert(area, 5, e2);
+
+        var results = tree.QueryPoint(1, 1).ToList();
+        Assert.Equal(new[] { e2, e1 }, results);
+    }
+
+    [Fact]
+    public void QueryWithZRange_MinGreaterThanMax_ReturnsEmpty()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var e = new TestElement("e");
+        var area = new Rectangle(0, 0, 10, 10);
+        tree.Insert(area, 3, e);
+
+        var results = tree.QueryWithZRange(area, 10, 5);
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public void FindRevealedByMovement_WhenStillCovering_ReturnsEmpty()
+    {
+        var tree = new Enhanced3DRTree<TestElement>();
+        var baseElem = new TestElement("base");
+        var cover = new TestElement("cover");
+        tree.Insert(new Rectangle(10, 10, 10, 10), 1, baseElem);
+        tree.Insert(new Rectangle(10, 10, 10, 10), 5, cover);
+
+        // Move cover slightly but still overlapping base -> not revealed by simplified logic
+        var revealed = tree.FindRevealedByMovement(new Rectangle(10, 10, 10, 10), new Rectangle(12, 12, 10, 10), 5);
+        Assert.Empty(revealed);
+    }
+
+    [Fact]
     public void Constructor_CreatesEmptyTree()
     {
         var tree = new Enhanced3DRTree<TestElement>();

@@ -16,6 +16,52 @@ public class OcclusionCalculatorTests
     }
 
     [Fact]
+    public void CalculateVisible_CompletelyOutsideViewport_YieldsNone()
+    {
+        var calculator = new OcclusionCalculator();
+        var elems = new List<SpatialElement<TestItem>>
+        {
+            new(new Rectangle(1000, 1000, 10, 10), 1, new TestItem("far"))
+        };
+        var viewport = new Rectangle(0, 0, 100, 100);
+
+        var visible = calculator.CalculateVisible(elems, viewport);
+        Assert.Empty(visible);
+    }
+
+    [Fact]
+    public void CalculateVisible_TwoSameZ_Overlapping_BothVisible()
+    {
+        var calculator = new OcclusionCalculator();
+        var a = new SpatialElement<TestItem>(new Rectangle(0, 0, 10, 10), 5, new TestItem("a"));
+        var b = new SpatialElement<TestItem>(new Rectangle(5, 5, 10, 10), 5, new TestItem("b"));
+        var viewport = new Rectangle(0, 0, 100, 100);
+
+        var visible = calculator.CalculateVisible(new[] { a, b }, viewport).ToList();
+        Assert.Equal(2, visible.Count);
+        Assert.Contains(a, visible);
+        Assert.Contains(b, visible);
+        Assert.False(a.IsFullyOccluded);
+        Assert.False(b.IsFullyOccluded);
+    }
+
+    [Fact]
+    public void CalculateDirtyRegions_NoOverlap_ZChange_MarksOnlySelf()
+    {
+        var calculator = new OcclusionCalculator();
+        var e1 = new SpatialElement<TestItem>(new Rectangle(0, 0, 5, 5), 1, new TestItem("e1"));
+        var e2 = new SpatialElement<TestItem>(new Rectangle(100, 100, 5, 5), 2, new TestItem("e2"));
+        var all = new List<SpatialElement<TestItem>> { e1, e2 };
+
+        var changes = new[] { (e1.Element, e1.Bounds, 1, e1.Bounds, 3) };
+        var dirty = calculator.CalculateDirtyRegions(all, changes).ToList();
+
+        // Should at least include the element's bounds; others are far away
+        Assert.Contains(dirty, r => r.Contains(0, 0));
+        Assert.DoesNotContain(dirty, r => r.Contains(100, 100));
+    }
+
+    [Fact]
     public void CalculateVisible_EmptyCollection_ReturnsEmpty()
     {
         var calculator = new OcclusionCalculator();

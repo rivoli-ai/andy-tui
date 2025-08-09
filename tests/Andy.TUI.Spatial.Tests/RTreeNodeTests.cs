@@ -458,6 +458,35 @@ public class RTreeNodeTests
     }
 
     [Fact]
+    public void Split_InternalNode_WithTightClusters_KeepsBalance()
+    {
+        var node = new RTreeNode<TestItem>(isLeaf: false, level: 1);
+
+        // Cluster A around (0,0)
+        for (int i = 0; i < 3; i++)
+        {
+            var child = new RTreeNode<TestItem>(isLeaf: true, level: 0);
+            child.AddEntry(new RTreeEntry<TestItem>(new Rectangle(i, i, 2, 2), i, new TestItem($"A{i}")));
+            node.AddChild(child);
+        }
+
+        // Cluster B around (100,100)
+        for (int i = 0; i < 3; i++)
+        {
+            var child = new RTreeNode<TestItem>(isLeaf: true, level: 0);
+            child.AddEntry(new RTreeEntry<TestItem>(new Rectangle(100 + i, 100 + i, 2, 2), i, new TestItem($"B{i}")));
+            node.AddChild(child);
+        }
+
+        var newNode = node.Split();
+
+        Assert.Equal(node.Level, newNode.Level);
+        Assert.True(node.Children.Count >= 2);
+        Assert.True(newNode.Children.Count >= 2);
+        Assert.Equal(6, node.Children.Count + newNode.Children.Count);
+    }
+
+    [Fact]
     public void Split_InternalNode_DistributesChildrenCorrectly()
     {
         var node = new RTreeNode<TestItem>(isLeaf: false, level: 1);
