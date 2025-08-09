@@ -1,12 +1,60 @@
 namespace Andy.TUI.Examples.BubbleTea;
 
+using System.Net.Http;
+using System.Threading.Tasks;
+using Andy.TUI.Declarative;
+using Andy.TUI.Declarative.Components;
+using Andy.TUI.Declarative.Layout;
+using Andy.TUI.Declarative.Rendering;
+using Andy.TUI.Terminal;
+using Andy.TUI.Terminal.Rendering;
+
 public static class HttpExample
 {
     public static void Run()
     {
-        Console.WriteLine("http example placeholder");
-        Console.WriteLine("TODO: implement async HTTP fetch with loading state");
-        Console.WriteLine("Press Enter to exit.");
-        Console.ReadLine();
+        var terminal = new AnsiTerminal();
+        using var rendering = new RenderingSystem(terminal);
+        var renderer = new DeclarativeRenderer(rendering);
+        rendering.Initialize();
+
+        var app = new HttpApp(renderer);
+        renderer.Run(() => app.Render());
+    }
+
+    private class HttpApp
+    {
+        private readonly DeclarativeRenderer _renderer;
+        private string _status = "Press [Fetch] to GET example.com";
+        private string _body = "";
+
+        public HttpApp(DeclarativeRenderer renderer) { _renderer = renderer; }
+
+        public ISimpleComponent Render()
+        {
+            return new VStack(spacing: 1) {
+                new Text("HTTP Fetch").Bold(),
+                new Text(_status).Color(Color.Cyan),
+                new Button("Fetch", () => _ = Fetch()),
+                new Text(_body).Wrap(TextWrap.Word).MaxWidth(70)
+            };
+        }
+
+        private async Task Fetch()
+        {
+            _status = "Fetching...";
+            _renderer.Render(new VStack());
+            try
+            {
+                using var client = new HttpClient();
+                _body = await client.GetStringAsync("https://example.com");
+                _status = "Done";
+            }
+            catch (Exception ex)
+            {
+                _status = $"Error: {ex.Message}";
+            }
+            _renderer.Render(new VStack());
+        }
     }
 }
