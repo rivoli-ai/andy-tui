@@ -3,8 +3,7 @@ using System.Text;
 
 static class ExampleRunner
 {
-    private static readonly string RepoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
-    private static readonly string ExamplesRoot = Path.Combine(RepoRoot, "examples");
+    private static readonly string ExamplesRoot = ResolveExamplesRoot();
 
     public static int Run(string[] args)
     {
@@ -83,6 +82,34 @@ static class ExampleRunner
             .OrderBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToList();
         return projects;
+    }
+
+    private static string ResolveExamplesRoot()
+    {
+        // Start from project output directory: .../examples/Andy.TUI.Examples.Runner/bin/Debug/net8.0
+        // Go up to project directory, then its parent should be 'examples'
+        var projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+        var parent = Directory.GetParent(projectDir)?.FullName;
+        if (!string.IsNullOrEmpty(parent) &&
+            string.Equals(Path.GetFileName(parent), "examples", StringComparison.OrdinalIgnoreCase))
+        {
+            return parent;
+        }
+
+        // Fallback: walk upwards to find a directory named 'examples'
+        var cursor = projectDir;
+        while (!string.IsNullOrEmpty(cursor))
+        {
+            var candidate = Path.Combine(cursor, "examples");
+            if (Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+            cursor = Directory.GetParent(cursor)?.FullName ?? string.Empty;
+        }
+
+        // Last resort: use project directory (will at least avoid exceptions)
+        return projectDir;
     }
 
     private sealed class ProjectInfo
