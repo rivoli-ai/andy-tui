@@ -183,31 +183,34 @@ public class Enhanced3DRTree<T> : I3DSpatialIndex<T> where T : class
     
     public IEnumerable<T> FindOccludedBy(T element)
     {
+        // Returns elements that are occluded by the provided element (i.e., this element sits above them)
         if (!_elementToEntry.TryGetValue(element, out var entry))
             yield break;
-            
-        var entries = new List<RTreeEntry<T>>();
-        _root?.Query(entry.Bounds, entries);
-        
-        foreach (var other in entries.Where(e => e.ZIndex > entry.ZIndex))
+
+        var candidates = new List<RTreeEntry<T>>();
+        _root?.Query(entry.Bounds, candidates);
+
+        foreach (var lower in candidates.Where(e => e.ZIndex < entry.ZIndex))
         {
-            if (other.Bounds.Contains(entry.Bounds))
-                yield return other.Element;
+            // Consider any intersection as occlusion (partial or full)
+            if (lower.Bounds.IntersectsWith(entry.Bounds))
+                yield return lower.Element;
         }
     }
     
     public IEnumerable<T> FindOccluding(T element)
     {
+        // Returns elements that occlude the provided element (i.e., elements above it)
         if (!_elementToEntry.TryGetValue(element, out var entry))
             yield break;
-            
-        var entries = new List<RTreeEntry<T>>();
-        _root?.Query(entry.Bounds, entries);
-        
-        foreach (var other in entries.Where(e => e.ZIndex < entry.ZIndex))
+
+        var candidates = new List<RTreeEntry<T>>();
+        _root?.Query(entry.Bounds, candidates);
+
+        foreach (var higher in candidates.Where(e => e.ZIndex > entry.ZIndex))
         {
-            if (entry.Bounds.Contains(other.Bounds))
-                yield return other.Element;
+            if (higher.Bounds.IntersectsWith(entry.Bounds))
+                yield return higher.Element;
         }
     }
     
@@ -230,20 +233,58 @@ public class Enhanced3DRTree<T> : I3DSpatialIndex<T> where T : class
     {
         if (!_elementToEntry.TryGetValue(element, out var entry))
             return false;
-            
-        var occluders = FindOccludedBy(element).ToList();
-        return occluders.Any(); // Simplified - should check actual coverage
+
+        var candidates = new List<RTreeEntry<T>>();
+        _root?.Query(entry.Bounds, candidates);
+
+        // Completely occluded if any higher-z rectangle fully contains it
+        return candidates.Any(e => e.ZIndex > entry.ZIndex && e.Bounds.Contains(entry.Bounds));
     }
     
     public Rectangle? GetVisibleRegion(T element)
     {
         if (!_elementToEntry.TryGetValue(element, out var entry))
             return null;
-            
+
+        // If fully occluded, no visible region
         if (IsCompletelyOccluded(element))
             return null;
-            
-        return entry.Bounds; // Simplified - should calculate actual visible region
+
+        // Compute a simple remaining visible rectangle by subtracting higher-z occluders
+        var candidates = new List<RTreeEntry<T>>();
+        _root?.Query(entry.Bounds, candidates);
+
+        var occluders = candidates.Where(e => e.ZIndex > entry.ZIndex && e.Bounds.IntersectsWith(entry.Bounds))
+                                  .Select(e => e.Bounds)
+                                  .ToList();
+
+        if (occluders.Count == 0)
+            return entry.Bounds;
+
+        // Start with the full region and iteratively subtract occluders to get uncovered parts
+        var uncovered = new List<Rectangle> { entry.Bounds };
+        foreach (var occ in occluders)
+        {
+            var next = new List<Rectangle>();
+            foreach (var region in uncovered)
+            {
+                if (!region.IntersectsWith(occ))
+                {
+                    next.Add(region);
+                }
+                else if (!occ.Contains(region))
+                {
+                    next.AddRange(SubtractRectangle(region, occ));
+                }
+                // else fully covered, drop region
+            }
+            uncovered = next;
+            if (uncovered.Count == 0)
+                break;
+        }
+
+        // Return the largest remaining rectangle if any, else null
+        return uncovered.Count > 0 ? uncovered.OrderByDescending(r => r.Area).First() : null;
     }
     
     public void BringToFront(T element)
@@ -295,7 +336,51 @@ public class Enhanced3DRTree<T> : I3DSpatialIndex<T> where T : class
     
     public void RecalculateOcclusion()
     {
-        // TODO: Implement full occlusion recalculation
+        // Run a full occlusion pass over all elements to warm any caches/stats
+        if (_root == null)
+            return;
+
+        var allEntries = _elementToEntry.Values.Select(e => new SpatialElement<T>(e.Bounds, e.ZIndex, e.Element)).ToList();
+        // Use a viewport that covers everything present
+        var union = ComputeUnionBounds(allEntries.Select(e => e.Bounds));
+        _ = _occlusionCalculator.CalculateVisible(allEntries, union).ToList();
+    }
+
+    private Rectangle ComputeUnionBounds(IEnumerable<Rectangle> rects)
+    {
+        var list = rects.ToList();
+        if (list.Count == 0)
+            return new Rectangle(0, 0, 0, 0);
+        var acc = list[0];
+        for (int i = 1; i < list.Count; i++)
+            acc = Rectangle.Union(acc, list[i]);
+        return acc;
+    }
+
+    private IEnumerable<Rectangle> SubtractRectangle(Rectangle region, Rectangle occluder)
+    {
+        var intersection = Rectangle.Intersect(region, occluder);
+        if (intersection.IsEmpty)
+        {
+            yield return region;
+            yield break;
+        }
+
+        if (intersection.Y > region.Y)
+            yield return new Rectangle(region.X, region.Y, region.Width, intersection.Y - region.Y);
+
+        var intersectionBottom = intersection.Y + intersection.Height;
+        var regionBottom = region.Y + region.Height;
+        if (intersectionBottom < regionBottom)
+            yield return new Rectangle(region.X, intersectionBottom, region.Width, regionBottom - intersectionBottom);
+
+        if (intersection.X > region.X)
+            yield return new Rectangle(region.X, intersection.Y, intersection.X - region.X, intersection.Height);
+
+        var intersectionRight = intersection.X + intersection.Width;
+        var regionRight = region.X + region.Width;
+        if (intersectionRight < regionRight)
+            yield return new Rectangle(intersectionRight, intersection.Y, regionRight - intersectionRight, intersection.Height);
     }
     
     public void Rebuild()

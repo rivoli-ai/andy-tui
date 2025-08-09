@@ -206,6 +206,16 @@ internal class RTreeNode<T>
         if (IsLeaf)
             throw new InvalidOperationException("Cannot choose child from a leaf node.");
             
+        // If the new bounds does not intersect any child MBRs, choose the child
+        // with the smallest area (helps reduce overall tree growth when far away).
+        var intersectingChildren = Children.Where(c => c.MBR.IntersectsWith(bounds)).ToList();
+        if (intersectingChildren.Count == 0)
+        {
+            return Children.OrderBy(c => c.MBR.Area).First();
+        }
+
+        // Otherwise, follow classic R-Tree heuristic: minimal area enlargement,
+        // breaking ties by choosing the smallest area.
         RTreeNode<T>? bestChild = null;
         int minEnlargement = int.MaxValue;
         int minArea = int.MaxValue;
