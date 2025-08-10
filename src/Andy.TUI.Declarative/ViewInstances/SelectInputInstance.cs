@@ -26,6 +26,9 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
     private int _highlightedIndex = 0;
     private int _scrollOffset = 0;
     private IDisposable? _bindingSubscription;
+    private int? _cachedMaxItemWidth;
+    private int _lastMeasuredFromIndex = -1;
+    private int _lastMeasuredCount = 0;
     
     public SelectInputInstance(string id) : base(id)
     {
@@ -139,11 +142,18 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
             throw new ArgumentException($"Expected SelectInput<{typeof(T).Name}> declaration");
         
         // Update properties from declaration
+        var prevCount = _items.Count;
         _items = selectInput.GetItems();
         _itemRenderer = selectInput.GetItemRenderer();
         _visibleItems = selectInput.GetVisibleItems();
         _showIndicator = selectInput.GetShowIndicator();
         _placeholder = selectInput.GetPlaceholder();
+        if (_items.Count != prevCount)
+        {
+            _cachedMaxItemWidth = null;
+            _lastMeasuredFromIndex = -1;
+            _lastMeasuredCount = 0;
+        }
         
         // Handle binding changes
         var newBinding = selectInput.GetBinding();
@@ -171,12 +181,35 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
     {
         var layout = new LayoutBox();
         
-        // Calculate width based on longest item
+        // Calculate width based on longest item (virtualized sampling to avoid O(N) on large lists)
         var maxItemWidth = _placeholder.Length;
         if (_items.Count > 0)
         {
-            maxItemWidth = Math.Max(maxItemWidth, 
-                _items.Max(item => _itemRenderer(item).Length));
+            if (_cachedMaxItemWidth.HasValue && _lastMeasuredFromIndex == _scrollOffset && _lastMeasuredCount == _visibleItems)
+            {
+                maxItemWidth = Math.Max(maxItemWidth, _cachedMaxItemWidth.Value);
+            }
+            else
+            {
+                var from = Math.Max(0, _scrollOffset - 2);
+                var to = Math.Min(_items.Count, _scrollOffset + _visibleItems + 2);
+                var windowWidth = 0;
+                for (int i = from; i < to; i++)
+                {
+                    var len = _itemRenderer(_items[i]).Length;
+                    if (len > windowWidth) windowWidth = len;
+                }
+                var headSample = Math.Min(_items.Count, 50);
+                for (int i = 0; i < headSample; i++)
+                {
+                    var len = _itemRenderer(_items[i]).Length;
+                    if (len > windowWidth) windowWidth = len;
+                }
+                _cachedMaxItemWidth = windowWidth;
+                _lastMeasuredFromIndex = _scrollOffset;
+                _lastMeasuredCount = _visibleItems;
+                maxItemWidth = Math.Max(maxItemWidth, windowWidth);
+            }
         }
         
         // Add space for selection indicator and border
