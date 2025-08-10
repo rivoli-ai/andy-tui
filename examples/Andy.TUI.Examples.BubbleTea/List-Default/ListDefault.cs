@@ -34,7 +34,7 @@ public static class ListDefault
         {
             return new VStack(spacing: 1) {
                 new Text("Default List (Up/Down Enter, Ctrl+C to quit)").Bold(),
-                new SelectInput<string>(_songs, new Binding<Optional<string>>(() => _selected, v => _selected = v), s => s, 8, "Choose a song")
+                new SelectInput<string>(_songs, new Binding<Optional<string>>(() => _selected, v => _selected = v), s => "♪ " + s, 8, "Choose a song")
                     .VisibleItems(8),
                 new Text(_selected.HasValue ? $"▶ {_selected.Value}" : "(none)")
                     .Color(_selected.HasValue ? Color.Cyan : Color.DarkGray)

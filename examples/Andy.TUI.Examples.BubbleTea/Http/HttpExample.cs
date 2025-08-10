@@ -27,6 +27,7 @@ public static class HttpExample
         private readonly DeclarativeRenderer _renderer;
         private string _status = "Press [Fetch] to GET example.com";
         private string _body = "";
+        private bool _loading = false;
 
         public HttpApp(DeclarativeRenderer renderer) { _renderer = renderer; }
 
@@ -34,8 +35,11 @@ public static class HttpExample
         {
             return new VStack(spacing: 1) {
                 new Text("HTTP Fetch").Bold(),
-                new Text(_status).Color(Color.Cyan),
-                new Button("Fetch", () => _ = Fetch()),
+                new HStack(spacing: 1) {
+                    _loading ? (ISimpleComponent)new Spinner(SpinnerStyle.Dots, label: "Loading...") : new Text(""),
+                    new Text(_status).Color(Color.Cyan),
+                },
+                new Button(_loading ? "Fetching..." : "Fetch", () => { if (!_loading) _ = Fetch(); }),
                 new Text(_body).Wrap(TextWrap.Word).MaxWidth(70)
             };
         }
@@ -43,6 +47,7 @@ public static class HttpExample
         private async Task Fetch()
         {
             _status = "Fetching...";
+            _loading = true;
             _renderer.Render(new VStack());
             try
             {
@@ -54,6 +59,7 @@ public static class HttpExample
             {
                 _status = $"Error: {ex.Message}";
             }
+            _loading = false;
             _renderer.Render(new VStack());
         }
     }

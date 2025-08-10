@@ -46,7 +46,8 @@ public static class Autocomplete
                     new Text("Search:"),
                     new TextField("Start typing...", new Binding<string>(() => _query, v => _query = v))
                 },
-                new SelectInput<string>(filtered, new Binding<Optional<string>>(() => _selected, v => _selected = v), s => s, 7, "No matches")
+                new SelectInput<string>(filtered, new Binding<Optional<string>>(() => _selected, v => _selected = v),
+                    s => s, 7, filtered.Count == 0 ? "No matches" : "Pick a value")
                     .VisibleItems(7),
                 new Text(_selected.HasValue ? $"You selected: {_selected.Value}" : "(no selection)")
                     .Color(_selected.HasValue ? Color.Green : Color.DarkGray)

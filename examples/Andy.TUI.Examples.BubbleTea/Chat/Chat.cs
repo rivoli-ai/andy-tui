@@ -32,7 +32,7 @@ public static class Chat
                 new Text("Chat (Enter to send, Ctrl+C to quit)").Bold(),
                 BuildMessagesBox(),
                 new HStack(spacing: 1) {
-                    new Text("> "),
+                    new Text("> ").Dim(),
                     new TextField("Type message...", new Binding<string>(() => _input, v => _input = v)),
                     new Button("Send", OnSend)
                 }
@@ -44,7 +44,7 @@ public static class Chat
             var box = new Box().WithWidth(60).WithHeight(12).WithOverflow(Overflow.Scroll);
             foreach (var m in _messages.TakeLast(10))
             {
-                box.Add(new Text(m));
+                box.Add(new Text(m).Wrap(TextWrap.Word).MaxWidth(58));
             }
             return box;
         }
