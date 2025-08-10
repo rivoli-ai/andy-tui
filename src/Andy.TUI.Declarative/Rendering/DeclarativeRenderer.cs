@@ -32,6 +32,26 @@ public class DeclarativeRenderer
         _logger = DebugContext.Logger.ForCategory("DeclarativeRenderer");
 
         _logger.Info("DeclarativeRenderer initialized");
+
+        // Re-render on terminal resize when possible
+        if (_renderingSystem is RenderingSystem rs)
+        {
+            rs.Terminal.SizeChanged += (_, __) => { _needsRender = true; };
+        }
+    }
+
+    public DeclarativeRenderer(IRenderingSystem renderingSystem, IInputHandler inputHandler, object? owner = null)
+        : this(renderingSystem, owner)
+    {
+        _externalInputHandler = inputHandler;
+    }
+
+    /// <summary>
+    /// Public API to request a re-render from external events (timers, async work, etc.).
+    /// </summary>
+    public void RequestRender()
+    {
+        _needsRender = true;
     }
 
     /// <summary>
@@ -39,7 +59,8 @@ public class DeclarativeRenderer
     /// </summary>
     public void Run(Func<ISimpleComponent> createRoot)
     {
-        var inputHandler = new ConsoleInputHandler();
+        // Use injected handler if provided; otherwise default to ConsoleInputHandler
+        var inputHandler = _externalInputHandler ?? new ConsoleInputHandler();
         inputHandler.KeyPressed += OnKeyPressed;
         inputHandler.Start();
 
@@ -56,7 +77,8 @@ public class DeclarativeRenderer
                     _needsRender = false;
                 }
 
-                System.Threading.Thread.Sleep(16); // ~60 FPS
+                // Light sleep to avoid busy loop; frame pacing is handled by scheduler
+                System.Threading.Thread.Sleep(2);
             }
         }
         finally
@@ -64,6 +86,8 @@ public class DeclarativeRenderer
             inputHandler.Stop();
         }
     }
+
+    private readonly IInputHandler? _externalInputHandler;
 
     /// <summary>
     /// Renders a single frame.
@@ -92,6 +116,10 @@ public class DeclarativeRenderer
 
         // Update absolute z-indices from root
         rootInstance.UpdateAbsoluteZIndex(0);
+
+        // Prime focus list by walking the rendered instances hierarchy
+        // Initial focus set below will pick the first focusable if none is focused yet
+        // (FocusManager gets registrations via ViewInstance.Context setter)
         _logger.Debug("Updated absolute z-indices");
 
         // Render the virtual DOM from instances
@@ -130,7 +158,7 @@ public class DeclarativeRenderer
             _logger.Debug("Forced render flush");
 
             // Give the render thread time to process
-            System.Threading.Thread.Sleep(10);
+            System.Threading.Thread.Sleep(1);
             _logger.Debug("Buffer dirty state after flush: {0}", rs.Buffer.IsDirty);
         }
 

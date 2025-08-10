@@ -49,8 +49,8 @@ Goal: Achieve feature and UX parity with Charmbracelet BubbleTea examples, keepi
 
 ### Performance and rendering
 - [ ] Virtualize long lists (render only visible rows)
-- [ ] ANSI renderer optimization: smarter style diffing and cross-line coalescing
-- [ ] Terminal resize handling (SIGWINCH): recalc constraints, re-render immediately
+- [x] ANSI renderer optimization: smarter style diffing and cross-line coalescing
+- [x] Terminal resize handling (SIGWINCH): recalc constraints, re-render immediately
 
 ### Reliability and async patterns
 - [ ] Standard async command pattern with cancellation tokens and error surfacing in UI
