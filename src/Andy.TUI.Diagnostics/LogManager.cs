@@ -116,6 +116,13 @@ public static class LogManager
     {
         var entries = _globalBuffer.GetEntries(since: since, minLevel: minLevel);
         
+        // Ensure directory exists
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        
         using var writer = new StreamWriter(filePath, append: false);
         writer.WriteLine($"=== Andy.TUI Log Export ===");
         writer.WriteLine($"Exported: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");

@@ -9,9 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageReference Include="xunit" Version="2.6.6" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -25,6 +25,8 @@
     <ProjectReference Include="..\..\src\Andy.TUI.Declarative\Andy.TUI.Declarative.csproj" />
     <ProjectReference Include="..\..\src\Andy.TUI.Core\Andy.TUI.Core.csproj" />
     <ProjectReference Include="..\..\src\Andy.TUI.Terminal\Andy.TUI.Terminal.csproj" />
+    <ProjectReference Include="..\..\src\Andy.TUI.Diagnostics\Andy.TUI.Diagnostics.csproj" />
+    <ProjectReference Include="..\Andy.TUI.Tests.Common\Andy.TUI.Tests.Common.csproj" />
   </ItemGroup>
 
 </Project>

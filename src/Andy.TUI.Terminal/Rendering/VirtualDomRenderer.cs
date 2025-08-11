@@ -44,9 +44,8 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     /// </summary>
     public void Render(VirtualNode tree)
     {
-        using (_logger.MeasureTime("Full render"))
-        {
-            _logger.Debug($"Starting full render. Tree nodes: {CountNodes(tree)}");
+        var startTime = DateTime.UtcNow;
+        _logger.Debug($"Starting full render. Tree nodes: {CountNodes(tree)}");
             _currentTree = tree;
             _renderedElements.Clear();
             _dirtyRegionTracker.Clear();
@@ -64,14 +63,15 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
         // Second pass: render elements in z-order
         RenderInZOrder(_rootElement);
-            _logger.Debug($"Render complete. Rendered elements: {_renderedElements.Count}");
-        }
+        
+        var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
+        _logger.Debug($"Render complete. Rendered elements: {_renderedElements.Count}, Time: {elapsed:F2}ms");
     }
     
     private int CountNodes(VirtualNode node)
     {
-        if (node is ContainerNode container)
-            return 1 + container.Children.Sum(CountNodes);
+        if (node.Children != null && node.Children.Count > 0)
+            return 1 + node.Children.Sum(CountNodes);
         return 1;
     }
 
@@ -83,20 +83,22 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         if (_currentTree == null)
             throw new InvalidOperationException("No tree has been rendered yet.");
 
-        using (_logger.MeasureTime($"Apply {patches.Count} patches"))
-        {
-            _logger.Debug($"ApplyPatches: {patches.Count} patches to apply");
-            _logger.Debug($"Stored paths: {string.Join("; ", _renderedElements.Keys.Select(k => "[" + string.Join(",", k) + "]"))}");
+        var startTime = DateTime.UtcNow;
+        _logger.Debug($"ApplyPatches: {patches.Count} patches to apply");
+        _logger.Debug($"Stored paths: {string.Join("; ", _renderedElements.Keys.Select(k => "[" + string.Join(",", k) + "]"))}");
 
-            // Apply patches and track dirty regions
-            foreach (var patch in patches)
-            {
-                _logger.Debug($"Applying patch: {patch.GetType().Name} at path [{string.Join(",", patch.Path)}]");
-                patch.Accept(this);
-            }
+        // Apply patches and track dirty regions
+        foreach (var patch in patches)
+        {
+            _logger.Debug($"Applying patch: {patch.GetType().Name} at path [{string.Join(",", patch.Path)}]");
+            patch.Accept(this);
+        }
 
         // Re-render only dirty regions
         RenderDirtyRegions();
+        
+        var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
+        _logger.Debug($"Applied {patches.Count} patches in {elapsed:F2}ms");
     }
 
     private RenderedElement BuildRenderTree(VirtualNode node, int x, int y, int[] path)
