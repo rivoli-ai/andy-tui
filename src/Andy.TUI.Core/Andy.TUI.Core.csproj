@@ -1,13 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Andy.TUI.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Andy.TUI.VirtualDom\Andy.TUI.VirtualDom.csproj" />
+    <ProjectReference Include="..\Andy.TUI.Observable\Andy.TUI.Observable.csproj" />
+    <ProjectReference Include="..\Andy.TUI.Spatial\Andy.TUI.Spatial.csproj" />
+    <ProjectReference Include="..\Andy.TUI.Diagnostics\Andy.TUI.Diagnostics.csproj" />
   </ItemGroup>
 
 </Project>

@@ -7,18 +7,22 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>Andy.TUI</PackageId>
+    <Version>1.0.0</Version>
     <Title>Andy TUI</Title>
     <Authors>Rivoli AI</Authors>
     <Company>Rivoli AI</Company>
-    <Description>A reactive text user interface framework for .NET applications</Description>
+    <Description>A modern, reactive text user interface framework for .NET applications. Build beautiful console applications with a component-based architecture, virtual DOM, and comprehensive animation support.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/rivoli-ai/andy-tui</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rivoli-ai/andy-tui</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>text;user interface;tui;gui;framework;extensible</PackageTags>
+    <PackageTags>tui;terminal;console;text-ui;terminal-ui;component;reactive;dotnet;csharp;cross-platform</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>andy_tui_icon.png</PackageIcon>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <!-- Suppress warnings for single-file publishing -->
@@ -32,7 +36,25 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <ProjectReference Include="..\Andy.TUI.Core\Andy.TUI.Core.csproj" />
+    <ProjectReference Include="..\Andy.TUI.Declarative\Andy.TUI.Declarative.csproj" />
+    <ProjectReference Include="..\Andy.TUI.Terminal\Andy.TUI.Terminal.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\assets\andy_tui_icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- Include referenced project DLLs in the NuGet package -->
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="BuildOnlySettings;ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')-&gt;WithMetadataValue('PrivateAssets', ''))" />
+    </ItemGroup>
+  </Target>
 
 </Project>

@@ -1,4 +1,4 @@
-using Andy.TUI.Core.Observable;
+using Andy.TUI.Observable;
 using System.Collections.Specialized;
 using System.ComponentModel;
 

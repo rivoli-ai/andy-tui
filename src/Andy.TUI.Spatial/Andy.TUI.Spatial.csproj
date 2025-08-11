@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Andy.TUI.Spatial</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Andy.TUI.Core.Tests" />
+    <InternalsVisibleTo Include="Andy.TUI.Terminal.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Andy.TUI.VirtualDom\Andy.TUI.VirtualDom.csproj" />
+  </ItemGroup>
+
+</Project>

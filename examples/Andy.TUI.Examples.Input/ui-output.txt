@@ -1,0 +1,12 @@
+FragmentNode:
+  ElementNode: text Props: {style=Style(fg=Cyan, bold), x=0, y=0, }
+    TextNode: '🚀 Andy.TUI Input Components Demo'
+  ElementNode: text Props: {style=Style(), x=0, y=2, }
+    TextNode: ' '
+  FragmentNode:
+    ElementNode: text Props: {style=Style(fg=White, bold), x=0, y=0, }
+      TextNode: '  Name:'
+    ElementNode: text Props: {x=9, y=0, }
+      TextNode: '[Enter your name...  ]'
+  ElementNode: text Props: {style=Style(fg=White, bg=Blue), x=0, y=6, }
+    TextNode: '[ Submit ]'

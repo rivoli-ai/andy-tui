@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Title>Andy.TUI Declarative UI Framework</Title>
+    <Description>SwiftUI-like declarative framework for terminal user interfaces</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Andy.TUI.Core/Andy.TUI.Core.csproj" />
+    <ProjectReference Include="../Andy.TUI.Terminal/Andy.TUI.Terminal.csproj" />
+    <ProjectReference Include="../Andy.TUI.Layout/Andy.TUI.Layout.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="_broken/**" />
+  </ItemGroup>
+
+</Project>

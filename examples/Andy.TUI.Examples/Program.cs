@@ -1,24 +1,21 @@
-using Andy.TUI;
-
-namespace Andy.TUI.Examples;
+using Andy.TUI.Examples;
 
 class Program
 {
     static void Main(string[] args)
     {
-        Console.WriteLine("Andy.TUI Examples");
-        Console.WriteLine("=================\n");
-        
         if (args.Length == 0)
         {
             Console.WriteLine("Available examples:");
-            Console.WriteLine("  dotnet run observable - Run the observable system example");
-            Console.WriteLine("  dotnet run collection - Run the observable collection example");
-            Console.WriteLine("  dotnet run all       - Run all examples");
+            Console.WriteLine("  observable - Observable properties example");
+            Console.WriteLine("  collection - Observable collection example");
+            Console.WriteLine("  all - Run all examples");
             return;
         }
+
+        var example = args[0].ToLower();
         
-        switch (args[0].ToLower())
+        switch (example)
         {
             case "observable":
                 ObservableSystemExample.Run();
@@ -28,12 +25,11 @@ class Program
                 break;
             case "all":
                 ObservableSystemExample.Run();
-                Console.WriteLine("\n" + new string('=', 50) + "\n");
+                Console.WriteLine();
                 ObservableCollectionExample.Run();
                 break;
             default:
-                Console.WriteLine($"Unknown example: {args[0]}");
-                Console.WriteLine("Use 'dotnet run' to see available examples");
+                Console.WriteLine($"Unknown example: {example}");
                 break;
         }
     }
