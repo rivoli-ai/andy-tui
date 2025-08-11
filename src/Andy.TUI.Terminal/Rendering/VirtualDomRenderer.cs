@@ -67,12 +67,14 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         if (_currentTree == null)
             throw new InvalidOperationException("No tree has been rendered yet.");
 
+        // Debug logging (uncomment to debug patch application issues)
         // Console.Error.WriteLine($"[VirtualDomRenderer] ApplyPatches: {patches.Count} patches");
+        // Console.Error.WriteLine($"[VirtualDomRenderer] Stored paths: {string.Join("; ", _renderedElements.Keys.Select(k => "[" + string.Join(",", k) + "]"))}");
 
         // Apply patches and track dirty regions
         foreach (var patch in patches)
         {
-            // Console.Error.WriteLine($"[VirtualDomRenderer] Applying patch: {patch.GetType().Name}");
+            // Console.Error.WriteLine($"[VirtualDomRenderer] Applying patch: {patch.GetType().Name} at path [{string.Join(",", patch.Path)}]");
             patch.Accept(this);
         }
 
@@ -206,9 +208,12 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private void RenderDirtyRegions()
     {
         var dirtyRegions = _dirtyRegionTracker.GetDirtyRegions().ToList();
+        // Debug logging (uncomment to debug rendering issues)
+        // Console.Error.WriteLine($"[VirtualDomRenderer] RenderDirtyRegions: {dirtyRegions.Count} dirty regions");
 
         if (dirtyRegions.Count == 0)
         {
+            // Console.Error.WriteLine("[VirtualDomRenderer] No dirty regions, skipping render");
             return;
         }
 
@@ -312,7 +317,15 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
     public void VisitReplace(ReplacePatch patch)
     {
-        if (_renderedElements.TryGetValue(patch.Path, out var element))
+        var element = default(RenderedElement);
+        if (!_renderedElements.TryGetValue(patch.Path, out element))
+        {
+            // Try with [0] prefix
+            var prefixedPath = new[] { 0 }.Concat(patch.Path).ToArray();
+            _renderedElements.TryGetValue(prefixedPath, out element);
+        }
+        
+        if (element != null)
         {
             _dirtyRegionTracker.MarkDirty(new Rectangle(element.X, element.Y, element.Width, element.Height));
             element.Node = patch.NewNode;
@@ -321,8 +334,23 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
     public void VisitUpdateProps(UpdatePropsPatch patch)
     {
-        if (_renderedElements.TryGetValue(patch.Path, out var element))
+        // Debug logging (uncomment to debug patch path issues)
+        // Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateProps: Looking for path [{string.Join(",", patch.Path)}]");
+        
+        // Patches use relative paths, but we store with [0] prefix for the root
+        // Try both the original path and with [0] prefix
+        var element = default(RenderedElement);
+        if (!_renderedElements.TryGetValue(patch.Path, out element))
         {
+            // Try with [0] prefix
+            var prefixedPath = new[] { 0 }.Concat(patch.Path).ToArray();
+            // Console.Error.WriteLine($"[VirtualDomRenderer] Trying prefixed path [{string.Join(",", prefixedPath)}]");
+            _renderedElements.TryGetValue(prefixedPath, out element);
+        }
+        
+        if (element != null)
+        {
+            // Console.Error.WriteLine($"[VirtualDomRenderer] Found element at path [{string.Join(",", patch.Path)}]");
             // Store original dimensions before any updates
             var originalX = element.X;
             var originalY = element.Y;
@@ -377,20 +405,35 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                 _dirtyRegionTracker.MarkDirty(rect);
             }
         }
+        else
+        {
+            // Debug logging (uncomment to debug missing elements)
+            // Console.Error.WriteLine($"[VirtualDomRenderer] Element NOT FOUND at path [{string.Join(",", patch.Path)}]");
+        }
     }
 
     public void VisitUpdateText(UpdateTextPatch patch)
     {
         // Text nodes are not stored directly in _renderedElements
         // We need to find the parent element that contains this text node
-        // Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateText: path length={patch.Path.Length}, newText='{patch.NewText}'");
+        // Debug logging (uncomment to debug text updates)
+        // Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateText: path [{string.Join(",", patch.Path)}], newText='{patch.NewText}'");
 
         if (patch.Path.Length > 0)
         {
             var parentPath = patch.Path.Take(patch.Path.Length - 1).ToArray();
             // Console.Error.WriteLine($"[VirtualDomRenderer] Looking for parent at path: [{string.Join(",", parentPath)}]");
 
-            if (_renderedElements.TryGetValue(parentPath, out var parentElement))
+            var parentElement = default(RenderedElement);
+            if (!_renderedElements.TryGetValue(parentPath, out parentElement))
+            {
+                // Try with [0] prefix
+                var prefixedParentPath = new[] { 0 }.Concat(parentPath).ToArray();
+                // Console.Error.WriteLine($"[VirtualDomRenderer] Trying prefixed parent path [{string.Join(",", prefixedParentPath)}]");
+                _renderedElements.TryGetValue(prefixedParentPath, out parentElement);
+            }
+            
+            if (parentElement != null)
             {
                 // Compute clear width as max of old and new to ensure trailing chars are cleared
                 var newWidth = patch.NewText?.Length ?? 0;

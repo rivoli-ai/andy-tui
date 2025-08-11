@@ -127,13 +127,19 @@ class InputDemoApp
 
     public void Run()
     {
+        // Debug logging (uncomment to debug startup)
+        // Console.Error.WriteLine("[InputDemoApp] Starting Run()");
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        var input = new CrossPlatformInputHandler();
+        // Use PollingInputHandler for simplest, most reliable input
+        // Console.Error.WriteLine("[InputDemoApp] Creating PollingInputHandler");
+        var input = new PollingInputHandler();
         var renderer = new DeclarativeRenderer(renderingSystem, input);
 
+        // Console.Error.WriteLine("[InputDemoApp] Initializing rendering system");
         renderingSystem.Initialize();
 
+        // Console.Error.WriteLine("[InputDemoApp] Starting renderer.Run()");
         renderer.Run(() => CreateDeclarativeUI());
     }
 

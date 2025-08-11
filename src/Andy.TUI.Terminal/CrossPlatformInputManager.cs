@@ -149,6 +149,27 @@ public class CrossPlatformInputManager : IInputManager
     {
         var buffer = new StringBuilder();
         
+        // Check if we're in an interactive console
+        bool isInteractive = false;
+        try
+        {
+            // This will throw if input is redirected
+            _ = Console.KeyAvailable;
+            isInteractive = true;
+        }
+        catch
+        {
+            // Console input is redirected or not available
+            // Fall back to reading from Console.In
+        }
+        
+        if (!isInteractive)
+        {
+            // Use Console.In.ReadLineAsync for non-interactive environments
+            await HandleNonInteractiveInputAsync();
+            return;
+        }
+        
         while (!_cancellationTokenSource.Token.IsCancellationRequested)
         {
             try
@@ -183,6 +204,67 @@ public class CrossPlatformInputManager : IInputManager
                 // Ignore input exceptions
             }
         }
+    }
+    
+    private async Task HandleNonInteractiveInputAsync()
+    {
+        // For non-interactive environments, read from Console.In
+        // This allows the example to work even when input is redirected
+        while (!_cancellationTokenSource.Token.IsCancellationRequested)
+        {
+            try
+            {
+                // Use a cancellable read operation
+                var buffer = new char[1];
+                var readTask = Console.In.ReadAsync(buffer, 0, 1);
+                var completedTask = await Task.WhenAny(
+                    readTask,
+                    Task.Delay(Timeout.Infinite, _cancellationTokenSource.Token)
+                );
+                
+                if (completedTask == readTask)
+                {
+                    var count = await readTask;
+                    if (count > 0)
+                    {
+                        var ch = buffer[0];
+                        
+                        // Convert char to ConsoleKeyInfo (limited but functional)
+                        var key = CharToConsoleKey(ch);
+                        var inputEvent = new InputEvent(InputEventType.KeyPress, new KeyInfo(key));
+                        ProcessInputEvent(inputEvent);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch
+            {
+                // Ignore input errors in non-interactive mode
+                await Task.Delay(10, _cancellationTokenSource.Token);
+            }
+        }
+    }
+    
+    private ConsoleKeyInfo CharToConsoleKey(char ch)
+    {
+        // Map common characters to ConsoleKey
+        ConsoleKey key = ch switch
+        {
+            '\t' => ConsoleKey.Tab,
+            '\r' or '\n' => ConsoleKey.Enter,
+            '\b' => ConsoleKey.Backspace,
+            (char)27 => ConsoleKey.Escape,
+            ' ' => ConsoleKey.Spacebar,
+            _ when char.IsLetter(ch) => (ConsoleKey)Enum.Parse(typeof(ConsoleKey), ch.ToString().ToUpper()),
+            _ when char.IsDigit(ch) => (ConsoleKey)Enum.Parse(typeof(ConsoleKey), "D" + ch),
+            _ => ConsoleKey.NoName
+        };
+        
+        bool shift = char.IsUpper(ch);
+        return new ConsoleKeyInfo(ch, key, shift, false, false);
     }
     
     private async Task ProcessEscapeSequenceAsync(StringBuilder buffer)

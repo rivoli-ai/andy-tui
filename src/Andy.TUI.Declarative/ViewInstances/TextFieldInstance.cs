@@ -46,6 +46,8 @@ public class TextFieldInstance : ViewInstance, IFocusable
         if (_textBinding == null) return false;
 
         var currentText = _textBinding.Value ?? string.Empty;
+        // Debug logging (uncomment to debug text field input)
+        // Console.Error.WriteLine($"[TextFieldInstance] HandleKeyPress: Key={keyInfo.Key} Char='{keyInfo.KeyChar}' CurrentText='{currentText}' CursorPos={_cursorPosition}");
 
         switch (keyInfo.Key)
         {
@@ -97,8 +99,12 @@ public class TextFieldInstance : ViewInstance, IFocusable
                     // Clamp cursor within current text bounds to avoid exceptions
                     if (_cursorPosition < 0) _cursorPosition = 0;
                     if (_cursorPosition > currentText.Length) _cursorPosition = currentText.Length;
-                    _textBinding.Value = currentText.Insert(_cursorPosition, keyInfo.KeyChar.ToString());
+                    var newText = currentText.Insert(_cursorPosition, keyInfo.KeyChar.ToString());
+                    // Debug logging (uncomment to debug text updates)
+                    // Console.Error.WriteLine($"[TextFieldInstance] Setting text from '{currentText}' to '{newText}'");
+                    _textBinding.Value = newText;
                     _cursorPosition++;
+                    // Console.Error.WriteLine($"[TextFieldInstance] After setting, binding value is: '{_textBinding.Value}'");
                     InvalidateView();
                     return true;
                 }

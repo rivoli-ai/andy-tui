@@ -33,7 +33,8 @@ class UIComponentsShowcaseApp
         // Ensure smooth, steady refresh for animations and spinners
         renderingSystem.Scheduler.Mode = RenderMode.Fixed;
         renderingSystem.Scheduler.TargetFps = 30;
-        var input = new CrossPlatformInputHandler();
+        // Use ConsoleInputHandler instead of CrossPlatformInputHandler
+        var input = new ConsoleInputHandler();
         var renderer = new DeclarativeRenderer(renderingSystem, input);
         
         renderingSystem.Initialize();

@@ -68,13 +68,19 @@ public class DeclarativeRenderer
         {
             while (true)
             {
+                // Poll for input events
+                inputHandler.Poll();
+                
                 if (_needsRender)
                 {
                     _logger.Debug("Render requested, executing render cycle");
+                    // Debug logging (uncomment to debug render cycles)
+                    // Console.Error.WriteLine("[DeclarativeRenderer] Executing render cycle");
                     // Recreate the root component tree on each render to capture fresh state
                     var root = createRoot();
                     Render(root);
                     _needsRender = false;
+                    // Console.Error.WriteLine("[DeclarativeRenderer] Render cycle complete");
                 }
 
                 // Light sleep to avoid busy loop; frame pacing is handled by scheduler
@@ -153,13 +159,26 @@ public class DeclarativeRenderer
         // Force the rendering system to flush changes to screen
         if (_renderingSystem is RenderingSystem rs)
         {
+            // Process any queued render operations first to ensure buffer is updated
+            rs.Scheduler.ProcessQueuedOperations();
+            
             _logger.Debug("Buffer dirty state before flush: {0}", rs.Buffer.IsDirty);
+            // Debug logging (uncomment to debug buffer state)
+            // Console.Error.WriteLine($"[DeclarativeRenderer] Buffer dirty before flush: {rs.Buffer.IsDirty}");
+            
+            // Now force a render to flush the buffer to screen
             rs.Render();
             _logger.Debug("Forced render flush");
+            // Console.Error.WriteLine("[DeclarativeRenderer] Called rs.Render() to flush");
 
             // Give the render thread time to process
             System.Threading.Thread.Sleep(1);
             _logger.Debug("Buffer dirty state after flush: {0}", rs.Buffer.IsDirty);
+            // Console.Error.WriteLine($"[DeclarativeRenderer] Buffer dirty after flush: {rs.Buffer.IsDirty}");
+        }
+        else
+        {
+            Console.Error.WriteLine("[DeclarativeRenderer] WARNING: RenderingSystem is not the expected type!");
         }
 
         _previousTree = newTree;
@@ -181,6 +200,8 @@ public class DeclarativeRenderer
     private void OnKeyPressed(object? sender, KeyEventArgs e)
     {
         _logger.Debug("Key pressed: {0} (Modifiers: {1})", e.Key, e.Modifiers);
+        // Debug logging (uncomment to debug key handling)
+        // Console.Error.WriteLine($"[DeclarativeRenderer] Key pressed: {e.Key} Char: '{e.KeyChar}'");
 
         if (e.Key == ConsoleKey.C && e.Modifiers.HasFlag(System.ConsoleModifiers.Control))
         {
@@ -197,6 +218,7 @@ public class DeclarativeRenderer
         );
 
         _context.EventRouter.RouteKeyPress(keyInfo);
+        // Console.Error.WriteLine($"[DeclarativeRenderer] After routing key, needsRender: {_needsRender}");
     }
 
 }

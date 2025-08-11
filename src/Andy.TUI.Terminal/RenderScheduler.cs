@@ -122,6 +122,28 @@ public class RenderScheduler : IDisposable
         _forceRender = true;
         _renderEvent.Set();
     }
+    
+    /// <summary>
+    /// Processes all queued render operations immediately.
+    /// This is synchronous and ensures the buffer is updated.
+    /// </summary>
+    public void ProcessQueuedOperations()
+    {
+        var updates = new List<Action>();
+        lock (_renderLock)
+        {
+            while (_renderQueue.Count > 0)
+            {
+                updates.Add(_renderQueue.Dequeue());
+            }
+        }
+        
+        // Execute updates synchronously
+        foreach (var update in updates)
+        {
+            update();
+        }
+    }
 
     /// <summary>
     /// The main render loop.

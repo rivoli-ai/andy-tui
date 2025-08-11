@@ -63,18 +63,34 @@ public class WorkingTwoFieldsTest
         
         _output.WriteLine("=== Test keyboard input in two text fields ===");
         
-        // Based on our diagnostic test, we know:
-        // First TAB focuses the SECOND field (lastName)
-        // Second TAB focuses the FIRST field (firstName) 
-        // Third TAB cycles back to SECOND field
+        // After fix: First TAB focuses the FIRST field (firstName)
+        // Second TAB focuses the SECOND field (lastName)
         
-        // Focus lastName field (first TAB)
-        _output.WriteLine("Step 1: TAB to focus lastName field");
+        // Focus firstName field (first TAB)
+        _output.WriteLine("Step 1: TAB to focus firstName field");
+        input.EmitKey('\t', ConsoleKey.Tab);
+        Thread.Sleep(50);
+        
+        // Type first name
+        _output.WriteLine("Step 2: Type 'John' in firstName field");
+        input.EmitKey('J', ConsoleKey.J);
+        Thread.Sleep(50);
+        input.EmitKey('o', ConsoleKey.O);
+        Thread.Sleep(50);
+        input.EmitKey('h', ConsoleKey.H);
+        Thread.Sleep(50);
+        input.EmitKey('n', ConsoleKey.N);
+        Thread.Sleep(50);
+        
+        _output.WriteLine($"After typing first name: firstName='{firstName}', lastName='{lastName}'");
+        
+        // TAB to lastName field (second TAB)
+        _output.WriteLine("Step 3: TAB to lastName field");
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(50);
         
         // Type last name
-        _output.WriteLine("Step 2: Type 'Smith' in lastName field");
+        _output.WriteLine("Step 4: Type 'Smith' in lastName field");
         input.EmitKey('S', ConsoleKey.S);
         Thread.Sleep(50);
         input.EmitKey('m', ConsoleKey.M);
@@ -84,24 +100,6 @@ public class WorkingTwoFieldsTest
         input.EmitKey('t', ConsoleKey.T);
         Thread.Sleep(50);
         input.EmitKey('h', ConsoleKey.H);
-        Thread.Sleep(50);
-        
-        _output.WriteLine($"After typing last name: firstName='{firstName}', lastName='{lastName}'");
-        
-        // TAB to firstName field (second TAB in cycle)
-        _output.WriteLine("Step 3: TAB to firstName field");
-        input.EmitKey('\t', ConsoleKey.Tab);
-        Thread.Sleep(50);
-        
-        // Type first name
-        _output.WriteLine("Step 4: Type 'John' in firstName field");
-        input.EmitKey('J', ConsoleKey.J);
-        Thread.Sleep(50);
-        input.EmitKey('o', ConsoleKey.O);
-        Thread.Sleep(50);
-        input.EmitKey('h', ConsoleKey.H);
-        Thread.Sleep(50);
-        input.EmitKey('n', ConsoleKey.N);
         Thread.Sleep(50);
         
         _output.WriteLine($"Final result: firstName='{firstName}', lastName='{lastName}'");
@@ -145,8 +143,8 @@ public class WorkingTwoFieldsTest
         
         Thread.Sleep(200);
         
-        // First TAB focuses field2 (based on our findings)
-        _output.WriteLine("Focus field2 with TAB");
+        // First TAB focuses field1 (after fix)
+        _output.WriteLine("Focus field1 with TAB");
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(50);
         
@@ -159,21 +157,21 @@ public class WorkingTwoFieldsTest
         input.EmitKey('t', ConsoleKey.T); // mistake
         Thread.Sleep(50);
         
-        _output.WriteLine($"Before backspace: field2='{field2}'");
+        _output.WriteLine($"Before backspace: field1='{field1}'");
         
         // Backspace to correct
         _output.WriteLine("Press backspace");
         input.EmitKey('\b', ConsoleKey.Backspace);
         Thread.Sleep(50);
         
-        _output.WriteLine($"After backspace: field2='{field2}'");
+        _output.WriteLine($"After backspace: field1='{field1}'");
         
-        // Move to field1 (second TAB in cycle)
-        _output.WriteLine("TAB to field1");
+        // Move to field2 (second TAB)
+        _output.WriteLine("TAB to field2");
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(50);
         
-        // Type in field1
+        // Type in field2
         _output.WriteLine("Type 'ok'");
         input.EmitKey('o', ConsoleKey.O);
         input.EmitKey('k', ConsoleKey.K);
@@ -182,8 +180,8 @@ public class WorkingTwoFieldsTest
         _output.WriteLine($"Final: field1='{field1}', field2='{field2}'");
         
         // Assert
-        Assert.Equal("ok", field1);
-        Assert.Equal("test", field2);
+        Assert.Equal("test", field1); // Should have removed the extra 't'
+        Assert.Equal("ok", field2);
         
         // Cleanup
         renderingSystem.Shutdown();
