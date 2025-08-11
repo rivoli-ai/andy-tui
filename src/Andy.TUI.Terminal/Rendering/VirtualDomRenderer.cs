@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Andy.TUI.VirtualDom;
+using Andy.TUI.Diagnostics;
 
 namespace Andy.TUI.Terminal.Rendering;
 
@@ -15,6 +16,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private readonly DirtyRegionTracker _dirtyRegionTracker = new();
     private VirtualNode? _currentTree;
     private RenderedElement? _rootElement;
+    private readonly ILogger _logger;
 
     /// <summary>
     /// Represents a rendered element with its position and z-order.
@@ -33,6 +35,8 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     public VirtualDomRenderer(IRenderingSystem renderingSystem)
     {
         _renderingSystem = renderingSystem ?? throw new ArgumentNullException(nameof(renderingSystem));
+        _logger = LogManager.GetLogger<VirtualDomRenderer>();
+        _logger.Debug("VirtualDomRenderer initialized");
     }
 
     /// <summary>
@@ -40,9 +44,12 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     /// </summary>
     public void Render(VirtualNode tree)
     {
-        _currentTree = tree;
-        _renderedElements.Clear();
-        _dirtyRegionTracker.Clear();
+        using (_logger.MeasureTime("Full render"))
+        {
+            _logger.Debug($"Starting full render. Tree nodes: {CountNodes(tree)}");
+            _currentTree = tree;
+            _renderedElements.Clear();
+            _dirtyRegionTracker.Clear();
 
         // Clear the entire render area to remove any stale content from previous frames
         for (int y = 0; y < _renderingSystem.Height; y++)
@@ -57,6 +64,15 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
         // Second pass: render elements in z-order
         RenderInZOrder(_rootElement);
+            _logger.Debug($"Render complete. Rendered elements: {_renderedElements.Count}");
+        }
+    }
+    
+    private int CountNodes(VirtualNode node)
+    {
+        if (node is ContainerNode container)
+            return 1 + container.Children.Sum(CountNodes);
+        return 1;
     }
 
     /// <summary>
@@ -67,16 +83,17 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         if (_currentTree == null)
             throw new InvalidOperationException("No tree has been rendered yet.");
 
-        // Debug logging (uncomment to debug patch application issues)
-        // Console.Error.WriteLine($"[VirtualDomRenderer] ApplyPatches: {patches.Count} patches");
-        // Console.Error.WriteLine($"[VirtualDomRenderer] Stored paths: {string.Join("; ", _renderedElements.Keys.Select(k => "[" + string.Join(",", k) + "]"))}");
-
-        // Apply patches and track dirty regions
-        foreach (var patch in patches)
+        using (_logger.MeasureTime($"Apply {patches.Count} patches"))
         {
-            // Console.Error.WriteLine($"[VirtualDomRenderer] Applying patch: {patch.GetType().Name} at path [{string.Join(",", patch.Path)}]");
-            patch.Accept(this);
-        }
+            _logger.Debug($"ApplyPatches: {patches.Count} patches to apply");
+            _logger.Debug($"Stored paths: {string.Join("; ", _renderedElements.Keys.Select(k => "[" + string.Join(",", k) + "]"))}");
+
+            // Apply patches and track dirty regions
+            foreach (var patch in patches)
+            {
+                _logger.Debug($"Applying patch: {patch.GetType().Name} at path [{string.Join(",", patch.Path)}]");
+                patch.Accept(this);
+            }
 
         // Re-render only dirty regions
         RenderDirtyRegions();

@@ -36,12 +36,11 @@ public class ConsoleInputHandler : IInputHandler
             
         _isRunning = true;
         _logger.Info("Starting console input handler");
-        Console.Error.WriteLine("[ConsoleInputHandler] Starting...");
         
         // Start a background task to read console input
         _inputTask = Task.Run(async () =>
         {
-            Console.Error.WriteLine("[ConsoleInputHandler] Input task started");
+            _logger.Debug("Input task started");
             while (!_cancellationTokenSource.Token.IsCancellationRequested)
             {
                 try

@@ -178,7 +178,7 @@ public class DeclarativeRenderer
         }
         else
         {
-            Console.Error.WriteLine("[DeclarativeRenderer] WARNING: RenderingSystem is not the expected type!");
+            _logger.Warning("RenderingSystem is not the expected type!");
         }
 
         _previousTree = newTree;

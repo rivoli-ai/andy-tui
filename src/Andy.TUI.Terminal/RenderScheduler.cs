@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Andy.TUI.Diagnostics;
 
 namespace Andy.TUI.Terminal;
 
@@ -14,6 +15,7 @@ public class RenderScheduler : IDisposable
     private readonly Queue<Action> _renderQueue = new();
     private readonly ManualResetEventSlim _renderEvent = new(false);
     private readonly CancellationTokenSource _cancellationTokenSource = new();
+    private readonly ILogger _logger;
 
     private Thread? _renderThread;
     private volatile bool _isRunning;
@@ -64,6 +66,7 @@ public class RenderScheduler : IDisposable
         _terminal = terminal ?? throw new ArgumentNullException(nameof(terminal));
         _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
+        _logger = LogManager.GetLogger<RenderScheduler>();
     }
 
     /// <summary>
@@ -242,7 +245,7 @@ public class RenderScheduler : IDisposable
             catch (Exception ex)
             {
                 // Log error but continue rendering
-                Debug.WriteLine($"Render error: {ex}");
+                _logger.Error(ex, "Render loop error");
             }
         }
     }

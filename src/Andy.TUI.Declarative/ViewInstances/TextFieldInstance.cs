@@ -4,6 +4,7 @@ using Andy.TUI.Declarative.Components;
 using Andy.TUI.Layout;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Terminal;
+using Andy.TUI.Diagnostics;
 using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative;
@@ -19,9 +20,12 @@ public class TextFieldInstance : ViewInstance, IFocusable
     private bool _isFocused;
     private int _cursorPosition;
     private IDisposable? _bindingSubscription;
+    private readonly ILogger _logger;
 
     public TextFieldInstance(string id) : base(id)
     {
+        _logger = LogManager.GetLogger($"TextField[{id}]");
+        _logger.Debug($"TextFieldInstance created: ID={id}");
     }
 
     // IFocusable implementation
@@ -32,38 +36,56 @@ public class TextFieldInstance : ViewInstance, IFocusable
     {
         _isFocused = true;
         _cursorPosition = _textBinding?.Value?.Length ?? 0;
+        _logger.Debug($"Got focus. CursorPosition={_cursorPosition}, Text='{_textBinding?.Value}'");
         InvalidateView();
     }
 
     public void OnLostFocus()
     {
         _isFocused = false;
+        _logger.Debug($"Lost focus. Text='{_textBinding?.Value}'");
         InvalidateView();
     }
 
     public bool HandleKeyPress(ConsoleKeyInfo keyInfo)
     {
-        if (_textBinding == null) return false;
+        if (_textBinding == null)
+        {
+            _logger.Warning("HandleKeyPress called but no text binding");
+            return false;
+        }
 
         var currentText = _textBinding.Value ?? string.Empty;
-        // Debug logging (uncomment to debug text field input)
-        // Console.Error.WriteLine($"[TextFieldInstance] HandleKeyPress: Key={keyInfo.Key} Char='{keyInfo.KeyChar}' CurrentText='{currentText}' CursorPos={_cursorPosition}");
+        _logger.LogKeyInput(keyInfo, $"TextField[{Id}]");
+        _logger.Debug($"Before: Text='{currentText}', CursorPos={_cursorPosition}");
 
         switch (keyInfo.Key)
         {
             case ConsoleKey.Backspace:
                 if (_cursorPosition > 0)
                 {
-                    _textBinding.Value = currentText.Remove(_cursorPosition - 1, 1);
+                    var newText = currentText.Remove(_cursorPosition - 1, 1);
+                    _textBinding.Value = newText;
                     _cursorPosition--;
                     if (_cursorPosition < 0) _cursorPosition = 0;
+                    _logger.Debug($"Backspace: Removed char at pos {_cursorPosition + 1}, NewText='{newText}'");
+                }
+                else
+                {
+                    _logger.Debug("Backspace: At beginning, no action");
                 }
                 return true;
 
             case ConsoleKey.Delete:
                 if (_cursorPosition < currentText.Length)
                 {
-                    _textBinding.Value = currentText.Remove(_cursorPosition, 1);
+                    var newText = currentText.Remove(_cursorPosition, 1);
+                    _textBinding.Value = newText;
+                    _logger.Debug($"Delete: Removed char at pos {_cursorPosition}, NewText='{newText}'");
+                }
+                else
+                {
+                    _logger.Debug("Delete: At end, no action");
                 }
                 return true;
 
@@ -98,6 +120,7 @@ public class TextFieldInstance : ViewInstance, IFocusable
                 {
                     // Clamp cursor within current text bounds to avoid exceptions
                     if (_cursorPosition < 0) _cursorPosition = 0;
+                    _logger.Debug($"Inserting character '{keyInfo.KeyChar}' at position {_cursorPosition}");
                     if (_cursorPosition > currentText.Length) _cursorPosition = currentText.Length;
                     var newText = currentText.Insert(_cursorPosition, keyInfo.KeyChar.ToString());
                     // Debug logging (uncomment to debug text updates)
