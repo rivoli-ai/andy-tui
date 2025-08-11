@@ -10,19 +10,19 @@ public class StyledTextExample
     public static void Run()
     {
         Console.WriteLine("=== Styled Text Example ===\n");
-        
+
         // Create ANSI terminal for advanced styling
         var terminal = new AnsiTerminal();
-        
+
         terminal.EnterAlternateScreen();
         terminal.Clear();
-        
+
         try
         {
             // Basic console colors
             terminal.MoveCursor(0, 0);
             terminal.WriteLine("Standard Console Colors:");
-            
+
             var consoleColors = new[]
             {
                 (Color.Black, "Black"),
@@ -42,7 +42,7 @@ public class StyledTextExample
                 (Color.Cyan, "Cyan"),
                 (Color.White, "White")
             };
-            
+
             int row = 2;
             int col = 0;
             foreach (var (color, name) in consoleColors)
@@ -51,7 +51,7 @@ public class StyledTextExample
                 terminal.ApplyStyle(Style.WithForeground(color));
                 terminal.Write($"██ {name}");
                 terminal.ResetColors();
-                
+
                 col += 15;
                 if (col > 60)
                 {
@@ -59,13 +59,13 @@ public class StyledTextExample
                     row++;
                 }
             }
-            
+
             // RGB colors (if supported)
             row += 2;
             terminal.MoveCursor(0, row);
             terminal.WriteLine("RGB Colors (24-bit):");
             row++;
-            
+
             // Rainbow gradient
             for (int i = 0; i < 40; i++)
             {
@@ -76,13 +76,13 @@ public class StyledTextExample
                 terminal.Write("██");
             }
             terminal.ResetColors();
-            
+
             // Text attributes
             row += 3;
             terminal.MoveCursor(0, row);
             terminal.WriteLine("Text Attributes:");
             row += 2;
-            
+
             var attributes = new[]
             {
                 (Style.Default.WithBold(), "Bold text"),
@@ -93,7 +93,7 @@ public class StyledTextExample
                 (Style.Default.WithInverse(), "Inverse text"),
                 (Style.Default.WithBlink(), "Blinking text")
             };
-            
+
             foreach (var (style, description) in attributes)
             {
                 terminal.MoveCursor(0, row++);
@@ -101,13 +101,13 @@ public class StyledTextExample
                 terminal.Write(description);
                 terminal.ResetColors();
             }
-            
+
             // Combined styles
             row += 2;
             terminal.MoveCursor(0, row);
             terminal.WriteLine("Combined Styles:");
             row += 2;
-            
+
             // Bold red on yellow
             terminal.MoveCursor(0, row++);
             var style1 = Style.Default
@@ -117,7 +117,7 @@ public class StyledTextExample
             terminal.ApplyStyle(style1);
             terminal.Write(" Bold red on yellow ");
             terminal.ResetColors();
-            
+
             // Underlined blue italic
             terminal.MoveCursor(0, row++);
             var style2 = Style.Default
@@ -127,7 +127,7 @@ public class StyledTextExample
             terminal.ApplyStyle(style2);
             terminal.Write("Underlined blue italic text");
             terminal.ResetColors();
-            
+
             // RGB gradient with bold
             terminal.MoveCursor(0, row++);
             for (int i = 0; i < 20; i++)
@@ -140,11 +140,11 @@ public class StyledTextExample
                 terminal.Write("█");
             }
             terminal.ResetColors();
-            
+
             terminal.MoveCursor(0, terminal.Height - 2);
             terminal.Write("Press any key to exit...");
             terminal.Flush();
-            
+
             Console.ReadKey(true);
         }
         finally
@@ -155,17 +155,17 @@ public class StyledTextExample
             terminal.Flush();
         }
     }
-    
+
     private static (byte r, byte g, byte b) HsvToRgb(double h, double s, double v)
     {
         double r, g, b;
-        
+
         int i = (int)(h / 60) % 6;
         double f = h / 60 - i;
         double p = v * (1 - s);
         double q = v * (1 - f * s);
         double t = v * (1 - (1 - f) * s);
-        
+
         switch (i)
         {
             case 0: r = v; g = t; b = p; break;
@@ -175,7 +175,7 @@ public class StyledTextExample
             case 4: r = t; g = p; b = v; break;
             default: r = v; g = p; b = q; break;
         }
-        
+
         return ((byte)(r * 255), (byte)(g * 255), (byte)(b * 255));
     }
 }

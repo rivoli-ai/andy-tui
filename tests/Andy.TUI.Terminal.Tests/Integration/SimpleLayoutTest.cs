@@ -72,10 +72,10 @@ public class SimpleLayoutTest
 
         // Assert
         Assert.Equal(2, textCalls.Count);
-        
+
         var firstCall = textCalls.Find(call => call.text == "First");
         var secondCall = textCalls.Find(call => call.text == "Second");
-        
+
         Assert.Equal(2, firstCall.x);
         Assert.Equal(3, firstCall.y);
         Assert.Equal(2, secondCall.x);

@@ -66,7 +66,7 @@ public class AsciiArtGalleryExample
 
         var frameCount = 0;
         var startTime = DateTime.Now;
-        
+
         // Configure render scheduler
         renderingSystem.Scheduler.TargetFps = 20;
 
@@ -76,7 +76,7 @@ public class AsciiArtGalleryExample
         {
             if (exit)
                 return;
-                
+
             renderingSystem.Clear();
 
             // Handle input
@@ -101,19 +101,19 @@ public class AsciiArtGalleryExample
             }
 
             // Draw gallery
-            DrawGallery(renderingSystem, artPieces[currentPiece], currentPiece, artPieces.Count, 
+            DrawGallery(renderingSystem, artPieces[currentPiece], currentPiece, artPieces.Count,
                        currentEffect, effectFrame, frameCount, startTime);
 
             effectFrame++;
             frameCount++;
-            
+
             // Queue next frame
             renderingSystem.Scheduler.QueueRender(renderFrame);
         };
-        
+
         // Start animation
         renderingSystem.Scheduler.QueueRender(renderFrame);
-        
+
         // Wait for exit
         while (!exit)
         {
@@ -364,7 +364,7 @@ public class AsciiArtGalleryExample
     private static void DrawArtNormal(RenderingSystem renderingSystem, ArtPiece piece, int x, int y)
     {
         var style = Style.Default.WithForegroundColor(piece.PrimaryColor);
-        
+
         for (int i = 0; i < piece.Lines.Length; i++)
         {
             renderingSystem.WriteText(x, y + i, piece.Lines[i], style);
@@ -413,9 +413,9 @@ public class AsciiArtGalleryExample
         var r = (byte)(rgb.R * intensity);
         var g = (byte)(rgb.G * intensity);
         var b = (byte)(rgb.B * intensity);
-        
+
         var style = Style.Default.WithForegroundColor(Color.FromRgb(r, g, b));
-        
+
         for (int i = 0; i < piece.Lines.Length; i++)
         {
             renderingSystem.WriteText(x, y + i, piece.Lines[i], style);
@@ -426,7 +426,7 @@ public class AsciiArtGalleryExample
     {
         var style = Style.Default.WithForegroundColor(piece.PrimaryColor);
         int slideOffset = Math.Max(0, 50 - frame);
-        
+
         for (int i = 0; i < piece.Lines.Length; i++)
         {
             renderingSystem.WriteText(x + slideOffset, y + i, piece.Lines[i], style);
@@ -455,12 +455,12 @@ public class AsciiArtGalleryExample
     {
         var random = new Random(frame / 5); // Change every few frames
         var baseStyle = Style.Default.WithForegroundColor(piece.PrimaryColor);
-        
+
         for (int lineIndex = 0; lineIndex < piece.Lines.Length; lineIndex++)
         {
             string line = piece.Lines[lineIndex];
             int glitchOffset = 0;
-            
+
             // Randomly glitch some lines
             if (random.NextDouble() < 0.3)
             {
@@ -468,10 +468,10 @@ public class AsciiArtGalleryExample
                 var glitchColors = new[] { Color.Red, Color.Green, Color.Blue, Color.Magenta, Color.Cyan };
                 var glitchColor = glitchColors[random.Next(glitchColors.Length)];
                 var glitchStyle = Style.Default.WithForegroundColor(glitchColor);
-                
+
                 // Draw glitched version
                 renderingSystem.WriteText(x + glitchOffset, y + lineIndex, line, glitchStyle);
-                
+
                 // Sometimes overlay with different colors
                 if (random.NextDouble() < 0.5)
                 {

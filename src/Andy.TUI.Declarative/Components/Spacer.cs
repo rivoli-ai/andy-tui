@@ -10,7 +10,7 @@ namespace Andy.TUI.Declarative.Components;
 public class Spacer : ISimpleComponent
 {
     private readonly Length? _minLength;
-    
+
     /// <summary>
     /// Creates a spacer that expands to fill available space.
     /// </summary>
@@ -18,7 +18,7 @@ public class Spacer : ISimpleComponent
     {
         _minLength = null;
     }
-    
+
     /// <summary>
     /// Creates a spacer with a minimum length.
     /// </summary>
@@ -27,7 +27,7 @@ public class Spacer : ISimpleComponent
     {
         _minLength = minLength;
     }
-    
+
     /// <summary>
     /// Creates a spacer with a minimum length in pixels.
     /// </summary>
@@ -35,11 +35,11 @@ public class Spacer : ISimpleComponent
     public Spacer(int minLength) : this(Length.Pixels(minLength))
     {
     }
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("Spacer declarations should not be rendered directly. Use ViewInstanceManager.");
     }
-    
+
     internal Length? GetMinLength() => _minLength;
 }

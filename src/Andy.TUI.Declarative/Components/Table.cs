@@ -14,10 +14,10 @@ public class TableColumn<T>
     public int? Width { get; }
     public bool Sortable { get; }
     public Comparison<T>? Comparer { get; }
-    
+
     public TableColumn(
-        string header, 
-        Func<T, string> renderer, 
+        string header,
+        Func<T, string> renderer,
         int? width = null,
         bool sortable = false,
         Comparison<T>? comparer = null)
@@ -42,7 +42,7 @@ public class Table<T> : ISimpleComponent
     private readonly bool _showHeader;
     private readonly bool _showBorder;
     private readonly bool _allowSelection;
-    
+
     public Table(
         IEnumerable<T> items,
         IEnumerable<TableColumn<T>> columns,
@@ -60,27 +60,27 @@ public class Table<T> : ISimpleComponent
         _showBorder = showBorder;
         _allowSelection = allowSelection && selectedItem != null;
     }
-    
+
     public Table<T> VisibleRows(int rows)
     {
         return new Table<T>(_items, _columns, _selectedItem, rows, _showHeader, _showBorder, _allowSelection);
     }
-    
+
     public Table<T> HideHeader()
     {
         return new Table<T>(_items, _columns, _selectedItem, _visibleRows, false, _showBorder, _allowSelection);
     }
-    
+
     public Table<T> HideBorder()
     {
         return new Table<T>(_items, _columns, _selectedItem, _visibleRows, _showHeader, false, _allowSelection);
     }
-    
+
     public Table<T> DisableSelection()
     {
         return new Table<T>(_items, _columns, _selectedItem, _visibleRows, _showHeader, _showBorder, false);
     }
-    
+
     // Internal accessors for view instance
     internal IReadOnlyList<T> GetItems() => _items;
     internal IReadOnlyList<TableColumn<T>> GetColumns() => _columns;
@@ -89,7 +89,7 @@ public class Table<T> : ISimpleComponent
     internal bool GetShowHeader() => _showHeader;
     internal bool GetShowBorder() => _showBorder;
     internal bool GetAllowSelection() => _allowSelection;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("Table declarations should not be rendered directly. Use ViewInstanceManager.");

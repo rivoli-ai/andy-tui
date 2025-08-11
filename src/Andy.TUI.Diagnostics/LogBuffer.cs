@@ -17,7 +17,7 @@ public class LogBuffer
     private readonly object _statsLock = new();
     private readonly Dictionary<LogLevel, int> _levelCounts = new();
     private readonly Dictionary<string, int> _categoryCounts = new();
-    
+
     public LogBuffer(int maxEntries = 100000)
     {
         _maxEntries = maxEntries;
@@ -26,25 +26,25 @@ public class LogBuffer
             _levelCounts[level] = 0;
         }
     }
-    
+
     public void Add(LogEntry entry)
     {
         _entries.Enqueue(entry);
         Interlocked.Increment(ref _totalEntries);
-        
+
         lock (_statsLock)
         {
             _levelCounts[entry.Level]++;
             _categoryCounts[entry.Category] = _categoryCounts.GetValueOrDefault(entry.Category, 0) + 1;
         }
-        
+
         // Trim if we exceed max entries
         while (_entries.Count > _maxEntries)
         {
             _entries.TryDequeue(out _);
         }
     }
-    
+
     public IReadOnlyList<LogEntry> GetEntries(
         DateTime? since = null,
         LogLevel? minLevel = null,
@@ -53,27 +53,27 @@ public class LogBuffer
         int? limit = null)
     {
         var query = _entries.AsEnumerable();
-        
+
         if (since.HasValue)
             query = query.Where(e => e.Timestamp >= since.Value);
-            
+
         if (minLevel.HasValue)
             query = query.Where(e => e.Level >= minLevel.Value);
-            
+
         if (!string.IsNullOrEmpty(category))
             query = query.Where(e => e.Category.Contains(category, StringComparison.OrdinalIgnoreCase));
-            
+
         if (!string.IsNullOrEmpty(searchText))
-            query = query.Where(e => 
+            query = query.Where(e =>
                 e.Message.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
                 e.Exception?.Message.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true);
-                
+
         if (limit.HasValue)
             query = query.TakeLast(limit.Value);
-            
+
         return query.ToList();
     }
-    
+
     public void Clear()
     {
         while (_entries.TryDequeue(out _)) { }
@@ -87,7 +87,7 @@ public class LogBuffer
         }
         _totalEntries = 0;
     }
-    
+
     public LogStatistics GetStatistics()
     {
         lock (_statsLock)

@@ -16,10 +16,10 @@ class FlexShrinkTestApp
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        
+
         renderingSystem.Initialize();
         terminal.Clear();
-        
+
         // Create UI demonstrating flex-shrink
         var ui = new VStack(spacing: 2) {
             new Text("Flex Shrink Demo").Bold().Color(Color.Cyan),
@@ -39,11 +39,11 @@ class FlexShrinkTestApp
             .Direction(FlexDirection.Row)
             .WithWidth(40)
             .WithPadding(1),
-            
+
             new Text("Container width: 40, Items min-width: 20 each").Color(Color.Gray),
             new Text("Item 2 shrinks twice as much as Item 1").Color(Color.Gray),
             new Text("Item 3 doesn't shrink (shrink: 0)").Color(Color.Gray),
-            
+
             new Spacer(),
             
             // Another example with different shrink values
@@ -57,11 +57,11 @@ class FlexShrinkTestApp
             .WithWidth(30)
             .WithPadding(1)
         };
-        
+
         // Render
         var renderer = new DeclarativeRenderer(renderingSystem, this);
         renderer.Render(ui);
-        
+
         Console.SetCursorPosition(0, terminal.Height - 2);
         Console.WriteLine("Press any key to exit...");
         Console.ReadKey();

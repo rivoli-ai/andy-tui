@@ -98,7 +98,7 @@ public class SpinnerComponentTests
     public void Spinner_ShowcaseExamples()
     {
         // Test examples from UIComponentsShowcase
-        
+
         // Dots spinner with label
         var dotsSpinner = new Spinner(SpinnerStyle.Dots, color: Color.Cyan, label: "Loading");
         Assert.NotNull(dotsSpinner);

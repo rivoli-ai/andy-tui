@@ -9,17 +9,17 @@ public class ConsoleSink : ILogSink
 {
     private readonly bool _useColors;
     private readonly bool _useStderr;
-    
+
     public ConsoleSink(bool useColors = true, bool useStderr = true)
     {
         _useColors = useColors;
         _useStderr = useStderr;
     }
-    
+
     public void Write(LogEntry entry)
     {
         var output = _useStderr ? Console.Error : Console.Out;
-        
+
         if (_useColors && !Console.IsOutputRedirected)
         {
             var originalColor = Console.ForegroundColor;
@@ -38,7 +38,7 @@ public class ConsoleSink : ILogSink
             output.WriteLine(entry.FormattedMessage);
         }
     }
-    
+
     private ConsoleColor GetColorForLevel(LogLevel level) => level switch
     {
         LogLevel.Debug => ConsoleColor.Gray,

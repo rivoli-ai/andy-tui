@@ -6,17 +6,17 @@ namespace Andy.TUI.Terminal;
 public class Buffer
 {
     private readonly Cell[,] _cells;
-    
+
     /// <summary>
     /// Gets the width of the buffer.
     /// </summary>
     public int Width { get; }
-    
+
     /// <summary>
     /// Gets the height of the buffer.
     /// </summary>
     public int Height { get; }
-    
+
     /// <summary>
     /// Creates a new buffer with the specified dimensions.
     /// </summary>
@@ -26,13 +26,13 @@ public class Buffer
             throw new ArgumentOutOfRangeException(nameof(width), "Width must be greater than zero.");
         if (height <= 0)
             throw new ArgumentOutOfRangeException(nameof(height), "Height must be greater than zero.");
-            
+
         Width = width;
         Height = height;
         _cells = new Cell[height, width];
         Clear();
     }
-    
+
     /// <summary>
     /// Gets or sets a cell at the specified position.
     /// </summary>
@@ -51,7 +51,7 @@ public class Buffer
             _cells[y, x] = value.AsDirty();
         }
     }
-    
+
     /// <summary>
     /// Checks if the specified position is within bounds.
     /// </summary>
@@ -59,7 +59,7 @@ public class Buffer
     {
         return x >= 0 && x < Width && y >= 0 && y < Height;
     }
-    
+
     /// <summary>
     /// Sets a cell at the specified position if it's within bounds.
     /// </summary>
@@ -67,11 +67,11 @@ public class Buffer
     {
         if (!IsInBounds(x, y))
             return false;
-            
+
         _cells[y, x] = cell.AsDirty();
         return true;
     }
-    
+
     /// <summary>
     /// Gets a cell at the specified position if it's within bounds.
     /// </summary>
@@ -82,11 +82,11 @@ public class Buffer
             cell = Cell.Empty;
             return false;
         }
-        
+
         cell = _cells[y, x];
         return true;
     }
-    
+
     /// <summary>
     /// Clears the entire buffer.
     /// </summary>
@@ -100,7 +100,7 @@ public class Buffer
             }
         }
     }
-    
+
     /// <summary>
     /// Clears a rectangular region in the buffer.
     /// </summary>
@@ -110,7 +110,7 @@ public class Buffer
         var y2 = Math.Min(y + height, Height);
         var x1 = Math.Max(x, 0);
         var y1 = Math.Max(y, 0);
-        
+
         for (int row = y1; row < y2; row++)
         {
             for (int col = x1; col < x2; col++)
@@ -119,7 +119,7 @@ public class Buffer
             }
         }
     }
-    
+
     /// <summary>
     /// Fills a rectangular region with the specified cell.
     /// </summary>
@@ -129,7 +129,7 @@ public class Buffer
         var y2 = Math.Min(y + height, Height);
         var x1 = Math.Max(x, 0);
         var y1 = Math.Max(y, 0);
-        
+
         for (int row = y1; row < y2; row++)
         {
             for (int col = x1; col < x2; col++)
@@ -138,7 +138,7 @@ public class Buffer
             }
         }
     }
-    
+
     /// <summary>
     /// Marks all cells as clean (not dirty).
     /// </summary>
@@ -152,7 +152,7 @@ public class Buffer
             }
         }
     }
-    
+
     /// <summary>
     /// Marks all cells as dirty.
     /// </summary>
@@ -166,7 +166,7 @@ public class Buffer
             }
         }
     }
-    
+
     /// <summary>
     /// Copies the contents of another buffer into this one.
     /// </summary>
@@ -174,10 +174,10 @@ public class Buffer
     {
         if (other == null)
             throw new ArgumentNullException(nameof(other));
-            
+
         var minWidth = Math.Min(Width, other.Width);
         var minHeight = Math.Min(Height, other.Height);
-        
+
         for (int y = 0; y < minHeight; y++)
         {
             for (int x = 0; x < minWidth; x++)
@@ -186,7 +186,7 @@ public class Buffer
             }
         }
     }
-    
+
     /// <summary>
     /// Creates a copy of this buffer.
     /// </summary>

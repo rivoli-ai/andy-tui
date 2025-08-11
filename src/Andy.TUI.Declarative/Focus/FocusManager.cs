@@ -12,18 +12,18 @@ public class FocusManager
     private readonly List<IFocusable> _focusableComponents = new();
     private IFocusable? _focusedComponent;
     private readonly ILogger _logger;
-    
+
     /// <summary>
     /// Gets the currently focused component.
     /// </summary>
     public IFocusable? FocusedComponent => _focusedComponent;
-    
+
     public FocusManager()
     {
         _logger = LogManager.GetLogger<FocusManager>();
         _logger.Info("FocusManager initialized");
     }
-    
+
     /// <summary>
     /// Registers a focusable component.
     /// </summary>
@@ -35,7 +35,7 @@ public class FocusManager
             _logger.Debug($"Registered focusable: {component.GetType().Name} (Total: {_focusableComponents.Count})");
         }
     }
-    
+
     /// <summary>
     /// Unregisters a focusable component.
     /// </summary>
@@ -62,7 +62,7 @@ public class FocusManager
             }
         }
     }
-    
+
     /// <summary>
     /// Sets focus to a specific component.
     /// </summary>
@@ -73,24 +73,24 @@ public class FocusManager
             _logger.Debug($"SetFocus: Already focused on {component?.GetType().Name ?? "null"}");
             return;
         }
-            
+
         if (component != null && !component.CanFocus)
         {
             _logger.Warning($"SetFocus: Component {component.GetType().Name} cannot receive focus (CanFocus=false)");
             return;
         }
-        
+
         var oldComponent = _focusedComponent;
         _logger.LogFocusChange(
-            oldComponent?.GetType().Name, 
+            oldComponent?.GetType().Name,
             component?.GetType().Name,
             "SetFocus");
-        
+
         _focusedComponent?.OnLostFocus();
         _focusedComponent = component;
         _focusedComponent?.OnGotFocus();
     }
-    
+
     /// <summary>
     /// Moves focus in the specified direction.
     /// </summary>
@@ -108,40 +108,40 @@ public class FocusManager
             _logger.Debug($"MoveFocus: No focusable component found in direction {direction}");
         }
     }
-    
+
     /// <summary>
     /// Gets the next focusable component in the specified direction.
     /// </summary>
     private IFocusable? GetNextFocusable(FocusDirection direction)
     {
         var focusableList = _focusableComponents.Where(c => c.CanFocus).ToList();
-        
+
         if (focusableList.Count == 0)
         {
             _logger.Debug("GetNextFocusable: No focusable components available");
             return null;
         }
-            
+
         if (_focusedComponent == null)
         {
             _logger.Debug($"GetNextFocusable: No current focus, returning first focusable: {focusableList.FirstOrDefault()?.GetType().Name}");
             return focusableList.FirstOrDefault();
         }
-        
+
         var currentIndex = focusableList.IndexOf(_focusedComponent);
         if (currentIndex == -1)
             return focusableList.FirstOrDefault();
-        
+
         int nextIndex = direction switch
         {
             FocusDirection.Next => (currentIndex + 1) % focusableList.Count,
             FocusDirection.Previous => (currentIndex - 1 + focusableList.Count) % focusableList.Count,
             _ => currentIndex
         };
-        
+
         return focusableList[nextIndex];
     }
-    
+
     /// <summary>
     /// Clears all registered components and focus.
     /// </summary>
@@ -150,6 +150,30 @@ public class FocusManager
         _focusedComponent?.OnLostFocus();
         _focusedComponent = null;
         _focusableComponents.Clear();
+    }
+
+    /// <summary>
+    /// Sets the focusable components in a specific order.
+    /// </summary>
+    public void SetFocusableOrder(IEnumerable<IFocusable> orderedFocusables)
+    {
+        var currentFocus = _focusedComponent;
+        _focusableComponents.Clear();
+        _focusableComponents.AddRange(orderedFocusables);
+
+        // Restore focus if the component still exists
+        if (currentFocus != null && _focusableComponents.Contains(currentFocus))
+        {
+            _focusedComponent = currentFocus;
+        }
+        else if (_focusedComponent != null && !_focusableComponents.Contains(_focusedComponent))
+        {
+            // Lost focus, clear it
+            _focusedComponent?.OnLostFocus();
+            _focusedComponent = null;
+        }
+
+        _logger.Debug($"Set focusable order with {_focusableComponents.Count} components");
     }
 }
 
@@ -162,7 +186,7 @@ public enum FocusDirection
     /// Move to the next focusable component (Tab).
     /// </summary>
     Next,
-    
+
     /// <summary>
     /// Move to the previous focusable component (Shift+Tab).
     /// </summary>

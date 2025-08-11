@@ -67,9 +67,9 @@ public class OcclusionCalculatorTests
         var calculator = new OcclusionCalculator();
         var elements = new List<SpatialElement<TestItem>>();
         var viewport = new Rectangle(0, 0, 100, 100);
-        
+
         var visible = calculator.CalculateVisible(elements, viewport).ToList();
-        
+
         Assert.Empty(visible);
     }
 
@@ -81,9 +81,9 @@ public class OcclusionCalculatorTests
         var element = new SpatialElement<TestItem>(new Rectangle(10, 10, 20, 20), 1, item);
         var elements = new List<SpatialElement<TestItem>> { element };
         var viewport = new Rectangle(0, 0, 100, 100);
-        
+
         var visible = calculator.CalculateVisible(elements, viewport).ToList();
-        
+
         Assert.Single(visible);
         Assert.Same(element, visible[0]);
         Assert.False(element.IsFullyOccluded);
@@ -97,9 +97,9 @@ public class OcclusionCalculatorTests
         var element = new SpatialElement<TestItem>(new Rectangle(150, 150, 20, 20), 1, item);
         var elements = new List<SpatialElement<TestItem>> { element };
         var viewport = new Rectangle(0, 0, 100, 100);
-        
+
         var visible = calculator.CalculateVisible(elements, viewport).ToList();
-        
+
         Assert.Empty(visible);
     }
 
@@ -112,9 +112,9 @@ public class OcclusionCalculatorTests
         var elem3 = new SpatialElement<TestItem>(new Rectangle(70, 70, 20, 20), 3, new TestItem("elem3"));
         var elements = new List<SpatialElement<TestItem>> { elem1, elem2, elem3 };
         var viewport = new Rectangle(0, 0, 100, 100);
-        
+
         var visible = calculator.CalculateVisible(elements, viewport).ToList();
-        
+
         Assert.Equal(3, visible.Count);
         Assert.All(visible, e => Assert.False(e.IsFullyOccluded));
     }
@@ -127,9 +127,9 @@ public class OcclusionCalculatorTests
         var cover = new SpatialElement<TestItem>(new Rectangle(15, 15, 20, 20), 5, new TestItem("cover"));
         var elements = new List<SpatialElement<TestItem>> { hidden, cover };
         var viewport = new Rectangle(0, 0, 100, 100);
-        
+
         var visible = calculator.CalculateVisible(elements, viewport).ToList();
-        
+
         Assert.Single(visible);
         Assert.Same(cover, visible[0]);
         Assert.False(cover.IsFullyOccluded);
@@ -144,9 +144,9 @@ public class OcclusionCalculatorTests
         var cover = new SpatialElement<TestItem>(new Rectangle(25, 25, 20, 20), 5, new TestItem("cover"));
         var elements = new List<SpatialElement<TestItem>> { partial, cover };
         var viewport = new Rectangle(0, 0, 100, 100);
-        
+
         var visible = calculator.CalculateVisible(elements, viewport).ToList();
-        
+
         Assert.Equal(2, visible.Count);
         // Higher z-index first
         Assert.Same(cover, visible[0]);
@@ -163,9 +163,9 @@ public class OcclusionCalculatorTests
         var top = new SpatialElement<TestItem>(new Rectangle(30, 30, 20, 20), 10, new TestItem("top"));
         var elements = new List<SpatialElement<TestItem>> { bottom, middle, top };
         var viewport = new Rectangle(0, 0, 100, 100);
-        
+
         var visible = calculator.CalculateVisible(elements, viewport).ToList();
-        
+
         // All should be visible as none is fully occluded
         Assert.Equal(3, visible.Count);
         // Check order (highest z-index first)
@@ -182,9 +182,9 @@ public class OcclusionCalculatorTests
         var elem2 = new SpatialElement<TestItem>(new Rectangle(15, 15, 20, 20), 5, new TestItem("elem2"));
         var elements = new List<SpatialElement<TestItem>> { elem1, elem2 };
         var viewport = new Rectangle(0, 0, 100, 100);
-        
+
         var visible = calculator.CalculateVisible(elements, viewport).ToList();
-        
+
         // Both should be visible even with same z-index
         Assert.Equal(2, visible.Count);
         Assert.Contains(elem1, visible);
@@ -198,9 +198,9 @@ public class OcclusionCalculatorTests
         var partial = new SpatialElement<TestItem>(new Rectangle(90, 90, 20, 20), 1, new TestItem("partial"));
         var elements = new List<SpatialElement<TestItem>> { partial };
         var viewport = new Rectangle(0, 0, 100, 100);
-        
+
         var visible = calculator.CalculateVisible(elements, viewport).ToList();
-        
+
         Assert.Single(visible);
         Assert.Same(partial, visible[0]);
     }
@@ -211,14 +211,14 @@ public class OcclusionCalculatorTests
         var calculator = new OcclusionCalculator();
         var elem = new SpatialElement<TestItem>(new Rectangle(10, 10, 20, 20), 1, new TestItem("mover"));
         var allElements = new List<SpatialElement<TestItem>> { elem };
-        
-        var changes = new[] 
+
+        var changes = new[]
         {
             (elem.Element, new Rectangle(10, 10, 20, 20), 1, new Rectangle(30, 30, 20, 20), 1)
         };
-        
+
         var dirty = calculator.CalculateDirtyRegions(allElements, changes).ToList();
-        
+
         // Should contain at least the old and new bounds
         Assert.NotEmpty(dirty);
         Assert.Contains(dirty, r => r.Contains(15, 15)); // Old position
@@ -232,15 +232,15 @@ public class OcclusionCalculatorTests
         var elem1 = new SpatialElement<TestItem>(new Rectangle(10, 10, 30, 30), 1, new TestItem("elem1"));
         var elem2 = new SpatialElement<TestItem>(new Rectangle(20, 20, 30, 30), 2, new TestItem("elem2"));
         var allElements = new List<SpatialElement<TestItem>> { elem1, elem2 };
-        
+
         // Change z-index of elem1 from 1 to 3 (moving above elem2)
         var changes = new[]
         {
             (elem1.Element, elem1.Bounds, 1, elem1.Bounds, 3)
         };
-        
+
         var dirty = calculator.CalculateDirtyRegions(allElements, changes).ToList();
-        
+
         // Should mark both elements as dirty since their relative order changed
         Assert.NotEmpty(dirty);
     }
@@ -251,11 +251,11 @@ public class OcclusionCalculatorTests
         var calculator = new OcclusionCalculator();
         var elem = new SpatialElement<TestItem>(new Rectangle(10, 10, 20, 20), 1, new TestItem("static"));
         var allElements = new List<SpatialElement<TestItem>> { elem };
-        
+
         var changes = Array.Empty<(TestItem, Rectangle, int, Rectangle, int)>();
-        
+
         var dirty = calculator.CalculateDirtyRegions(allElements, changes).ToList();
-        
+
         Assert.Empty(dirty);
     }
 }

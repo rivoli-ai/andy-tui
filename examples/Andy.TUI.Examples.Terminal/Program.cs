@@ -6,7 +6,7 @@ class Program
     {
         Console.WriteLine("Andy.TUI Examples");
         Console.WriteLine("=================\n");
-        
+
         if (args.Length == 0)
         {
             Console.WriteLine("Available examples:");
@@ -35,7 +35,7 @@ class Program
             Console.WriteLine("  dotnet run all            - Run all terminal examples");
             return;
         }
-        
+
         switch (args[0].ToLower())
         {
             case "terminal-basic":

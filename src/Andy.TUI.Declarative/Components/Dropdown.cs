@@ -17,7 +17,7 @@ public class Dropdown<T> : ISimpleComponent where T : class
     private readonly Func<T, string>? _displayText;
     private Terminal.Color _textColor = Terminal.Color.White;
     private Terminal.Color _placeholderColor = Terminal.Color.Gray;
-    
+
     /// <summary>
     /// Creates a new dropdown with a placeholder and selection binding.
     /// </summary>
@@ -28,7 +28,7 @@ public class Dropdown<T> : ISimpleComponent where T : class
         _selection = selection;
         _displayText = displayText;
     }
-    
+
     /// <summary>
     /// Sets the text color.
     /// </summary>
@@ -37,7 +37,7 @@ public class Dropdown<T> : ISimpleComponent where T : class
         _textColor = color;
         return this;
     }
-    
+
     /// <summary>
     /// Sets the placeholder color.
     /// </summary>
@@ -46,12 +46,12 @@ public class Dropdown<T> : ISimpleComponent where T : class
         _placeholderColor = color;
         return this;
     }
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("Dropdown declarations should not be rendered directly. Use ViewInstanceManager.");
     }
-    
+
     // Internal accessors for ViewInstance
     internal string GetPlaceholder() => _placeholder;
     internal IEnumerable<T> GetItems() => _items;

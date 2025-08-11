@@ -34,10 +34,10 @@ class TableTestApp
         new Product { Id = 14, Name = "Printer Paper", Category = "Office", Price = 19.99m, Stock = 200 },
         new Product { Id = 15, Name = "Webcam", Category = "Electronics", Price = 69.99m, Stock = 18 }
     };
-    
+
     private Optional<Product> selectedProduct = Optional<Product>.None;
     private Optional<Person> selectedPerson = Optional<Person>.None;
-    
+
     private readonly List<Person> people = new()
     {
         new Person { Name = "Alice Johnson", Age = 28, Department = "Engineering" },
@@ -46,18 +46,18 @@ class TableTestApp
         new Person { Name = "David Brown", Age = 29, Department = "Engineering" },
         new Person { Name = "Emma Davis", Age = 31, Department = "HR" }
     };
-    
+
     public void Run()
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
         var renderer = new DeclarativeRenderer(renderingSystem);
-        
+
         renderingSystem.Initialize();
-        
+
         renderer.Run(() => CreateUI());
     }
-    
+
     private ISimpleComponent CreateUI()
     {
         // Define product table columns
@@ -74,7 +74,7 @@ class TableTestApp
             new TableColumn<Product>("Stock", p => p.Stock.ToString(), width: 6, sortable: true,
                 comparer: (a, b) => a.Stock.CompareTo(b.Stock))
         };
-        
+
         // Define person table columns
         var personColumns = new[]
         {
@@ -85,10 +85,10 @@ class TableTestApp
             new TableColumn<Person>("Department", p => p.Department, sortable: true,
                 comparer: (a, b) => string.Compare(a.Department, b.Department, StringComparison.OrdinalIgnoreCase))
         };
-        
+
         return new VStack(spacing: 2) {
             new Text("Table Component Demo").Bold().Color(Color.Cyan),
-            
+
             new Text("Product Inventory (Tab to switch tables):").Bold(),
             new Table<Product>(
                 products,
@@ -96,14 +96,14 @@ class TableTestApp
                 this.Bind(() => selectedProduct),
                 visibleRows: 8
             ),
-            
+
             selectedProduct.TryGetValue(out var prod)
                 ? new HStack(spacing: 2) {
                     new Text($"Selected: {prod.Name}").Color(Color.Green),
                     new Text($"Total Value: ${prod.Price * prod.Stock:F2}").Color(Color.Yellow)
                   }
                 : new Text("No product selected").Color(Color.DarkGray),
-            
+
             new Text("Employee List (Minimal table):").Bold(),
             new Table<Person>(
                 people,
@@ -111,11 +111,11 @@ class TableTestApp
                 this.Bind(() => selectedPerson),
                 visibleRows: 5
             ).HideBorder(),
-            
+
             selectedPerson.TryGetValue(out var person)
                 ? new Text($"Selected: {person.Name} ({person.Age} years old)").Color(Color.Green)
                 : new Text("No person selected").Color(Color.DarkGray),
-            
+
             new Text("Controls:").Bold().Color(Color.Yellow),
             new HStack(spacing: 3) {
                 new VStack(spacing: 0) {
@@ -129,7 +129,7 @@ class TableTestApp
                     new Text("• 1-5: Sort by column").Color(Color.Gray)
                 }
             },
-            
+
             new HStack(spacing: 2) {
                 new Button("Clear Selection", () => {
                     selectedProduct = Optional<Product>.None;
@@ -137,17 +137,17 @@ class TableTestApp
                 }).Secondary(),
                 new Button("Submit", HandleSubmit).Primary()
             },
-            
+
             new Text("• Ctrl+C to exit").Color(Color.DarkGray)
         };
     }
-    
+
     private void HandleSubmit()
     {
         Console.Clear();
         Console.WriteLine("Selected items:");
         Console.WriteLine("===============");
-        
+
         if (selectedProduct.TryGetValue(out var product))
         {
             Console.WriteLine($"Product: {product.Name} (${product.Price})");
@@ -156,7 +156,7 @@ class TableTestApp
         {
             Console.WriteLine("Product: None");
         }
-        
+
         if (selectedPerson.TryGetValue(out var person))
         {
             Console.WriteLine($"Person: {person.Name} ({person.Department})");
@@ -165,10 +165,10 @@ class TableTestApp
         {
             Console.WriteLine("Person: None");
         }
-        
+
         Environment.Exit(0);
     }
-    
+
     // Sample data classes
     public class Product
     {
@@ -178,7 +178,7 @@ class TableTestApp
         public decimal Price { get; set; }
         public int Stock { get; set; }
     }
-    
+
     public class Person
     {
         public string Name { get; set; } = "";

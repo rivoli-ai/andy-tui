@@ -7,19 +7,19 @@ public class DependencyTracker
 {
     [ThreadStatic]
     private static DependencyTracker? _current;
-    
+
     private readonly HashSet<IObservableProperty> _dependencies = new();
-    
+
     /// <summary>
     /// Gets the current dependency tracker for the thread.
     /// </summary>
     public static DependencyTracker? Current => _current;
-    
+
     /// <summary>
     /// Gets the tracked dependencies.
     /// </summary>
     public IReadOnlySet<IObservableProperty> Dependencies => _dependencies;
-    
+
     /// <summary>
     /// Begins tracking dependencies.
     /// </summary>
@@ -29,10 +29,10 @@ public class DependencyTracker
         var tracker = new DependencyTracker();
         var previous = _current;
         _current = tracker;
-        
+
         return new TrackingScope(tracker, previous);
     }
-    
+
     /// <summary>
     /// Tracks a dependency on an observable property.
     /// </summary>
@@ -42,7 +42,7 @@ public class DependencyTracker
         ArgumentNullException.ThrowIfNull(property);
         _dependencies.Add(property);
     }
-    
+
     /// <summary>
     /// Clears all tracked dependencies.
     /// </summary>
@@ -50,19 +50,19 @@ public class DependencyTracker
     {
         _dependencies.Clear();
     }
-    
+
     private class TrackingScope : IDisposable
     {
         private readonly DependencyTracker _tracker;
         private readonly DependencyTracker? _previous;
         private bool _disposed;
-        
+
         public TrackingScope(DependencyTracker tracker, DependencyTracker? previous)
         {
             _tracker = tracker;
             _previous = previous;
         }
-        
+
         public void Dispose()
         {
             if (!_disposed)

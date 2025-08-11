@@ -17,24 +17,24 @@ public class DiffEngineOverlapTests
     {
         private readonly List<(int x, int y, string text, Style style)> _writes = new();
         private readonly List<(int x, int y, int width, int height, char fill, Style style)> _fills = new();
-        
+
         public int Width { get; set; } = 80;
         public int Height { get; set; } = 24;
         public bool IsDisposed { get; private set; }
-        
+
         public List<(int x, int y, string text, Style style)> Writes => _writes;
         public List<(int x, int y, int width, int height, char fill, Style style)> Fills => _fills;
-        
+
         public void WriteText(int x, int y, string text, Style style)
         {
             _writes.Add((x, y, text, style));
         }
-        
+
         public void FillRect(int x, int y, int width, int height, char fill, Style style)
         {
             _fills.Add((x, y, width, height, fill, style));
         }
-        
+
         public void DrawBox(int x, int y, int width, int height, Style style, BoxStyle boxStyle) { }
         public void Initialize() { }
         public void SetCursorPosition(int x, int y) { }
@@ -43,7 +43,7 @@ public class DiffEngineOverlapTests
         public void Render() { }
         public void Dispose() => IsDisposed = true;
     }
-    
+
     [Fact]
     public void SimpleOverlap_TwoTextComponents_ShouldClearOverlappedArea()
     {
@@ -51,7 +51,7 @@ public class DiffEngineOverlapTests
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         // Initial tree: single text at position (5, 2)
         var tree1 = Element("text")
             .WithProp("x", 5)
@@ -59,7 +59,7 @@ public class DiffEngineOverlapTests
             .WithProp("style", Style.Default)
             .WithChild(new TextNode("Hello"))
             .Build();
-        
+
         // Modified tree: text moved to position (3, 2) - overlaps with previous position
         var tree2 = Element("text")
             .WithProp("x", 3)
@@ -67,38 +67,38 @@ public class DiffEngineOverlapTests
             .WithProp("style", Style.Default)
             .WithChild(new TextNode("Hello World"))
             .Build();
-        
+
         // Act
         renderer.Render(tree1);
         mockSystem.Writes.Clear();
         mockSystem.Fills.Clear();
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
-        
+
         // Debug: Let's see what patches are generated
         var patchesDebug = string.Join(", ", patches.Select(p => p.GetType().Name));
         Assert.True(patches.Count > 0, $"Should generate patches. Generated: {patches.Count}, Types: [{patchesDebug}]");
-        
+
         renderer.ApplyPatches(patches);
-        
+
         // Debug: Let's see what operations were performed
         var fillsDebug = string.Join(", ", mockSystem.Fills.Select(f => $"({f.x},{f.y},{f.width}x{f.height})"));
         var writesDebug = string.Join(", ", mockSystem.Writes.Select(w => $"({w.x},{w.y}:'{w.text}')"));
-        
+
         // Assert
         // The renderer should clear dirty regions and rewrite content
         Assert.True(mockSystem.Fills.Count > 0, $"Should have clearing operations. Fills: [{fillsDebug}], Writes: [{writesDebug}]");
-        
+
         // The clearing may be consolidated into a single region covering both old and new positions
         // Check that at least the area from x=3 to x=9 (covering both positions) is cleared
-        Assert.Contains(mockSystem.Fills, f => 
+        Assert.Contains(mockSystem.Fills, f =>
             f.y == 2 && f.x <= 5 && (f.x + f.width) >= 10 && f.fill == ' ');
-        
+
         // Should have written new text at new position (3, 2)
-        Assert.Contains(mockSystem.Writes, w => 
+        Assert.Contains(mockSystem.Writes, w =>
             w.x == 3 && w.y == 2 && w.text == "Hello World");
     }
-    
+
     [Fact]
     public void ColumnWidthExpansion_ShouldClearOverlappedColumns()
     {
@@ -106,7 +106,7 @@ public class DiffEngineOverlapTests
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         // Initial tree: three columns at fixed positions
         var tree1 = Fragment(
             // Column 1: Programming Languages
@@ -122,7 +122,7 @@ public class DiffEngineOverlapTests
                 .WithProp("style", Style.Default)
                 .WithChild(new TextNode("C#"))
                 .Build(),
-            
+
             // Column 2: Colors
             Element("text")
                 .WithProp("x", 20)
@@ -136,7 +136,7 @@ public class DiffEngineOverlapTests
                 .WithProp("style", Style.Default)
                 .WithChild(new TextNode("Red"))
                 .Build(),
-                
+
             // Column 3: Numbers  
             Element("text")
                 .WithProp("x", 40)
@@ -151,7 +151,7 @@ public class DiffEngineOverlapTests
                 .WithChild(new TextNode("1"))
                 .Build()
         );
-        
+
         // Modified tree: Column 1 expands, pushing columns 2 and 3 to the right
         var tree2 = Fragment(
             // Column 1: Expanded
@@ -167,7 +167,7 @@ public class DiffEngineOverlapTests
                 .WithProp("style", Style.Default)
                 .WithChild(new TextNode("C#, JavaScript, Python"))
                 .Build(),
-            
+
             // Column 2: Moved right due to expansion
             Element("text")
                 .WithProp("x", 30)  // Moved from 20 to 30
@@ -181,7 +181,7 @@ public class DiffEngineOverlapTests
                 .WithProp("style", Style.Default)
                 .WithChild(new TextNode("Red"))
                 .Build(),
-                
+
             // Column 3: Moved further right
             Element("text")
                 .WithProp("x", 50)  // Moved from 40 to 50
@@ -196,34 +196,34 @@ public class DiffEngineOverlapTests
                 .WithChild(new TextNode("1"))
                 .Build()
         );
-        
+
         // Act
         renderer.Render(tree1);
         mockSystem.Writes.Clear();
         mockSystem.Fills.Clear();
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
         renderer.ApplyPatches(patches);
-        
+
         // Assert
         // The renderer consolidates dirty regions, so clearing may be merged
         Assert.True(mockSystem.Fills.Count > 0, "Should have clearing operations");
-        
+
         // Verify that clearing covers the affected areas (may be consolidated)
-        var hasClearing = mockSystem.Fills.Any(f => f.fill == ' ' && 
+        var hasClearing = mockSystem.Fills.Any(f => f.fill == ' ' &&
             ((f.y == 0 && f.x <= 40 && f.x + f.width > 20) || // Covers row 0 movements
              (f.y == 1 && f.x <= 40 && f.x + f.width > 20))); // Covers row 1 movements
         Assert.True(hasClearing, "Should have clearing for moved columns");
-        
+
         // Should write new content at new positions
-        Assert.Contains(mockSystem.Writes, w => 
+        Assert.Contains(mockSystem.Writes, w =>
             w.x == 0 && w.y == 1 && w.text == "C#, JavaScript, Python");
-        Assert.Contains(mockSystem.Writes, w => 
+        Assert.Contains(mockSystem.Writes, w =>
             w.x == 30 && w.y == 0 && w.text == "Colors:");
-        Assert.Contains(mockSystem.Writes, w => 
+        Assert.Contains(mockSystem.Writes, w =>
             w.x == 50 && w.y == 0 && w.text == "Numbers:");
     }
-    
+
     [Fact]
     public void ComplexLayoutShift_MultipleMoves_ShouldHandleAllOverlaps()
     {
@@ -231,7 +231,7 @@ public class DiffEngineOverlapTests
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         // Initial: A grid of text components
         var tree1 = Fragment(
             Element("text").WithProp("x", 0).WithProp("y", 0).WithChild(new TextNode("A")).Build(),
@@ -241,7 +241,7 @@ public class DiffEngineOverlapTests
             Element("text").WithProp("x", 5).WithProp("y", 1).WithChild(new TextNode("E")).Build(),
             Element("text").WithProp("x", 10).WithProp("y", 1).WithChild(new TextNode("F")).Build()
         );
-        
+
         // Modified: Shift everything right by different amounts
         var tree2 = Fragment(
             Element("text").WithProp("x", 2).WithProp("y", 0).WithChild(new TextNode("A_expanded")).Build(),
@@ -251,26 +251,26 @@ public class DiffEngineOverlapTests
             Element("text").WithProp("x", 15).WithProp("y", 1).WithChild(new TextNode("E")).Build(),
             Element("text").WithProp("x", 20).WithProp("y", 1).WithChild(new TextNode("F")).Build()
         );
-        
+
         // Act
         renderer.Render(tree1);
         mockSystem.Writes.Clear();
         mockSystem.Fills.Clear();
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
         renderer.ApplyPatches(patches);
-        
+
         // Assert - should clear all old positions and write to new positions
         // This is a complex scenario that tests the diff engine's ability to handle
         // multiple simultaneous position changes and overlaps
-        
+
         // Should have clearing operations for old positions
         Assert.True(mockSystem.Fills.Count > 0, "Should have clearing operations for old content");
-        
+
         // Should have new content written - text changes may not all be captured
         // Just verify that we have writes at the expected positions
         Assert.True(mockSystem.Writes.Count >= 4, "Should write multiple text elements");
-        Assert.True(mockSystem.Writes.Any(w => w.text.Contains("A") || w.text.Contains("B") || 
+        Assert.True(mockSystem.Writes.Any(w => w.text.Contains("A") || w.text.Contains("B") ||
                                                w.text.Contains("C") || w.text.Contains("D") ||
                                                w.text.Contains("E") || w.text.Contains("F")),
             "Should write some of the expected text content");

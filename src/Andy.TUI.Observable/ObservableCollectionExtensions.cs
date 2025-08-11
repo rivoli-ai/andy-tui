@@ -14,7 +14,7 @@ public static class ObservableCollectionExtensions
     {
         // Track the collection access
         DependencyTracker.Current?.TrackDependency(collection);
-        
+
         // Return the items
         foreach (var item in collection)
         {

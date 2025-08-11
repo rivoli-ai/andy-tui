@@ -14,7 +14,7 @@ class Program
         }
 
         var example = args[0].ToLower();
-        
+
         switch (example)
         {
             case "observable":

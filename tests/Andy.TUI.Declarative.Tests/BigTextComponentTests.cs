@@ -139,7 +139,7 @@ public class BigTextComponentTests
     public void BigText_ShowcaseExamples()
     {
         // Test examples from FinalComponentsShowcase
-        
+
         // Block font title
         var blockText = new BigText("FINAL", BigTextFont.Block, color: Color.Cyan);
         Assert.NotNull(blockText);

@@ -20,16 +20,16 @@ public class GradientInstance : ViewInstance
     private bool _bold = false;
     private bool _italic = false;
     private bool _underline = false;
-    
+
     public GradientInstance(string id) : base(id)
     {
     }
-    
+
     protected override void OnUpdate(ISimpleComponent viewDeclaration)
     {
         if (viewDeclaration is not Gradient gradient)
             throw new InvalidOperationException($"Expected Gradient, got {viewDeclaration.GetType()}");
-        
+
         _text = gradient.GetText();
         _startColor = gradient.GetStartColor();
         _endColor = gradient.GetEndColor();
@@ -38,7 +38,7 @@ public class GradientInstance : ViewInstance
         _italic = gradient.GetItalic();
         _underline = gradient.GetUnderline();
     }
-    
+
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
         var lines = _text.Split('\n');
@@ -47,23 +47,23 @@ public class GradientInstance : ViewInstance
         {
             maxWidth = Math.Max(maxWidth, line.Length);
         }
-        
-        return new LayoutBox 
-        { 
+
+        return new LayoutBox
+        {
             Width = Math.Min(maxWidth, constraints.MaxWidth),
             Height = Math.Min(lines.Length, constraints.MaxHeight)
         };
     }
-    
+
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         var children = new List<VirtualNode>();
         var lines = _text.Split('\n');
-        
+
         for (int lineIndex = 0; lineIndex < lines.Length && lineIndex < layout.Height; lineIndex++)
         {
             var line = lines[lineIndex];
-            
+
             if (_direction == GradientDirection.Horizontal)
             {
                 // Render each character with interpolated color
@@ -71,13 +71,13 @@ public class GradientInstance : ViewInstance
                 {
                     var t = line.Length > 1 ? (float)charIndex / (line.Length - 1) : 0f;
                     var color = Gradient.InterpolateColor(_startColor, _endColor, t);
-                    
+
                     var style = Style.Default
                         .WithForegroundColor(color)
                         .WithBold(_bold)
                         .WithItalic(_italic)
                         .WithUnderline(_underline);
-                    
+
                     children.Add(Element("text")
                         .WithProp("style", style)
                         .WithProp("x", (int)(layout.AbsoluteX + charIndex))
@@ -91,13 +91,13 @@ public class GradientInstance : ViewInstance
                 // Render entire line with interpolated color
                 var t = lines.Length > 1 ? (float)lineIndex / (lines.Length - 1) : 0f;
                 var color = Gradient.InterpolateColor(_startColor, _endColor, t);
-                
+
                 var style = Style.Default
                     .WithForegroundColor(color)
                     .WithBold(_bold)
                     .WithItalic(_italic)
                     .WithUnderline(_underline);
-                
+
                 children.Add(Element("text")
                     .WithProp("style", style)
                     .WithProp("x", (int)layout.AbsoluteX)
@@ -114,13 +114,13 @@ public class GradientInstance : ViewInstance
                     var dist = (float)Math.Sqrt(charIndex * charIndex + lineIndex * lineIndex);
                     var t = maxDist > 0 ? dist / maxDist : 0f;
                     var color = Gradient.InterpolateColor(_startColor, _endColor, t);
-                    
+
                     var style = Style.Default
                         .WithForegroundColor(color)
                         .WithBold(_bold)
                         .WithItalic(_italic)
                         .WithUnderline(_underline);
-                    
+
                     children.Add(Element("text")
                         .WithProp("style", style)
                         .WithProp("x", (int)(layout.AbsoluteX + charIndex))
@@ -130,7 +130,7 @@ public class GradientInstance : ViewInstance
                 }
             }
         }
-        
+
         return Element("container")
             .WithChildren(children.ToArray())
             .Build();

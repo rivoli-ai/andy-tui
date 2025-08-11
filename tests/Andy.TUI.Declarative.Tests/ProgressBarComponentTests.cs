@@ -94,7 +94,7 @@ public class ProgressBarComponentTests
     public void ProgressBar_ShowcaseExamples()
     {
         // Test examples from UIComponentsShowcase
-        
+
         // Default style
         var defaultBar = new ProgressBar(0.7f);
         Assert.NotNull(defaultBar);
@@ -129,7 +129,7 @@ public class ProgressBarComponentTests
         {
             var progressBar = new ProgressBar(0.5f, style: style);
             Assert.NotNull(progressBar);
-            
+
             var (filled, empty) = ProgressBar.GetStyleChars(style);
             Assert.NotEqual(filled, empty); // Characters should be different
         }

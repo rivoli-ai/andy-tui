@@ -28,7 +28,7 @@ public class BigText : ISimpleComponent
     private readonly Color _color;
     private readonly char _fillChar;
     private readonly int _spacing;
-    
+
     public BigText(
         string text,
         BigTextFont font = BigTextFont.Block,
@@ -44,7 +44,7 @@ public class BigText : ISimpleComponent
         _fillChar = fillChar;
         _spacing = Math.Max(0, spacing);
     }
-    
+
     // Internal accessors for view instance
     internal string GetText() => _text;
     internal BigTextFont GetFont() => _font;
@@ -52,19 +52,19 @@ public class BigText : ISimpleComponent
     internal Color GetColor() => _color;
     internal char GetFillChar() => _fillChar;
     internal int GetSpacing() => _spacing;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("BigText declarations should not be rendered directly. Use ViewInstanceManager.");
     }
-    
+
     // Get font data for a character
     public static string[]? GetCharacterPattern(char c, BigTextFont font)
     {
         var fonts = GetFontData(font);
         return fonts.TryGetValue(char.ToUpper(c), out var pattern) ? pattern : null;
     }
-    
+
     // Basic block font data
     private static Dictionary<char, string[]> GetFontData(BigTextFont font)
     {
@@ -76,7 +76,7 @@ public class BigText : ISimpleComponent
             _ => BlockFont
         };
     }
-    
+
     private static readonly Dictionary<char, string[]> BlockFont = new()
     {
         ['A'] = new[] { " ███ ", "█   █", "█████", "█   █", "█   █" },
@@ -122,7 +122,7 @@ public class BigText : ISimpleComponent
         [','] = new[] { "     ", "     ", "     ", "  █  ", " █   " },
         ['-'] = new[] { "     ", "     ", "█████", "     ", "     " }
     };
-    
+
     private static readonly Dictionary<char, string[]> SlimFont = new()
     {
         ['A'] = new[] { " ▄▄ ", "█  █", "████", "█  █" },
@@ -163,7 +163,7 @@ public class BigText : ISimpleComponent
         ['9'] = new[] { " ██ ", "█  █", " ███", "   █" },
         [' '] = new[] { "    ", "    ", "    ", "    " }
     };
-    
+
     private static readonly Dictionary<char, string[]> MiniFont = new()
     {
         ['A'] = new[] { "▄▄▄", "█▄█", "█ █" },

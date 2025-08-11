@@ -25,7 +25,7 @@ class UIComponentsShowcaseApp
     private Optional<string> _selectedSize = Optional<string>.None;
     private float _downloadProgress = 0f;
     private Timer? _progressTimer;
-    
+
     public void Run()
     {
         var terminal = new AnsiTerminal();
@@ -36,43 +36,44 @@ class UIComponentsShowcaseApp
         // Use ConsoleInputHandler instead of CrossPlatformInputHandler
         var input = new ConsoleInputHandler();
         var renderer = new DeclarativeRenderer(renderingSystem, input);
-        
+
         renderingSystem.Initialize();
-        
+
         // Start progress animation
-        _progressTimer = new Timer(_ => {
+        _progressTimer = new Timer(_ =>
+        {
             _downloadProgress = (_downloadProgress + 5) % 101;
             // Request a render to reflect progress promptly
             renderer.RequestRender();
         }, null, 0, 200);
-        
+
         renderer.Run(() => CreateUI());
-        
+
         _progressTimer?.Dispose();
     }
-    
+
     private ISimpleComponent CreateUI()
     {
         var themes = new[] { "Light", "Dark", "High Contrast", "Solarized" };
-        
+
         return new VStack(spacing: 2) {
             new Text("UI Components Showcase").Bold().Color(Color.Cyan),
             new Text("Demonstrating Checkbox, RadioGroup, List, ProgressBar, and Spinner").Color(Color.DarkGray),
             new Newline(),
-            
+
             new HStack(spacing: 4) {
                 // Left column
                 new VStack(spacing: 1) {
                     new Text("Checkboxes:").Bold().Color(Color.Yellow),
-                    new Checkbox("Accept Terms & Conditions", 
+                    new Checkbox("Accept Terms & Conditions",
                         this.Bind(() => _acceptTerms)),
-                    new Checkbox("Enable Notifications", 
+                    new Checkbox("Enable Notifications",
                         this.Bind(() => _enableNotifications),
                         checkedMark: "[✓]", uncheckedMark: "[×]"),
-                    new Checkbox("Dark Mode", 
+                    new Checkbox("Dark Mode",
                         this.Bind(() => _darkMode),
                         labelFirst: false),
-                    
+
                     new Newline(),
                     new Text("Radio Group:").Bold().Color(Color.Yellow),
                     new RadioGroup<string>(
@@ -82,7 +83,7 @@ class UIComponentsShowcaseApp
                         selectedMark: "(●)",
                         unselectedMark: "( )"
                     ),
-                    
+
                     new Newline(),
                     new Text($"Selected: {(_selectedTheme.HasValue ? _selectedTheme.Value : "None")}").Color(Color.Gray)
                 },
@@ -99,7 +100,7 @@ class UIComponentsShowcaseApp
                         ListMarkerStyle.Bullet,
                         markerColor: Color.Cyan
                     ),
-                    
+
                     new Newline(),
                     new List(
                         new ISimpleComponent[] {
@@ -111,7 +112,7 @@ class UIComponentsShowcaseApp
                         markerColor: Color.Magenta,
                         spacing: 1
                     ),
-                    
+
                     new Newline(),
                     new List(
                         new ISimpleComponent[] {
@@ -127,29 +128,29 @@ class UIComponentsShowcaseApp
                 // Right column
                 new VStack(spacing: 1) {
                     new Text("Progress & Loading:").Bold().Color(Color.Yellow),
-                    
+
                     new Text("Download Progress:"),
-                    new ProgressBar(_downloadProgress, 
+                    new ProgressBar(_downloadProgress,
                         width: 25,
                         style: ProgressBarStyle.Solid,
                         filledColor: Color.Green,
                         label: "file.zip"),
-                    
+
                     new Newline(),
                     new Text("Processing:"),
-                    new ProgressBar(75f, 
+                    new ProgressBar(75f,
                         width: 25,
                         style: ProgressBarStyle.Line,
                         filledColor: Color.Blue,
                         showPercentage: true),
-                    
+
                     new Newline(),
                     new Text("Custom Style:"),
-                    new ProgressBar(45f, 
+                    new ProgressBar(45f,
                         width: 25,
                         style: ProgressBarStyle.Dots,
                         filledColor: Color.Magenta),
-                    
+
                     new Newline(),
                     new Text("Spinners:").Bold(),
                     new HStack(spacing: 3) {
@@ -157,7 +158,7 @@ class UIComponentsShowcaseApp
                         new Spinner(SpinnerStyle.Line, color: Color.Green),
                         new Spinner(SpinnerStyle.Arrow, color: Color.Yellow)
                     },
-                    
+
                     new Newline(),
                     new HStack(spacing: 3) {
                         new Spinner(SpinnerStyle.Box, color: Color.Red, label: "Saving", labelFirst: true),
@@ -165,7 +166,7 @@ class UIComponentsShowcaseApp
                     }
                 }
             },
-            
+
             new Newline(),
             new Box {
                 new VStack {
@@ -179,7 +180,7 @@ class UIComponentsShowcaseApp
                     new Text($"Selected Size: {(_selectedSize.HasValue ? _selectedSize.Value : "None")}").Color(Color.Gray)
                 }
             }.WithPadding(1),
-            
+
             new Newline(),
             new Text("Press Ctrl+C to exit...").Color(Color.DarkGray)
         };

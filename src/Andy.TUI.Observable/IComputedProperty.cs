@@ -9,12 +9,12 @@ public interface IComputedProperty : IObservableProperty
     /// Gets the dependencies of this computed property.
     /// </summary>
     IReadOnlySet<IObservableProperty> Dependencies { get; }
-    
+
     /// <summary>
     /// Forces the computed property to recalculate its value.
     /// </summary>
     void Invalidate();
-    
+
     /// <summary>
     /// Gets a value indicating whether the computed value is currently valid.
     /// </summary>

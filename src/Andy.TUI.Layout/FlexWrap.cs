@@ -9,12 +9,12 @@ public enum FlexWrap
     /// Items are laid out in a single line (default).
     /// </summary>
     NoWrap,
-    
+
     /// <summary>
     /// Items wrap to new lines as needed.
     /// </summary>
     Wrap,
-    
+
     /// <summary>
     /// Items wrap to new lines in reverse order.
     /// </summary>

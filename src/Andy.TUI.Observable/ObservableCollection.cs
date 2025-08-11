@@ -22,8 +22,8 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
     /// <summary>
     /// Gets the current items as a read-only list.
     /// </summary>
-    public new IReadOnlyList<T> Items 
-    { 
+    public new IReadOnlyList<T> Items
+    {
         get
         {
             // Track this property access if we're in a computed property context
@@ -158,7 +158,7 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
     public T Replace(int index, T item)
     {
         ThrowIfDisposed();
-        
+
         if (index < 0 || index >= Count)
             throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -175,12 +175,12 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
     public void Move(int oldIndex, int newIndex)
     {
         ThrowIfDisposed();
-        
+
         if (oldIndex < 0 || oldIndex >= Count)
             throw new ArgumentOutOfRangeException(nameof(oldIndex));
         if (newIndex < 0 || newIndex >= Count)
             throw new ArgumentOutOfRangeException(nameof(newIndex));
-        
+
         if (oldIndex == newIndex) return;
 
         var item = this[oldIndex];
@@ -195,7 +195,7 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
     public IDisposable SuspendNotifications()
     {
         ThrowIfDisposed();
-        
+
         lock (_lock)
         {
             if (_suspendCount == 0)
@@ -268,10 +268,10 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
     protected override void ClearItems()
     {
         ThrowIfDisposed();
-        
+
         // Track this property access if we're in a computed property context
         DependencyTracker.Current?.TrackDependency(this);
-        
+
         lock (_lock)
         {
             base.ClearItems();
@@ -281,10 +281,10 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
     protected override void InsertItem(int index, T item)
     {
         ThrowIfDisposed();
-        
+
         // Track this property access if we're in a computed property context
         DependencyTracker.Current?.TrackDependency(this);
-        
+
         lock (_lock)
         {
             base.InsertItem(index, item);
@@ -294,10 +294,10 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
     protected override void RemoveItem(int index)
     {
         ThrowIfDisposed();
-        
+
         // Track this property access if we're in a computed property context
         DependencyTracker.Current?.TrackDependency(this);
-        
+
         lock (_lock)
         {
             base.RemoveItem(index);
@@ -307,10 +307,10 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
     protected override void SetItem(int index, T item)
     {
         ThrowIfDisposed();
-        
+
         // Track this property access if we're in a computed property context
         DependencyTracker.Current?.TrackDependency(this);
-        
+
         lock (_lock)
         {
             base.SetItem(index, item);
@@ -351,7 +351,7 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
         }
 
         CollectionChanged?.Invoke(this, e);
-        
+
         // Notify property observers
         var propertyArgs = new PropertyChangedEventArgs("Items", null, Items);
         NotifyPropertyObservers(propertyArgs);
@@ -388,7 +388,7 @@ public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, 
     private void ResumeNotifications()
     {
         List<NotifyCollectionChangedEventArgs>? pendingChanges = null;
-        
+
         lock (_lock)
         {
             _suspendCount--;

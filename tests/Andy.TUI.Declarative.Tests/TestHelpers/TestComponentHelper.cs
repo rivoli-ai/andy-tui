@@ -21,7 +21,7 @@ public static class TestComponentHelper
     public static ViewInstance GetOrCreateTestInstance(DeclarativeContext context, ISimpleComponent component, string path)
     {
         var manager = context.ViewInstanceManager;
-        
+
         // For our test components, we'll create wrapper components that the system can handle
         ISimpleComponent wrappedComponent = component switch
         {
@@ -31,11 +31,11 @@ public static class TestComponentHelper
             ExtremeValueComponent extreme => new TestComponentWrapper(extreme, () => new ExtremeValueInstance(path)),
             _ => component
         };
-        
+
         // Use reflection to call CreateGenericInstance which will use our wrapper
-        var createGenericMethod = manager.GetType().GetMethod("CreateGenericInstance", 
+        var createGenericMethod = manager.GetType().GetMethod("CreateGenericInstance",
             BindingFlags.NonPublic | BindingFlags.Instance);
-        
+
         if (createGenericMethod != null && wrappedComponent is TestComponentWrapper)
         {
             var wrapper = (TestComponentWrapper)wrappedComponent;
@@ -44,7 +44,7 @@ public static class TestComponentHelper
             instance.Update(wrapper.InnerComponent);
             return instance;
         }
-        
+
         // Fallback to regular GetOrCreateInstance
         return manager.GetOrCreateInstance(component, path);
     }
@@ -57,15 +57,15 @@ internal class TestComponentWrapper : ISimpleComponent
 {
     public ISimpleComponent InnerComponent { get; }
     public Func<ViewInstance> InstanceFactory { get; }
-    
+
     public TestComponentWrapper(ISimpleComponent innerComponent, Func<ViewInstance> instanceFactory)
     {
         InnerComponent = innerComponent;
         InstanceFactory = instanceFactory;
     }
-    
+
     public ISimpleComponent Copy() => new TestComponentWrapper(InnerComponent, InstanceFactory);
-    
+
     public VirtualNode Render() => Fragment();
 }
 
@@ -75,24 +75,24 @@ internal class TestComponentWrapper : ISimpleComponent
 public class TestDeclarativeContext : DeclarativeContext
 {
     private readonly Dictionary<string, ViewInstance> _testInstances = new();
-    
+
     public TestDeclarativeContext() : base(() => { })
     {
     }
-    
+
     /// <summary>
     /// Gets or creates an instance, handling test components specially.
     /// </summary>
     public ViewInstance GetTestInstance(ISimpleComponent component, string path)
     {
         // For test components, create them directly
-        if (component is FixedSizeComponent || 
-            component is AutoSizeComponent || 
-            component is TestContainer || 
+        if (component is FixedSizeComponent ||
+            component is AutoSizeComponent ||
+            component is TestContainer ||
             component is ExtremeValueComponent)
         {
             var key = $"{path}:{component.GetType().Name}";
-            
+
             if (!_testInstances.TryGetValue(key, out var instance))
             {
                 instance = component switch
@@ -103,15 +103,15 @@ public class TestDeclarativeContext : DeclarativeContext
                     ExtremeValueComponent => new ExtremeValueInstance(key),
                     _ => throw new NotSupportedException($"Unsupported test component: {component.GetType().Name}")
                 };
-                
+
                 instance.Context = this;
                 _testInstances[key] = instance;
             }
-            
+
             instance.Update(component);
             return instance;
         }
-        
+
         // For regular components, use the standard manager
         return ViewInstanceManager.GetOrCreateInstance(component, path);
     }

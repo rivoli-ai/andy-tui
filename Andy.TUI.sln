@@ -55,6 +55,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Andy.TUI.Tests.Common", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Andy.TUI.Diagnostics.Tests", "tests\Andy.TUI.Diagnostics.Tests\Andy.TUI.Diagnostics.Tests.csproj", "{C8EBE315-5DA6-4087-860C-561342AEBA03}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Andy.TUI.Examples.Chat", "examples\Andy.TUI.Examples.Chat\Andy.TUI.Examples.Chat.csproj", "{55827AB6-5A62-4DFE-9699-688F7F990C30}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -341,6 +343,18 @@ Global
 		{C8EBE315-5DA6-4087-860C-561342AEBA03}.Release|x64.Build.0 = Release|Any CPU
 		{C8EBE315-5DA6-4087-860C-561342AEBA03}.Release|x86.ActiveCfg = Release|Any CPU
 		{C8EBE315-5DA6-4087-860C-561342AEBA03}.Release|x86.Build.0 = Release|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Debug|x64.Build.0 = Debug|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Debug|x86.Build.0 = Debug|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Release|x64.ActiveCfg = Release|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Release|x64.Build.0 = Release|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Release|x86.ActiveCfg = Release|Any CPU
+		{55827AB6-5A62-4DFE-9699-688F7F990C30}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -369,5 +383,6 @@ Global
 		{9DA54E1D-56EA-4BE6-AAB1-F1671D35EA67} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{E3B5A30C-ECDD-4C2B-A9F8-28329CF94A61} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{C8EBE315-5DA6-4087-860C-561342AEBA03} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{55827AB6-5A62-4DFE-9699-688F7F990C30} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 	EndGlobalSection
 EndGlobal

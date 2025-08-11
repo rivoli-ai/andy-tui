@@ -15,65 +15,65 @@ public class SystemBannerExample
         Console.WriteLine("Displays a system information banner");
         Console.WriteLine("Press any key to continue...");
         Console.ReadKey(true);
-        
+
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
         renderingSystem.Initialize();
-        
+
         renderingSystem.Clear();
-        
+
         DrawBanner(renderingSystem);
-        
+
         // Draw exit instruction at the bottom
-        renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 2, "Press any key to exit...", 
+        renderingSystem.WriteText(2, renderingSystem.Terminal.Height - 2, "Press any key to exit...",
             Style.Default.WithForegroundColor(Color.DarkGray));
-        
+
         renderingSystem.Render();
-        
+
         Console.ReadKey(true);
-        
+
         renderingSystem.Shutdown();
     }
-    
+
     private static void DrawBanner(RenderingSystem renderingSystem)
     {
         var y = 2;
-        
+
         // Welcome header with ASCII art
         DrawAsciiLogo(renderingSystem, 2, y);
         y += 6;
-        
+
         // System information box
         renderingSystem.DrawBox(2, y, renderingSystem.Terminal.Width - 4, 12,
             Style.Default.WithForegroundColor(Color.DarkGray), BoxStyle.Rounded);
-        
+
         y += 1;
-        
+
         // Welcome message
         var hostname = Environment.MachineName;
         var welcomeMsg = $"Welcome to {hostname}";
-        renderingSystem.WriteText(4, y, welcomeMsg, 
+        renderingSystem.WriteText(4, y, welcomeMsg,
             Style.Default.WithForegroundColor(Color.Green).WithBold());
-        
+
         y += 2;
-        
+
         // System information
         DrawSystemInfo(renderingSystem, 4, y);
         y += 5;
-        
+
         // System usage
         DrawSystemUsage(renderingSystem, 4, y);
         y += 3;
-        
+
         // Updates and security
         y += 1;
         DrawUpdatesInfo(renderingSystem, 2, y);
         y += 4;
-        
+
         // Last login
         DrawLastLogin(renderingSystem, 2, y);
     }
-    
+
     private static void DrawAsciiLogo(RenderingSystem renderingSystem, int x, int y)
     {
         var logo = new[]
@@ -85,64 +85,64 @@ public class SystemBannerExample
             @"/_/   \_\_| |_|\__,_|\__, |   |_|  \___/|___|",
             @"                     |___/                    "
         };
-        
+
         var logoStyle = Style.Default.WithForegroundColor(Color.Cyan);
         for (int i = 0; i < logo.Length; i++)
         {
             renderingSystem.WriteText(x, y + i, logo[i], logoStyle);
         }
     }
-    
+
     private static void DrawSystemInfo(RenderingSystem renderingSystem, int x, int y)
     {
         var labelStyle = Style.Default.WithForegroundColor(Color.DarkGray);
         var valueStyle = Style.Default.WithForegroundColor(Color.White);
-        
+
         // OS Information
         var os = RuntimeInformation.OSDescription;
         renderingSystem.WriteText(x, y, "System: ", labelStyle);
         renderingSystem.WriteText(x + 10, y, os, valueStyle);
-        
+
         // Kernel/Runtime
         y++;
         renderingSystem.WriteText(x, y, "Runtime: ", labelStyle);
         renderingSystem.WriteText(x + 10, y, $".NET {Environment.Version}", valueStyle);
-        
+
         // Architecture
         y++;
         renderingSystem.WriteText(x, y, "Arch: ", labelStyle);
         renderingSystem.WriteText(x + 10, y, RuntimeInformation.ProcessArchitecture.ToString(), valueStyle);
-        
+
         // Uptime
         y++;
         var uptime = GetSystemUptime();
         renderingSystem.WriteText(x, y, "Uptime: ", labelStyle);
         renderingSystem.WriteText(x + 10, y, uptime, valueStyle);
     }
-    
+
     private static void DrawSystemUsage(RenderingSystem renderingSystem, int x, int y)
     {
         var labelStyle = Style.Default.WithForegroundColor(Color.DarkGray);
-        
+
         // CPU usage
         var cpuUsage = GetCpuUsage();
         renderingSystem.WriteText(x, y, "CPU: ", labelStyle);
         DrawUsageBar(renderingSystem, x + 10, y, 20, cpuUsage, "cpu");
-        
+
         // Memory usage
         y++;
         var (memUsed, memTotal, memPercent) = GetMemoryUsage();
         renderingSystem.WriteText(x, y, "Memory: ", labelStyle);
         DrawUsageBar(renderingSystem, x + 10, y, 20, memPercent, "memory");
-        renderingSystem.WriteText(x + 32, y, $"{memUsed:F1}G / {memTotal:F1}G", 
+        renderingSystem.WriteText(x + 32, y, $"{memUsed:F1}G / {memTotal:F1}G",
             Style.Default.WithForegroundColor(Color.DarkGray));
     }
-    
-    private static void DrawUsageBar(RenderingSystem renderingSystem, int x, int y, int width, 
+
+    private static void DrawUsageBar(RenderingSystem renderingSystem, int x, int y, int width,
         double percentage, string type)
     {
         var filled = (int)(width * percentage / 100.0);
-        
+
         // Determine color based on usage
         Color barColor;
         if (percentage > 80)
@@ -151,55 +151,55 @@ public class SystemBannerExample
             barColor = Color.Yellow;
         else
             barColor = Color.Green;
-        
+
         // Draw the bar
         renderingSystem.WriteText(x, y, "[", Style.Default.WithForegroundColor(Color.DarkGray));
-        
+
         for (int i = 0; i < width; i++)
         {
             if (i < filled)
             {
-                renderingSystem.Buffer.SetCell(x + 1 + i, y, '=', 
+                renderingSystem.Buffer.SetCell(x + 1 + i, y, '=',
                     Style.Default.WithForegroundColor(barColor));
             }
             else
             {
-                renderingSystem.Buffer.SetCell(x + 1 + i, y, '-', 
+                renderingSystem.Buffer.SetCell(x + 1 + i, y, '-',
                     Style.Default.WithForegroundColor(Color.DarkGray));
             }
         }
-        
-        renderingSystem.WriteText(x + width + 1, y, $"] {percentage:F0}%", 
+
+        renderingSystem.WriteText(x + width + 1, y, $"] {percentage:F0}%",
             Style.Default.WithForegroundColor(Color.DarkGray));
     }
-    
+
     private static void DrawUpdatesInfo(RenderingSystem renderingSystem, int x, int y)
     {
         // Simulated update information
         renderingSystem.DrawBox(x, y, renderingSystem.Terminal.Width - 4, 3,
             Style.Default.WithForegroundColor(Color.Yellow), BoxStyle.Single);
-        
+
         renderingSystem.WriteText(x + 2, y + 1, "💡 ", Style.Default);
-        renderingSystem.WriteText(x + 5, y + 1, "System is up to date. No updates available.", 
+        renderingSystem.WriteText(x + 5, y + 1, "System is up to date. No updates available.",
             Style.Default.WithForegroundColor(Color.Yellow));
     }
-    
+
     private static void DrawLastLogin(RenderingSystem renderingSystem, int x, int y)
     {
         var lastLogin = DateTime.Now.AddHours(-2.5); // Simulated
         var loginInfo = $"Last login: {lastLogin:ddd MMM dd HH:mm:ss yyyy} from console";
-        
-        renderingSystem.WriteText(x, y, loginInfo, 
+
+        renderingSystem.WriteText(x, y, loginInfo,
             Style.Default.WithForegroundColor(Color.DarkGray));
     }
-    
+
     private static string GetSystemUptime()
     {
         try
         {
             // Get actual system uptime on different platforms
             TimeSpan uptime;
-            
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // On Windows, use Environment.TickCount64
@@ -232,13 +232,13 @@ public class SystemBannerExample
                         RedirectStandardOutput = true,
                         CreateNoWindow = true
                     };
-                    
+
                     using var process = Process.Start(processInfo);
                     if (process != null)
                     {
                         var output = process.StandardOutput.ReadToEnd();
                         process.WaitForExit();
-                        
+
                         // Parse uptime output, e.g., "18:45  up 52 mins, 3 users, load averages: 2.50 2.89 3.22"
                         // or "18:45  up 2 days, 3:24, 3 users, load averages: 2.50 2.89 3.22"
                         uptime = ParseMacOSUptime(output);
@@ -260,7 +260,7 @@ public class SystemBannerExample
                 // Fallback for other platforms
                 uptime = TimeSpan.FromDays(5.5).Add(TimeSpan.FromHours(2.25));
             }
-            
+
             if (uptime.TotalDays >= 1)
             {
                 return $"{(int)uptime.TotalDays} days, {uptime.Hours} hours, {uptime.Minutes} minutes";
@@ -279,7 +279,7 @@ public class SystemBannerExample
             return "Unknown";
         }
     }
-    
+
     private static double GetCpuUsage()
     {
         // Simulate realistic CPU usage for a system
@@ -287,10 +287,10 @@ public class SystemBannerExample
         var baseUsage = 15.0; // Base system usage
         var variation = random.NextDouble() * 10; // 0-10% variation
         var spikes = random.NextDouble() < 0.1 ? random.NextDouble() * 30 : 0; // Occasional spikes
-        
+
         return Math.Min(100, baseUsage + variation + spikes);
     }
-    
+
     private static TimeSpan ParseMacOSUptime(string uptimeOutput)
     {
         // Parse macOS uptime command output
@@ -299,11 +299,11 @@ public class SystemBannerExample
         // "18:45  up 2:30, 3 users, load averages: 2.50 2.89 3.22"
         // "18:45  up 2 days, 3:24, 3 users, load averages: 2.50 2.89 3.22"
         // "18:45  up 15 days, 22:03, 3 users, load averages: 2.50 2.89 3.22"
-        
+
         try
         {
             var parts = uptimeOutput.Split(',')[0].Split("up")[1].Trim().Split(' ');
-            
+
             if (parts.Length == 2 && parts[1] == "mins")
             {
                 // Format: "52 mins"
@@ -343,13 +343,13 @@ public class SystemBannerExample
             return TimeSpan.FromMinutes(52);
         }
     }
-    
+
     private static (double used, double total, double percent) GetMemoryUsage()
     {
         // Try to get actual system memory
         double total = 16.0; // Default fallback
         double used = 8.0;
-        
+
         try
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -365,13 +365,13 @@ public class SystemBannerExample
                         RedirectStandardOutput = true,
                         CreateNoWindow = true
                     };
-                    
+
                     using var process = Process.Start(processInfo);
                     if (process != null)
                     {
                         var output = process.StandardOutput.ReadToEnd();
                         process.WaitForExit();
-                        
+
                         // Parse "TotalPhysicalMemory=137438953472"
                         var match = System.Text.RegularExpressions.Regex.Match(output, @"TotalPhysicalMemory=(\d+)");
                         if (match.Success)
@@ -380,7 +380,7 @@ public class SystemBannerExample
                             total = bytes / (1024.0 * 1024.0 * 1024.0); // Convert to GB
                         }
                     }
-                    
+
                     // Simulate used memory
                     var random = new Random();
                     used = total * (0.3 + random.NextDouble() * 0.3); // 30-60% usage
@@ -400,13 +400,13 @@ public class SystemBannerExample
                     var meminfo = System.IO.File.ReadAllLines("/proc/meminfo");
                     var totalLine = meminfo.FirstOrDefault(l => l.StartsWith("MemTotal:"));
                     var availLine = meminfo.FirstOrDefault(l => l.StartsWith("MemAvailable:"));
-                    
+
                     if (totalLine != null)
                     {
                         var totalKb = double.Parse(totalLine.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1]);
                         total = totalKb / (1024 * 1024); // Convert KB to GB
                     }
-                    
+
                     if (availLine != null && totalLine != null)
                     {
                         var availKb = double.Parse(availLine.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1]);
@@ -432,13 +432,13 @@ public class SystemBannerExample
                         RedirectStandardOutput = true,
                         CreateNoWindow = true
                     };
-                    
+
                     using var process = Process.Start(processInfo);
                     if (process != null)
                     {
                         var output = process.StandardOutput.ReadToEnd();
                         process.WaitForExit();
-                        
+
                         // Parse "hw.memsize: 137438953472" (bytes)
                         var parts = output.Split(':');
                         if (parts.Length == 2)
@@ -447,17 +447,17 @@ public class SystemBannerExample
                             total = bytes / (1024.0 * 1024.0 * 1024.0); // Convert to GB
                         }
                     }
-                    
+
                     // Get memory pressure for used memory estimate
                     processInfo.Arguments = "-l 1 -c 1";
                     processInfo.FileName = "/usr/bin/vm_stat";
-                    
+
                     using var vmProcess = Process.Start(processInfo);
                     if (vmProcess != null)
                     {
                         var output = vmProcess.StandardOutput.ReadToEnd();
                         vmProcess.WaitForExit();
-                        
+
                         // Parse vm_stat output to estimate used memory
                         // This is simplified - real implementation would parse all values
                         var random = new Random();
@@ -474,10 +474,10 @@ public class SystemBannerExample
         {
             // Keep defaults
         }
-        
+
         // Ensure used is not greater than total
         if (used > total) used = total * 0.8;
-        
+
         var percent = (used / total) * 100;
         return (used, total, percent);
     }

@@ -23,8 +23,8 @@ public class Text : ISimpleComponent
 
     public Text Color(Color color)
     {
-        return new Text(_content) 
-        { 
+        return new Text(_content)
+        {
             _style = _style.WithForegroundColor(color),
             _wrap = _wrap,
             _maxLines = _maxLines,
@@ -35,8 +35,8 @@ public class Text : ISimpleComponent
 
     public Text Bold()
     {
-        return new Text(_content) 
-        { 
+        return new Text(_content)
+        {
             _style = _style.WithBold(true),
             _wrap = _wrap,
             _maxLines = _maxLines,
@@ -47,8 +47,8 @@ public class Text : ISimpleComponent
 
     public Text Title()
     {
-        return new Text(_content) 
-        { 
+        return new Text(_content)
+        {
             _style = _style.WithBold(true).WithForegroundColor(Terminal.Color.White),
             _wrap = _wrap,
             _maxLines = _maxLines,
@@ -59,8 +59,8 @@ public class Text : ISimpleComponent
 
     public Text Dim()
     {
-        return new Text(_content) 
-        { 
+        return new Text(_content)
+        {
             _style = _style.WithDim(true),
             _wrap = _wrap,
             _maxLines = _maxLines,
@@ -71,8 +71,8 @@ public class Text : ISimpleComponent
 
     public Text Underline()
     {
-        return new Text(_content) 
-        { 
+        return new Text(_content)
+        {
             _style = _style.WithUnderline(true),
             _wrap = _wrap,
             _maxLines = _maxLines,
@@ -86,11 +86,11 @@ public class Text : ISimpleComponent
         // For now, just return self - in full implementation this would add center alignment
         return this;
     }
-    
+
     public Text Wrap(TextWrap wrap)
     {
-        return new Text(_content) 
-        { 
+        return new Text(_content)
+        {
             _style = _style,
             _wrap = wrap,
             _maxLines = _maxLines,
@@ -98,11 +98,11 @@ public class Text : ISimpleComponent
             _maxWidth = _maxWidth
         };
     }
-    
+
     public Text MaxLines(int lines)
     {
-        return new Text(_content) 
-        { 
+        return new Text(_content)
+        {
             _style = _style,
             _wrap = _wrap,
             _maxLines = lines,
@@ -110,11 +110,11 @@ public class Text : ISimpleComponent
             _maxWidth = _maxWidth
         };
     }
-    
+
     public Text Truncate(TruncationMode mode)
     {
-        return new Text(_content) 
-        { 
+        return new Text(_content)
+        {
             _style = _style,
             _wrap = _wrap,
             _maxLines = _maxLines,
@@ -122,11 +122,11 @@ public class Text : ISimpleComponent
             _maxWidth = _maxWidth
         };
     }
-    
+
     public Text MaxWidth(int width)
     {
-        return new Text(_content) 
-        { 
+        return new Text(_content)
+        {
             _style = _style,
             _wrap = _wrap,
             _maxLines = _maxLines,
@@ -134,7 +134,7 @@ public class Text : ISimpleComponent
             _maxWidth = width
         };
     }
-    
+
     // Internal accessors for view instance
     internal string GetContent() => _content;
     internal Style GetStyle() => _style;

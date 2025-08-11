@@ -9,29 +9,29 @@ public interface IObservableProperty
     /// Gets the current value of the property.
     /// </summary>
     object? Value { get; }
-    
+
     /// <summary>
     /// Gets a value indicating whether this property has any observers.
     /// </summary>
     bool HasObservers { get; }
-    
+
     /// <summary>
     /// Occurs when the property value changes.
     /// </summary>
     event EventHandler<PropertyChangedEventArgs>? PropertyChanged;
-    
+
     /// <summary>
     /// Adds an observer to this property.
     /// </summary>
     /// <param name="observer">The observer to add.</param>
     void AddObserver(IPropertyObserver observer);
-    
+
     /// <summary>
     /// Removes an observer from this property.
     /// </summary>
     /// <param name="observer">The observer to remove.</param>
     void RemoveObserver(IPropertyObserver observer);
-    
+
     /// <summary>
     /// Disposes of the property and cleans up resources.
     /// </summary>
@@ -48,19 +48,19 @@ public interface IObservableProperty<T> : IObservableProperty
     /// Gets or sets the value of the property.
     /// </summary>
     new T Value { get; set; }
-    
+
     /// <summary>
     /// Occurs when the property value changes, providing old and new values.
     /// </summary>
     event EventHandler<PropertyChangedEventArgs<T>>? ValueChanged;
-    
+
     /// <summary>
     /// Subscribes to value changes with a callback.
     /// </summary>
     /// <param name="callback">The callback to invoke when the value changes.</param>
     /// <returns>A disposable that unsubscribes when disposed.</returns>
     IDisposable Subscribe(Action<T> callback);
-    
+
     /// <summary>
     /// Observes the property value, invoking the callback immediately and on changes.
     /// </summary>
@@ -91,17 +91,17 @@ public class PropertyChangedEventArgs : EventArgs
     /// Gets the name of the property that changed.
     /// </summary>
     public string PropertyName { get; }
-    
+
     /// <summary>
     /// Gets the old value of the property.
     /// </summary>
     public object? OldValue { get; }
-    
+
     /// <summary>
     /// Gets the new value of the property.
     /// </summary>
     public object? NewValue { get; }
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="PropertyChangedEventArgs"/> class.
     /// </summary>
@@ -126,17 +126,17 @@ public class PropertyChangedEventArgs<T> : EventArgs
     /// Gets the name of the property that changed.
     /// </summary>
     public string PropertyName { get; }
-    
+
     /// <summary>
     /// Gets the old value of the property.
     /// </summary>
     public T OldValue { get; }
-    
+
     /// <summary>
     /// Gets the new value of the property.
     /// </summary>
     public T NewValue { get; }
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="PropertyChangedEventArgs{T}"/> class.
     /// </summary>

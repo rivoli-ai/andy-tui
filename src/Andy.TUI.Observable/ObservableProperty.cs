@@ -20,10 +20,10 @@ public class ObservableProperty<T> : IObservableProperty<T>, IDisposable
         get
         {
             ThrowIfDisposed();
-            
+
             // Track this property access if we're in a computed property context
             DependencyTracker.Current?.TrackDependency(this);
-            
+
             lock (_lock)
             {
                 return _value;
@@ -120,7 +120,7 @@ public class ObservableProperty<T> : IObservableProperty<T>, IDisposable
         ThrowIfDisposed();
 
         var weakRef = new WeakReference<Action<T>>(callback);
-        
+
         lock (_lock)
         {
             _callbacks.Add(weakRef);
@@ -201,7 +201,7 @@ public class ObservableProperty<T> : IObservableProperty<T>, IDisposable
         // Get observers snapshot to avoid modifications during iteration
         IPropertyObserver[] observers;
         List<Action<T>> callbacks;
-        
+
         lock (_lock)
         {
             observers = _observers.ToArray();

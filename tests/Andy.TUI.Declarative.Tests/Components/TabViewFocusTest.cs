@@ -27,33 +27,33 @@ public class TabViewFocusTest
         var context = new DeclarativeContext(() => { });
         var manager = context.ViewInstanceManager;
         var focusManager = context.FocusManager;
-        
+
         // Create a container to hold the TabView
         var container = new VStack {
             new Text("Header"),
             tabView
         };
-        
+
         var rootInstance = manager.GetOrCreateInstance(container, "root");
-        
+
         // Calculate layout
         var constraints = LayoutConstraints.Loose(80, 24);
         rootInstance.CalculateLayout(constraints);
-        
+
         // Act - The TabView should have been registered during instance creation
         // Move focus to the first focusable element
         focusManager.MoveFocus(FocusDirection.Next);
-        
+
         // Assert
         var focusedComponent = focusManager.FocusedComponent;
         Assert.NotNull(focusedComponent);
-        
+
         // The focused component should be the TabView
         var tabViewInstance = focusedComponent as TabViewInstance;
         Assert.NotNull(tabViewInstance);
         Assert.True(tabViewInstance.CanReceiveFocus);
         Assert.True(tabViewInstance.IsFocused);
-        
+
         // Test keyboard navigation
         var handled = tabViewInstance.HandleKeyPress(new ConsoleKeyInfo('\0', ConsoleKey.RightArrow, false, false, false));
         Assert.True(handled);

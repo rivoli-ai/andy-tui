@@ -25,21 +25,21 @@ public class ComputedProperty<T> : IComputedProperty<T>, IPropertyObserver, IDis
         get
         {
             ThrowIfDisposed();
-            
+
             // Track this property access if we're in a computed property context
             DependencyTracker.Current?.TrackDependency(this);
-            
+
             bool needsUpdate = false;
             lock (_lock)
             {
                 needsUpdate = !_isValid && !_isComputing;
             }
-            
+
             if (needsUpdate)
             {
                 UpdateValue();
             }
-            
+
             lock (_lock)
             {
                 return _cachedValue;
@@ -144,7 +144,7 @@ public class ComputedProperty<T> : IComputedProperty<T>, IPropertyObserver, IDis
         ThrowIfDisposed();
 
         var weakRef = new WeakReference<Action<T>>(callback);
-        
+
         lock (_lock)
         {
             _callbacks.Add(weakRef);
@@ -170,7 +170,7 @@ public class ComputedProperty<T> : IComputedProperty<T>, IPropertyObserver, IDis
     public void Invalidate()
     {
         ThrowIfDisposed();
-        
+
         lock (_lock)
         {
             if (!_isValid)
@@ -179,7 +179,7 @@ public class ComputedProperty<T> : IComputedProperty<T>, IPropertyObserver, IDis
             }
             _isValid = false;
         }
-        
+
         // If we have observers, trigger recomputation
         if (HasObservers)
         {
@@ -199,7 +199,7 @@ public class ComputedProperty<T> : IComputedProperty<T>, IPropertyObserver, IDis
             }
             _isValid = false;
         }
-        
+
         // If we have observers, trigger recomputation
         if (HasObservers)
         {
@@ -278,7 +278,7 @@ public class ComputedProperty<T> : IComputedProperty<T>, IPropertyObserver, IDis
             lock (_lock)
             {
                 oldDependencies = new HashSet<IObservableProperty>(_dependencies);
-                
+
                 // Check if value changed
                 if (_isValid && !_comparer.Equals(oldValue, newValue))
                 {
@@ -290,9 +290,9 @@ public class ComputedProperty<T> : IComputedProperty<T>, IPropertyObserver, IDis
                     valueChanged = true;
                     oldValue = _cachedValue;
                 }
-                
+
                 _cachedValue = newValue;
-                
+
                 // Remove old dependencies
                 var toRemove = oldDependencies.Except(newDependencies);
                 foreach (var dep in toRemove)
@@ -338,7 +338,7 @@ public class ComputedProperty<T> : IComputedProperty<T>, IPropertyObserver, IDis
             }
             _isNotifying = true;
         }
-        
+
         try
         {
             var genericArgs = new PropertyChangedEventArgs(_propertyName, oldValue, newValue);
@@ -347,7 +347,7 @@ public class ComputedProperty<T> : IComputedProperty<T>, IPropertyObserver, IDis
             // Get observers snapshot to avoid modifications during iteration
             IPropertyObserver[] observers;
             List<Action<T>> callbacks;
-            
+
             lock (_lock)
             {
                 observers = _observers.ToArray();

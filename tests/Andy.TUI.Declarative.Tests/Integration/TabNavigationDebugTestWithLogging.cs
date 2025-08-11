@@ -18,7 +18,7 @@ public class TabNavigationDebugTestWithLogging : TestBase
     public TabNavigationDebugTestWithLogging(ITestOutputHelper output) : base(output)
     {
     }
-    
+
     [Fact]
     public void TabNavigation_ShouldMoveFocusBetweenComponents_WithLogging()
     {
@@ -43,9 +43,9 @@ public class TabNavigationDebugTestWithLogging : TestBase
 
             LogStep("Initializing rendering system");
             renderingSystem.Initialize();
-            
+
             LogStep("Starting renderer thread");
-            var thread = new Thread(() => 
+            var thread = new Thread(() =>
             {
                 try
                 {
@@ -56,17 +56,18 @@ public class TabNavigationDebugTestWithLogging : TestBase
                     Logger.Error(ex, "Renderer thread error");
                     throw;
                 }
-            }) { IsBackground = true };
+            })
+            { IsBackground = true };
             thread.Start();
 
             // Give time for initial render
             LogStep("Waiting for initial render");
             Thread.Sleep(100);
-            
+
             // Capture initial state
             LogData("Initial name value", name);
             LogData("Initial pass value", pass);
-            
+
             // Check focus manager state
             LogStep("Checking focus manager state before first TAB");
             var focusManager = renderer.GetFocusManager();
@@ -74,7 +75,7 @@ public class TabNavigationDebugTestWithLogging : TestBase
             {
                 LogData("FocusedComponent before TAB", focusManager.FocusedComponent?.GetType().Name);
                 LogData("Focusable count", focusManager.GetFocusableComponents().Count);
-                
+
                 foreach (var component in focusManager.GetFocusableComponents())
                 {
                     Logger.Debug($"Focusable component: {component.GetType().Name}, CanFocus: {component.CanFocus}");
@@ -85,18 +86,18 @@ public class TabNavigationDebugTestWithLogging : TestBase
             LogStep("Pressing first TAB to focus name field");
             input.EmitKey('\t', ConsoleKey.Tab);
             Thread.Sleep(50);
-            
+
             // Check focus after first tab
             if (focusManager != null)
             {
                 LogData("FocusedComponent after first TAB", focusManager.FocusedComponent?.GetType().Name);
             }
-            
+
             // Tab to second input
             LogStep("Pressing second TAB to focus password field");
             input.EmitKey('\t', ConsoleKey.Tab);
             Thread.Sleep(50);
-            
+
             // Check focus after second tab
             if (focusManager != null)
             {
@@ -112,19 +113,19 @@ public class TabNavigationDebugTestWithLogging : TestBase
             LogStep("Checking final state");
             LogData("Final name value", name);
             LogData("Final pass value", pass);
-            
+
             // Export detailed logs before assertions
             var inspector = new LogInspector();
             var report = inspector.GenerateReport();
             Logger.Debug($"Test execution report:\n{report}");
-            
+
             // Ensure app is still running and state updated
             LogAssertion("Thread should still be alive");
             Assert.True(thread.IsAlive);
-            
+
             LogAssertion("Name should be empty");
             Assert.Equal(string.Empty, name);
-            
+
             LogAssertion("Password should be 'A'");
             Assert.Equal("A", pass);
 
@@ -141,11 +142,11 @@ public static class DebugExtensions
 {
     public static Andy.TUI.Declarative.Focus.FocusManager? GetFocusManager(this DeclarativeRenderer renderer)
     {
-        var field = typeof(DeclarativeRenderer).GetField("_focusManager", 
+        var field = typeof(DeclarativeRenderer).GetField("_focusManager",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         return field?.GetValue(renderer) as Andy.TUI.Declarative.Focus.FocusManager;
     }
-    
+
     public static List<Andy.TUI.Declarative.IFocusable> GetFocusableComponents(this Andy.TUI.Declarative.Focus.FocusManager focusManager)
     {
         var field = typeof(Andy.TUI.Declarative.Focus.FocusManager).GetField("_focusableComponents",

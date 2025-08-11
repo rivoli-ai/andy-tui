@@ -125,7 +125,7 @@ public class RenderScheduler : IDisposable
         _forceRender = true;
         _renderEvent.Set();
     }
-    
+
     /// <summary>
     /// Processes all queued render operations immediately.
     /// This is synchronous and ensures the buffer is updated.
@@ -140,7 +140,7 @@ public class RenderScheduler : IDisposable
                 updates.Add(_renderQueue.Dequeue());
             }
         }
-        
+
         // Execute updates synchronously
         foreach (var update in updates)
         {

@@ -16,10 +16,10 @@ class FlexBasisTestApp
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        
+
         renderingSystem.Initialize();
         terminal.Clear();
-        
+
         // Create UI demonstrating flex-basis
         var ui = new VStack(spacing: 2) {
             new Text("Flex Basis Demo").Bold().Color(Color.Cyan),
@@ -40,7 +40,7 @@ class FlexBasisTestApp
             .Direction(FlexDirection.Row)
             .WithWidth(100)
             .WithPadding(1),
-            
+
             new Text("All items have flex-grow: 1, different flex-basis").Color(Color.Gray),
             
             // Example 2: flex-basis without flex-grow
@@ -56,7 +56,7 @@ class FlexBasisTestApp
             .Direction(FlexDirection.Row)
             .WithWidth(100)
             .WithPadding(1),
-            
+
             new Text("Items use their flex-basis as fixed width").Color(Color.Gray),
             
             // Example 3: flex-basis with percentage
@@ -72,14 +72,14 @@ class FlexBasisTestApp
             .Direction(FlexDirection.Row)
             .WithWidth(80)
             .WithPadding(1),
-            
+
             new Text("Items use percentage of container width").Color(Color.Gray)
         };
-        
+
         // Render
         var renderer = new DeclarativeRenderer(renderingSystem, this);
         renderer.Render(ui);
-        
+
         Console.SetCursorPosition(0, terminal.Height - 2);
         Console.WriteLine("Press any key to exit...");
         Console.ReadKey();

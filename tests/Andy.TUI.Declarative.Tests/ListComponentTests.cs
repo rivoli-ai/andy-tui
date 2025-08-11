@@ -14,10 +14,10 @@ public class ListComponentTests
     public void List_CreatesSuccessfully()
     {
         // Act
-        var list = new List(new ISimpleComponent[] { 
-            new Text("First item"), 
-            new Text("Second item"), 
-            new Text("Third item") 
+        var list = new List(new ISimpleComponent[] {
+            new Text("First item"),
+            new Text("Second item"),
+            new Text("Third item")
         });
 
         // Assert
@@ -29,10 +29,10 @@ public class ListComponentTests
     {
         // Act
         var list = new List(
-            new ISimpleComponent[] { 
-                new Text("Apple"), 
-                new Text("Banana"), 
-                new Text("Cherry") 
+            new ISimpleComponent[] {
+                new Text("Apple"),
+                new Text("Banana"),
+                new Text("Cherry")
             },
             ListMarkerStyle.Number,
             customMarker: "→",
@@ -114,10 +114,10 @@ public class ListComponentTests
     public void GetMarker_ReturnsRomanNumeralsCorrectly()
     {
         // Test Roman numeral markers with more examples
-        var testCases = new[] { 
+        var testCases = new[] {
             (3, "iv."), (4, "v."), (8, "ix."), (14, "xv."), (19, "xx.")
         };
-        
+
         foreach (var (index, expected) in testCases)
         {
             var result = List.GetMarker(ListMarkerStyle.Roman, index);
@@ -141,10 +141,10 @@ public class ListComponentTests
         // Arrange
         var context = new DeclarativeContext(() => { });
         var manager = context.ViewInstanceManager;
-        var list = new List(new ISimpleComponent[] { 
-            new Text("One"), 
-            new Text("Two"), 
-            new Text("Three") 
+        var list = new List(new ISimpleComponent[] {
+            new Text("One"),
+            new Text("Two"),
+            new Text("Three")
         });
 
         // Act

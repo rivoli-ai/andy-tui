@@ -10,7 +10,7 @@ public class ObservableCollectionTests
     public void Constructor_Empty_CreatesEmptyCollection()
     {
         var collection = new ObservableCollection<int>();
-        
+
         Assert.Empty(collection);
         Assert.Empty(collection);
     }
@@ -20,7 +20,7 @@ public class ObservableCollectionTests
     {
         var items = new[] { 1, 2, 3 };
         var collection = new ObservableCollection<int>(items);
-        
+
         Assert.Equal(3, collection.Count);
         Assert.Equal(items, collection);
     }
@@ -31,7 +31,7 @@ public class ObservableCollectionTests
         var collection = new ObservableCollection<string>();
         var collectionChangedCount = 0;
         var propertyChangedCount = 0;
-        
+
         collection.CollectionChanged += (s, e) =>
         {
             collectionChangedCount++;
@@ -40,15 +40,15 @@ public class ObservableCollectionTests
             Assert.Single(e.NewItems!);
             Assert.Equal("test", e.NewItems![0]);
         };
-        
+
         collection.PropertyChanged += (s, e) =>
         {
             propertyChangedCount++;
             Assert.Contains(e.PropertyName, new[] { "Count", "Item[]" });
         };
-        
+
         collection.Add("test");
-        
+
         Assert.Single(collection);
         Assert.Equal("test", collection[0]);
         Assert.Equal(1, collectionChangedCount);
@@ -60,7 +60,7 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>(new[] { 1, 2, 3 });
         var collectionChangedCount = 0;
-        
+
         collection.CollectionChanged += (s, e) =>
         {
             collectionChangedCount++;
@@ -69,9 +69,9 @@ public class ObservableCollectionTests
             Assert.Single(e.OldItems!);
             Assert.Equal(2, e.OldItems![0]);
         };
-        
+
         var removed = collection.Remove(2);
-        
+
         Assert.True(removed);
         Assert.Equal(2, collection.Count);
         Assert.Equal(new[] { 1, 3 }, collection);
@@ -83,15 +83,15 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>(new[] { 1, 2, 3 });
         var collectionChangedCount = 0;
-        
+
         collection.CollectionChanged += (s, e) =>
         {
             collectionChangedCount++;
             Assert.Equal(NotifyCollectionChangedAction.Reset, e.Action);
         };
-        
+
         collection.Clear();
-        
+
         Assert.Empty(collection);
         Assert.Equal(1, collectionChangedCount);
     }
@@ -101,15 +101,15 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>();
         var collectionChangedCount = 0;
-        
+
         collection.CollectionChanged += (s, e) =>
         {
             collectionChangedCount++;
             Assert.Equal(NotifyCollectionChangedAction.Reset, e.Action);
         };
-        
+
         collection.AddRange(new[] { 1, 2, 3, 4, 5 });
-        
+
         Assert.Equal(5, collection.Count);
         Assert.Equal(new[] { 1, 2, 3, 4, 5 }, collection);
         Assert.Equal(1, collectionChangedCount); // Should only fire once
@@ -120,15 +120,15 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>(new[] { 1, 2, 3, 4, 5 });
         var collectionChangedCount = 0;
-        
+
         collection.CollectionChanged += (s, e) =>
         {
             collectionChangedCount++;
             Assert.Equal(NotifyCollectionChangedAction.Reset, e.Action);
         };
-        
+
         var removed = collection.RemoveRange(new[] { 2, 4 });
-        
+
         Assert.Equal(2, removed);
         Assert.Equal(3, collection.Count);
         Assert.Equal(new[] { 1, 3, 5 }, collection);
@@ -140,14 +140,14 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>(new[] { 1, 2, 3, 4, 5 });
         var collectionChangedCount = 0;
-        
+
         collection.CollectionChanged += (s, e) =>
         {
             collectionChangedCount++;
         };
-        
+
         var removed = collection.RemoveAll(x => x % 2 == 0);
-        
+
         Assert.Equal(2, removed);
         Assert.Equal(3, collection.Count);
         Assert.Equal(new[] { 1, 3, 5 }, collection);
@@ -159,7 +159,7 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<string>(new[] { "a", "b", "c" });
         var collectionChangedCount = 0;
-        
+
         collection.CollectionChanged += (s, e) =>
         {
             collectionChangedCount++;
@@ -168,9 +168,9 @@ public class ObservableCollectionTests
             Assert.Equal("x", e.NewItems![0]);
             Assert.Equal("b", e.OldItems![0]);
         };
-        
+
         var replaced = collection.Replace(1, "x");
-        
+
         Assert.Equal("b", replaced);
         Assert.Equal(new[] { "a", "x", "c" }, collection);
         Assert.Equal(1, collectionChangedCount);
@@ -181,11 +181,11 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>(new[] { 1, 2, 3, 4 });
         var notifications = new List<NotifyCollectionChangedEventArgs>();
-        
+
         collection.CollectionChanged += (s, e) => notifications.Add(e);
-        
+
         collection.Move(3, 0);
-        
+
         Assert.Equal(new[] { 4, 1, 2, 3 }, collection);
         Assert.Equal(2, notifications.Count); // Remove and Insert
     }
@@ -195,12 +195,12 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>();
         var collectionChangedCount = 0;
-        
+
         collection.CollectionChanged += (s, e) =>
         {
             collectionChangedCount++;
         };
-        
+
         using (collection.SuspendNotifications())
         {
             collection.Add(1);
@@ -209,7 +209,7 @@ public class ObservableCollectionTests
             collection.Remove(2);
             collection.Add(4);
         }
-        
+
         Assert.Equal(new[] { 1, 3, 4 }, collection);
         Assert.Equal(1, collectionChangedCount); // Should only fire once after suspension ends
     }
@@ -219,10 +219,10 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>();
         var observer = new TestPropertyObserver();
-        
+
         collection.AddObserver(observer);
         collection.Add(42);
-        
+
         Assert.True(observer.WasNotified);
         Assert.Equal("Items", observer.LastPropertyName);
     }
@@ -231,7 +231,7 @@ public class ObservableCollectionTests
     public void ComputedProperty_Integration_UpdatesOnCollectionChange()
     {
         var collection = new ObservableCollection<int>(new[] { 1, 2, 3 });
-        var sum = new ComputedProperty<int>(() => 
+        var sum = new ComputedProperty<int>(() =>
         {
             var total = 0;
             foreach (var item in collection)
@@ -240,15 +240,15 @@ public class ObservableCollectionTests
             }
             return total;
         });
-        
+
         Assert.Equal(6, sum.Value);
-        
+
         collection.Add(4);
         Assert.Equal(10, sum.Value);
-        
+
         collection.Remove(2);
         Assert.Equal(8, sum.Value);
-        
+
         collection.Clear();
         Assert.Equal(0, sum.Value);
     }
@@ -258,11 +258,11 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>(new[] { 1, 2, 3 });
         var notificationCount = 0;
-        
+
         collection.CollectionChanged += (s, e) => notificationCount++;
-        
+
         collection.Dispose();
-        
+
         Assert.Throws<ObjectDisposedException>(() => collection.Add(4));
         Assert.Equal(0, notificationCount);
     }
@@ -273,7 +273,7 @@ public class ObservableCollectionTests
     {
         var collection = new ObservableCollection<int>();
         var tasks = new List<Task>();
-        
+
         // Add items from multiple threads
         for (int i = 0; i < 10; i++)
         {
@@ -286,9 +286,9 @@ public class ObservableCollectionTests
                 }
             }));
         }
-        
+
         Task.WaitAll(tasks.ToArray());  // This is a test scenario demonstrating thread safety
-        
+
         Assert.Equal(1000, collection.Count);
     }
 #pragma warning restore xUnit1031
@@ -297,7 +297,7 @@ public class ObservableCollectionTests
     {
         public bool WasNotified { get; private set; }
         public string? LastPropertyName { get; private set; }
-        
+
         public void OnPropertyChanged(IObservableProperty property, Andy.TUI.Observable.PropertyChangedEventArgs args)
         {
             WasNotified = true;

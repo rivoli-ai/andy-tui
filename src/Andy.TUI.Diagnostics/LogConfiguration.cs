@@ -27,7 +27,7 @@ public class LogConfiguration
     public static LogConfiguration GetFromEnvironment()
     {
         var config = new LogConfiguration();
-        
+
         // Check environment variables
         var logLevel = Environment.GetEnvironmentVariable("ANDY_TUI_LOG_LEVEL");
         if (!string.IsNullOrEmpty(logLevel) && Enum.TryParse<LogLevel>(logLevel, true, out var level))

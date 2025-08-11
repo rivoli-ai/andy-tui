@@ -25,10 +25,10 @@ class LayoutTestApp
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        
+
         renderingSystem.Initialize();
         terminal.Clear();
-        
+
         // Create a simple layout test
         var box1 = new Box {
             new Text("Start"),
@@ -39,7 +39,7 @@ class LayoutTestApp
             .Justify(JustifyContent.SpaceBetween)
             .WithWidth(40)
             .WithPadding(2);
-            
+
         var box2 = new Box {
             new Text("Centered Text"),
             new Text("In a Box")
@@ -49,10 +49,10 @@ class LayoutTestApp
             .WithWidth(40)
             .WithHeight(5)
             .WithPadding(1);
-        
+
         var ui = new VStack(spacing: 2) {
             new Text("Layout Test").Bold().Color(Color.Cyan),
-            
+
             new HStack(spacing: 1) {
                 new Text("Left").Color(Color.Green),
                 new Text("Middle").Color(Color.Yellow),
@@ -72,19 +72,19 @@ class LayoutTestApp
                 new Text("Centered").Color(Color.Yellow),
                 new Spacer()
             },
-            
+
             box1,
             box2,
-            
+
             new Spacer(), // Push remaining content to bottom
             
             new Text("Bottom text pushed down by Spacer").Color(Color.Gray)
         };
-        
+
         // Render
         var renderer = new DeclarativeRenderer(renderingSystem, this);
         renderer.Render(ui);
-        
+
         Console.SetCursorPosition(0, 20);
         Console.WriteLine("Press any key to exit...");
         Console.ReadKey();

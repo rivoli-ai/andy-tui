@@ -10,27 +10,27 @@ namespace Andy.TUI.Declarative;
 public class DeclarativeContext
 {
     private readonly Action _requestRender;
-    
+
     /// <summary>
     /// Gets the focus manager for this context.
     /// </summary>
     public FocusManager FocusManager { get; }
-    
+
     /// <summary>
     /// Gets the event router for this context.
     /// </summary>
     public EventRouter EventRouter { get; }
-    
+
     /// <summary>
     /// Gets the component bounds for hit testing and layout.
     /// </summary>
     public ComponentBounds Bounds { get; }
-    
+
     /// <summary>
     /// Gets the view instance manager.
     /// </summary>
     public ViewInstanceManager ViewInstanceManager { get; }
-    
+
     public DeclarativeContext(Action requestRender)
     {
         _requestRender = requestRender ?? throw new ArgumentNullException(nameof(requestRender));
@@ -39,7 +39,7 @@ public class DeclarativeContext
         Bounds = new ComponentBounds();
         ViewInstanceManager = new ViewInstanceManager(this);
     }
-    
+
     /// <summary>
     /// Requests a re-render of the UI.
     /// </summary>
@@ -47,7 +47,7 @@ public class DeclarativeContext
     {
         _requestRender();
     }
-    
+
     /// <summary>
     /// Clears all context state.
     /// </summary>

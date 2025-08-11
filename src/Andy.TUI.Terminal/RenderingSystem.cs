@@ -10,37 +10,37 @@ public class RenderingSystem : IRenderingSystem, IDisposable
     private readonly IRenderer _renderer;
     private readonly RenderScheduler _scheduler;
     private bool _isInitialized;
-    
+
     /// <summary>
     /// Gets the terminal buffer for drawing operations.
     /// </summary>
     public TerminalBuffer Buffer => _buffer;
-    
+
     /// <summary>
     /// Gets the render scheduler for controlling rendering.
     /// </summary>
     public RenderScheduler Scheduler => _scheduler;
-    
+
     /// <summary>
     /// Gets the underlying terminal.
     /// </summary>
     public ITerminal Terminal => _terminal;
-    
+
     /// <summary>
     /// Gets the renderer being used.
     /// </summary>
     public IRenderer Renderer => _renderer;
-    
+
     /// <summary>
     /// Gets the width of the terminal.
     /// </summary>
     public int Width => _terminal.Width;
-    
+
     /// <summary>
     /// Gets the height of the terminal.
     /// </summary>
     public int Height => _terminal.Height;
-    
+
     /// <summary>
     /// Creates a new rendering system.
     /// </summary>
@@ -52,11 +52,11 @@ public class RenderingSystem : IRenderingSystem, IDisposable
         _scheduler = new RenderScheduler(terminal, _renderer, _buffer);
         // Default to OnDemand; callers can set Fixed for constant refresh
         _scheduler.Mode = RenderMode.OnDemand;
-        
+
         // Subscribe to terminal resize events
         _terminal.SizeChanged += OnTerminalSizeChanged;
     }
-    
+
     /// <summary>
     /// Initializes the rendering system.
     /// </summary>
@@ -64,20 +64,20 @@ public class RenderingSystem : IRenderingSystem, IDisposable
     {
         if (_isInitialized)
             return;
-            
+
         // Enter alternate screen if supported
         _terminal.EnterAlternateScreen();
-        
+
         // Clear the screen
         _terminal.Clear();
         _terminal.CursorVisible = false;
-        
+
         // Start the render scheduler
         _scheduler.Start();
-        
+
         _isInitialized = true;
     }
-    
+
     /// <summary>
     /// Shuts down the rendering system.
     /// </summary>
@@ -85,19 +85,19 @@ public class RenderingSystem : IRenderingSystem, IDisposable
     {
         if (!_isInitialized)
             return;
-            
+
         // Stop the render scheduler
         _scheduler.Stop();
-        
+
         // Show cursor
         _terminal.CursorVisible = true;
-        
+
         // Exit alternate screen if we entered it
         _terminal.ExitAlternateScreen();
-        
+
         _isInitialized = false;
     }
-    
+
     /// <summary>
     /// Clears the entire screen.
     /// </summary>
@@ -108,7 +108,7 @@ public class RenderingSystem : IRenderingSystem, IDisposable
             _buffer.Clear();
         });
     }
-    
+
     /// <summary>
     /// Writes text at the specified position.
     /// </summary>
@@ -119,7 +119,7 @@ public class RenderingSystem : IRenderingSystem, IDisposable
             _buffer.WriteText(x, y, text, style);
         });
     }
-    
+
     /// <summary>
     /// Draws a box at the specified position.
     /// </summary>
@@ -128,20 +128,20 @@ public class RenderingSystem : IRenderingSystem, IDisposable
         _scheduler.QueueRender(() =>
         {
             var chars = GetBoxCharacters(boxStyle);
-            
+
             // Draw corners
             _buffer.SetCell(x, y, chars.TopLeft, style);
             _buffer.SetCell(x + width - 1, y, chars.TopRight, style);
             _buffer.SetCell(x, y + height - 1, chars.BottomLeft, style);
             _buffer.SetCell(x + width - 1, y + height - 1, chars.BottomRight, style);
-            
+
             // Draw horizontal lines
             for (int i = 1; i < width - 1; i++)
             {
                 _buffer.SetCell(x + i, y, chars.Horizontal, style);
                 _buffer.SetCell(x + i, y + height - 1, chars.Horizontal, style);
             }
-            
+
             // Draw vertical lines
             for (int i = 1; i < height - 1; i++)
             {
@@ -150,7 +150,7 @@ public class RenderingSystem : IRenderingSystem, IDisposable
             }
         });
     }
-    
+
     /// <summary>
     /// Fills a rectangle with the specified character and style.
     /// </summary>
@@ -161,7 +161,7 @@ public class RenderingSystem : IRenderingSystem, IDisposable
             _buffer.FillRect(x, y, width, height, new Cell(character, style));
         });
     }
-    
+
     /// <summary>
     /// Forces an immediate render of all pending changes.
     /// </summary>
@@ -169,7 +169,7 @@ public class RenderingSystem : IRenderingSystem, IDisposable
     {
         _scheduler.ForceRender();
     }
-    
+
     /// <summary>
     /// Handles terminal size changes.
     /// </summary>
@@ -181,7 +181,7 @@ public class RenderingSystem : IRenderingSystem, IDisposable
             _buffer.MarkAllDirty();
         });
     }
-    
+
     /// <summary>
     /// Gets box drawing characters for the specified style.
     /// </summary>
@@ -236,7 +236,7 @@ public class RenderingSystem : IRenderingSystem, IDisposable
             }
         };
     }
-    
+
     /// <summary>
     /// Disposes the rendering system.
     /// </summary>
@@ -246,7 +246,7 @@ public class RenderingSystem : IRenderingSystem, IDisposable
         _terminal.SizeChanged -= OnTerminalSizeChanged;
         _scheduler.Dispose();
     }
-    
+
     private struct BoxCharacters
     {
         public char TopLeft;
@@ -267,22 +267,22 @@ public enum BoxStyle
     /// Single line box (┌─┐).
     /// </summary>
     Single,
-    
+
     /// <summary>
     /// Double line box (╔═╗).
     /// </summary>
     Double,
-    
+
     /// <summary>
     /// Rounded corners box (╭─╮).
     /// </summary>
     Rounded,
-    
+
     /// <summary>
     /// Heavy line box (┏━┓).
     /// </summary>
     Heavy,
-    
+
     /// <summary>
     /// ASCII box (+-+).
     /// </summary>

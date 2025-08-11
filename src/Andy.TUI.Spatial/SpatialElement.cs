@@ -13,33 +13,33 @@ public class SpatialElement<T> : IEquatable<SpatialElement<T>>
     /// Gets the spatial bounds of the element.
     /// </summary>
     public Rectangle Bounds { get; set; }
-    
+
     /// <summary>
     /// Gets the absolute z-index of the element for rendering order.
     /// </summary>
     public int ZIndex { get; set; }
-    
+
     /// <summary>
     /// Gets the element being indexed.
     /// </summary>
     public T Element { get; }
-    
+
     /// <summary>
     /// Gets or sets whether this element is completely occluded by others.
     /// Used for rendering optimization.
     /// </summary>
     public bool IsFullyOccluded { get; set; }
-    
+
     /// <summary>
     /// Gets the set of elements that occlude this one.
     /// </summary>
     public HashSet<SpatialElement<T>> OccludedBy { get; } = new();
-    
+
     /// <summary>
     /// Gets the set of elements that this one occludes.
     /// </summary>
     public HashSet<SpatialElement<T>> Occludes { get; } = new();
-    
+
     /// <summary>
     /// Gets a unique identifier for this spatial element.
     /// </summary>
@@ -65,8 +65,8 @@ public class SpatialElement<T> : IEquatable<SpatialElement<T>>
     /// </summary>
     public bool PartiallyOccludes(SpatialElement<T> other)
     {
-        return ZIndex > other.ZIndex && 
-               Bounds.IntersectsWith(other.Bounds) && 
+        return ZIndex > other.ZIndex &&
+               Bounds.IntersectsWith(other.Bounds) &&
                !Bounds.Contains(other.Bounds);
     }
 
@@ -78,7 +78,7 @@ public class SpatialElement<T> : IEquatable<SpatialElement<T>>
     {
         if (IsFullyOccluded)
             return null;
-            
+
         // TODO: Implement partial occlusion calculation
         // For now, return full bounds if not fully occluded
         return Bounds;

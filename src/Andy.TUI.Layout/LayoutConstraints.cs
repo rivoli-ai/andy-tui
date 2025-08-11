@@ -11,27 +11,27 @@ public readonly struct LayoutConstraints
     /// Gets the minimum width constraint.
     /// </summary>
     public float MinWidth { get; }
-    
+
     /// <summary>
     /// Gets the maximum width constraint.
     /// </summary>
     public float MaxWidth { get; }
-    
+
     /// <summary>
     /// Gets the minimum height constraint.
     /// </summary>
     public float MinHeight { get; }
-    
+
     /// <summary>
     /// Gets the maximum height constraint.
     /// </summary>
     public float MaxHeight { get; }
-    
+
     /// <summary>
     /// Creates unconstrained layout constraints.
     /// </summary>
     public static LayoutConstraints Unconstrained => new(0, float.PositiveInfinity, 0, float.PositiveInfinity);
-    
+
     /// <summary>
     /// Creates layout constraints with the specified bounds.
     /// </summary>
@@ -42,7 +42,7 @@ public readonly struct LayoutConstraints
         MinHeight = Math.Max(0, minHeight);
         MaxHeight = Math.Max(minHeight, maxHeight);
     }
-    
+
     /// <summary>
     /// Creates tight constraints that force a specific size.
     /// </summary>
@@ -50,7 +50,7 @@ public readonly struct LayoutConstraints
     {
         return new LayoutConstraints(width, width, height, height);
     }
-    
+
     /// <summary>
     /// Creates loose constraints with a maximum size.
     /// </summary>
@@ -58,7 +58,7 @@ public readonly struct LayoutConstraints
     {
         return new LayoutConstraints(0, maxWidth, 0, maxHeight);
     }
-    
+
     /// <summary>
     /// Returns new constraints with the specified minimum width.
     /// </summary>
@@ -66,7 +66,7 @@ public readonly struct LayoutConstraints
     {
         return new LayoutConstraints(minWidth, MaxWidth, MinHeight, MaxHeight);
     }
-    
+
     /// <summary>
     /// Returns new constraints with the specified maximum width.
     /// </summary>
@@ -74,7 +74,7 @@ public readonly struct LayoutConstraints
     {
         return new LayoutConstraints(MinWidth, maxWidth, MinHeight, MaxHeight);
     }
-    
+
     /// <summary>
     /// Returns new constraints with the specified minimum height.
     /// </summary>
@@ -82,7 +82,7 @@ public readonly struct LayoutConstraints
     {
         return new LayoutConstraints(MinWidth, MaxWidth, minHeight, MaxHeight);
     }
-    
+
     /// <summary>
     /// Returns new constraints with the specified maximum height.
     /// </summary>
@@ -90,7 +90,7 @@ public readonly struct LayoutConstraints
     {
         return new LayoutConstraints(MinWidth, MaxWidth, MinHeight, maxHeight);
     }
-    
+
     /// <summary>
     /// Constrains a width value to fit within these constraints.
     /// </summary>
@@ -98,7 +98,7 @@ public readonly struct LayoutConstraints
     {
         return Math.Max(MinWidth, Math.Min(MaxWidth, width));
     }
-    
+
     /// <summary>
     /// Constrains a height value to fit within these constraints.
     /// </summary>
@@ -106,7 +106,7 @@ public readonly struct LayoutConstraints
     {
         return Math.Max(MinHeight, Math.Min(MaxHeight, height));
     }
-    
+
     /// <summary>
     /// Returns constraints with padding subtracted from the available space.
     /// </summary>
@@ -114,7 +114,7 @@ public readonly struct LayoutConstraints
     {
         var horizontalPadding = padding.GetHorizontalTotal(parentWidth);
         var verticalPadding = padding.GetVerticalTotal(parentHeight);
-        
+
         return new LayoutConstraints(
             Math.Max(0, MinWidth - horizontalPadding),
             Math.Max(0, MaxWidth - horizontalPadding),
@@ -122,17 +122,17 @@ public readonly struct LayoutConstraints
             Math.Max(0, MaxHeight - verticalPadding)
         );
     }
-    
+
     /// <summary>
     /// Checks if these constraints allow no flexibility (tight constraints).
     /// </summary>
     public bool IsTight => MinWidth == MaxWidth && MinHeight == MaxHeight;
-    
+
     /// <summary>
     /// Checks if these constraints are unbounded.
     /// </summary>
     public bool IsUnbounded => float.IsPositiveInfinity(MaxWidth) || float.IsPositiveInfinity(MaxHeight);
-    
+
     public override string ToString()
     {
         return $"Constraints(W: {MinWidth}-{MaxWidth}, H: {MinHeight}-{MaxHeight})";

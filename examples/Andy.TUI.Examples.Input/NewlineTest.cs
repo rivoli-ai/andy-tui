@@ -16,10 +16,10 @@ class NewlineTestApp
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        
+
         renderingSystem.Initialize();
         terminal.Clear();
-        
+
         var ui = new VStack {
             new Text("Newline Component Demo").Bold().Color(Color.Cyan),
             new Newline(), // Single line break
@@ -51,20 +51,20 @@ class NewlineTestApp
             }
             .WithPadding(1)
             .WithMargin(1),
-            
+
             new Newline(),
             new Text("Benefits over empty strings:").Bold().Color(Color.Yellow),
             new Text("• More semantic and clear intent"),
             new Text("• Can specify multiple lines easily"),
             new Text("• Works consistently in all layouts"),
-            
+
             new Newline(2),
             new Text("Press any key to exit...").Color(Color.DarkGray)
         };
-        
+
         var renderer = new DeclarativeRenderer(renderingSystem, this);
         renderer.Render(ui);
-        
+
         Console.SetCursorPosition(0, terminal.Height - 1);
         Console.ReadKey();
     }

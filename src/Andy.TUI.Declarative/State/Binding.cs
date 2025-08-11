@@ -38,9 +38,9 @@ public class Binding<T> : INotifyPropertyChanged
     public static implicit operator T(Binding<T> binding) => binding.Value;
 
     public override string ToString() => Value?.ToString() ?? "";
-    
+
     public event PropertyChangedEventHandler? PropertyChanged;
-    
+
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

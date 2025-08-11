@@ -16,7 +16,7 @@ public class MockTerminal : ITerminal
     private bool _cursorVisible = true;
     private ConsoleColor _currentForeground = ConsoleColor.White;
     private ConsoleColor _currentBackground = ConsoleColor.Black;
-    
+
     public MockTerminal(int width, int height)
     {
         Width = width;
@@ -26,15 +26,15 @@ public class MockTerminal : ITerminal
         _backgroundColors = new ConsoleColor[height, width];
         Clear();
     }
-    
+
     public int Width { get; }
     public int Height { get; }
-    public bool CursorVisible 
-    { 
-        get => _cursorVisible; 
-        set => _cursorVisible = value; 
+    public bool CursorVisible
+    {
+        get => _cursorVisible;
+        set => _cursorVisible = value;
     }
-    
+
     public (int Column, int Row) CursorPosition
     {
         get => (_cursorX, _cursorY);
@@ -44,14 +44,14 @@ public class MockTerminal : ITerminal
             _cursorY = Math.Max(0, Math.Min(value.Row, Height - 1));
         }
     }
-    
+
     public bool SupportsColor => true;
     public bool SupportsAnsi => true;
-    
+
 #pragma warning disable CS0067 // Event is never used
     public event EventHandler<TerminalSizeChangedEventArgs>? SizeChanged;
 #pragma warning restore CS0067
-    
+
     public void Clear()
     {
         for (int y = 0; y < Height; y++)
@@ -66,7 +66,7 @@ public class MockTerminal : ITerminal
         _cursorX = 0;
         _cursorY = 0;
     }
-    
+
     public void ClearLine()
     {
         if (_cursorY < Height)
@@ -79,12 +79,12 @@ public class MockTerminal : ITerminal
             }
         }
     }
-    
+
     public void MoveCursor(int column, int row)
     {
         CursorPosition = (column, row);
     }
-    
+
     public void Write(string text)
     {
         int i = 0;
@@ -101,12 +101,12 @@ public class MockTerminal : ITerminal
                     code += text[i];
                     i++;
                 }
-                
+
                 if (i < text.Length)
                 {
                     char command = text[i];
                     i++;
-                    
+
                     // Handle common ANSI commands
                     switch (command)
                     {
@@ -167,7 +167,7 @@ public class MockTerminal : ITerminal
                     _foregroundColors[_cursorY, _cursorX] = _currentForeground;
                     _backgroundColors[_cursorY, _cursorX] = _currentBackground;
                     _cursorX++;
-                    
+
                     if (_cursorX >= Width)
                     {
                         _cursorX = 0;
@@ -178,56 +178,56 @@ public class MockTerminal : ITerminal
             }
         }
     }
-    
+
     public void WriteLine(string text)
     {
         Write(text);
         Write("\n");
     }
-    
+
     public void SetForegroundColor(ConsoleColor color)
     {
         _currentForeground = color;
     }
-    
+
     public void SetBackgroundColor(ConsoleColor color)
     {
         _currentBackground = color;
     }
-    
+
     public void ResetColors()
     {
         _currentForeground = ConsoleColor.White;
         _currentBackground = ConsoleColor.Black;
     }
-    
+
     public void SaveCursorPosition()
     {
         _savedCursorX = _cursorX;
         _savedCursorY = _cursorY;
     }
-    
+
     public void RestoreCursorPosition()
     {
         _cursorX = _savedCursorX;
         _cursorY = _savedCursorY;
     }
-    
+
     public void EnterAlternateScreen()
     {
         // No-op for mock terminal
     }
-    
+
     public void ExitAlternateScreen()
     {
         // No-op for mock terminal
     }
-    
+
     public void Flush()
     {
         // No-op for mock terminal
     }
-    
+
     public string GetTextAt(int x, int y)
     {
         if (x >= 0 && x < Width && y >= 0 && y < Height)
@@ -236,11 +236,11 @@ public class MockTerminal : ITerminal
         }
         return "";
     }
-    
+
     public string GetLine(int y)
     {
         if (y < 0 || y >= Height) return "";
-        
+
         var line = "";
         for (int x = 0; x < Width; x++)
         {
@@ -248,7 +248,7 @@ public class MockTerminal : ITerminal
         }
         return line.TrimEnd();
     }
-    
+
     public string[] GetAllLines()
     {
         var lines = new string[Height];

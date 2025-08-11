@@ -13,7 +13,7 @@ public static class ObservableCollectionExample
     public static void Run()
     {
         Console.WriteLine("=== ObservableCollection Example ===\n");
-        
+
         BasicOperationsExample();
         BatchOperationsExample();
         NotificationSuspensionExample();
@@ -24,9 +24,9 @@ public static class ObservableCollectionExample
     private static void BasicOperationsExample()
     {
         Console.WriteLine("1. Basic Operations:");
-        
+
         var collection = new ObservableCollection<string>();
-        
+
         // Subscribe to changes
         collection.CollectionChanged += (s, e) =>
         {
@@ -36,43 +36,43 @@ public static class ObservableCollectionExample
             if (e.OldItems != null)
                 Console.WriteLine($"   - Old items: {string.Join(", ", e.OldItems.Cast<string>())}");
         };
-        
+
         collection.PropertyChanged += (s, e) =>
         {
             Console.WriteLine($"   Property changed: {e.PropertyName}");
         };
-        
+
         // Add items
         Console.WriteLine("   Adding items...");
         collection.Add("Apple");
         collection.Add("Banana");
         collection.Add("Cherry");
-        
+
         // Remove item
         Console.WriteLine("   Removing 'Banana'...");
         collection.Remove("Banana");
-        
+
         // Replace item
         Console.WriteLine("   Replacing 'Apple' with 'Apricot'...");
         collection.Replace(0, "Apricot");
-        
+
         Console.WriteLine($"   Final collection: [{string.Join(", ", collection)}]\n");
     }
 
     private static void BatchOperationsExample()
     {
         Console.WriteLine("2. Batch Operations:");
-        
+
         var collection = new ObservableCollection<int>();
         var changeCount = 0;
-        
+
         collection.CollectionChanged += (s, e) => changeCount++;
-        
+
         // AddRange
         Console.WriteLine("   Adding range [1, 2, 3, 4, 5]...");
         collection.AddRange(new[] { 1, 2, 3, 4, 5 });
         Console.WriteLine($"   Change notifications: {changeCount} (batch operation fires once)");
-        
+
         // RemoveAll
         Console.WriteLine("   Removing all even numbers...");
         changeCount = 0;
@@ -84,15 +84,15 @@ public static class ObservableCollectionExample
     private static void NotificationSuspensionExample()
     {
         Console.WriteLine("3. Notification Suspension:");
-        
+
         var collection = new ObservableCollection<string>();
         var notifications = new List<string>();
-        
+
         collection.CollectionChanged += (s, e) =>
         {
             notifications.Add($"{e.Action} at {DateTime.Now:HH:mm:ss.fff}");
         };
-        
+
         Console.WriteLine("   Performing multiple operations with suspended notifications...");
         using (collection.SuspendNotifications())
         {
@@ -103,7 +103,7 @@ public static class ObservableCollectionExample
             collection.Add("Fourth");
             Console.WriteLine($"   During suspension: {notifications.Count} notifications");
         }
-        
+
         Console.WriteLine($"   After suspension: {notifications.Count} notification(s)");
         foreach (var notification in notifications)
         {
@@ -115,11 +115,11 @@ public static class ObservableCollectionExample
     private static void ComputedPropertyIntegrationExample()
     {
         Console.WriteLine("4. Computed Property Integration:");
-        
+
         var scores = new ObservableCollection<int>(new[] { 85, 92, 78, 95, 88 });
-        
+
         // Create computed properties that depend on the collection
-        var average = new ComputedProperty<double>(() => 
+        var average = new ComputedProperty<double>(() =>
         {
             if (scores.Count == 0) return 0;
             double sum = 0;
@@ -131,8 +131,8 @@ public static class ObservableCollectionExample
             }
             return sum / count;
         }, "Average");
-        
-        var highest = new ComputedProperty<int>(() => 
+
+        var highest = new ComputedProperty<int>(() =>
         {
             if (scores.Count == 0) return 0;
             int max = int.MinValue;
@@ -142,8 +142,8 @@ public static class ObservableCollectionExample
             }
             return max;
         }, "Highest");
-        
-        var passing = new ComputedProperty<int>(() => 
+
+        var passing = new ComputedProperty<int>(() =>
         {
             int count = 0;
             foreach (var score in scores)
@@ -152,15 +152,15 @@ public static class ObservableCollectionExample
             }
             return count;
         }, "PassingCount");
-        
+
         Console.WriteLine($"   Initial scores: [{string.Join(", ", scores)}]");
         Console.WriteLine($"   Average: {average.Value:F2}, Highest: {highest.Value}, Passing: {passing.Value}");
-        
+
         // Add a new score
         Console.WriteLine("   Adding score: 100");
         scores.Add(100);
         Console.WriteLine($"   Average: {average.Value:F2}, Highest: {highest.Value}, Passing: {passing.Value}");
-        
+
         // Remove lowest score
         Console.WriteLine("   Removing lowest score: 78");
         scores.Remove(78);
@@ -170,11 +170,11 @@ public static class ObservableCollectionExample
     private static void TodoListExample()
     {
         Console.WriteLine("5. Real-World Example - Todo List:");
-        
+
         var todos = new ObservableCollection<TodoItem>();
-        
+
         // Create computed properties for statistics
-        var totalCount = new ComputedProperty<int>(() => 
+        var totalCount = new ComputedProperty<int>(() =>
         {
             int count = 0;
             foreach (var _ in todos)
@@ -183,8 +183,8 @@ public static class ObservableCollectionExample
             }
             return count;
         });
-        
-        var completedCount = new ComputedProperty<int>(() => 
+
+        var completedCount = new ComputedProperty<int>(() =>
         {
             int count = 0;
             foreach (var todo in todos)
@@ -193,16 +193,16 @@ public static class ObservableCollectionExample
             }
             return count;
         });
-        
-        var percentComplete = new ComputedProperty<double>(() => 
+
+        var percentComplete = new ComputedProperty<double>(() =>
             totalCount.Value > 0 ? (completedCount.Value * 100.0 / totalCount.Value) : 0);
-        
+
         // Subscribe to show statistics updates
         percentComplete.ValueChanged += (s, e) =>
         {
             Console.WriteLine($"   Progress: {e.NewValue:F1}% complete ({completedCount.Value}/{totalCount.Value} tasks)");
         };
-        
+
         // Add todos
         Console.WriteLine("   Adding todos...");
         todos.AddRange(new[]
@@ -212,12 +212,12 @@ public static class ObservableCollectionExample
             new TodoItem { Title = "Fix bug #123", IsCompleted = false },
             new TodoItem { Title = "Update dependencies", IsCompleted = false }
         });
-        
+
         // Complete some tasks
         Console.WriteLine("   Completing tasks...");
         todos[0].IsCompleted = true;
         todos[2].IsCompleted = true;
-        
+
         // Add more tasks in batch
         Console.WriteLine("   Adding more tasks...");
         using (todos.SuspendNotifications())
@@ -225,7 +225,7 @@ public static class ObservableCollectionExample
             todos.Add(new TodoItem { Title = "Write tests", IsCompleted = false });
             todos.Add(new TodoItem { Title = "Deploy to staging", IsCompleted = false });
         }
-        
+
         // Show final state
         Console.WriteLine("\n   Final todo list:");
         foreach (var todo in todos)
@@ -233,13 +233,13 @@ public static class ObservableCollectionExample
             Console.WriteLine($"   - [{(todo.IsCompleted ? "x" : " ")}] {todo.Title}");
         }
     }
-    
+
     private class TodoItem : INotifyPropertyChanged
     {
         private bool _isCompleted;
-        
+
         public string Title { get; set; } = "";
-        
+
         public bool IsCompleted
         {
             get => _isCompleted;
@@ -252,7 +252,7 @@ public static class ObservableCollectionExample
                 }
             }
         }
-        
+
         public event PropertyChangedEventHandler? PropertyChanged;
     }
 }

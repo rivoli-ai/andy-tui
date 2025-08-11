@@ -16,14 +16,14 @@ public class DiffEngineMovementTests
     {
         private readonly List<(int x, int y, string text, Style style)> _writes = new();
         private readonly List<(int x, int y, int width, int height, char fill, Style style)> _fills = new();
-        
+
         public int Width { get; set; } = 80;
         public int Height { get; set; } = 24;
         public bool IsDisposed { get; private set; }
-        
+
         public List<(int x, int y, string text, Style style)> Writes => _writes;
         public List<(int x, int y, int width, int height, char fill, Style style)> Fills => _fills;
-        
+
         public void WriteText(int x, int y, string text, Style style) => _writes.Add((x, y, text, style));
         public void FillRect(int x, int y, int width, int height, char fill, Style style) => _fills.Add((x, y, width, height, fill, style));
         public void DrawBox(int x, int y, int width, int height, Style style, BoxStyle boxStyle) { }
@@ -36,18 +36,18 @@ public class DiffEngineMovementTests
     }
 
     #region Test Case 1: Basic Property Change Detection
-    
+
     [Fact]
     public void DiffEngine_PropertyChange_ShouldGenerateUpdatePropsPatch()
     {
         // Test: Verify diff engine detects property changes
         var diffEngine = new DiffEngine();
-        
+
         var tree1 = Element("text").WithProp("x", 5).WithProp("y", 2).Build();
         var tree2 = Element("text").WithProp("x", 10).WithProp("y", 2).Build();
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
-        
+
         Assert.Single(patches);
         Assert.IsType<UpdatePropsPatch>(patches[0]);
         var patch = (UpdatePropsPatch)patches[0];
@@ -59,32 +59,32 @@ public class DiffEngineMovementTests
 
     #region Test Case 2: Simple Position Movement
 
-    [Fact] 
+    [Fact]
     public void SimpleMovement_TextMoveRight_ShouldClearOldAndDrawNew()
     {
         // Test: Single text component moves right
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         var tree1 = Element("text")
             .WithProp("x", 5).WithProp("y", 2).WithProp("style", Style.Default)
             .WithChild(new TextNode("Hello")).Build();
-        
+
         var tree2 = Element("text")
             .WithProp("x", 10).WithProp("y", 2).WithProp("style", Style.Default)
             .WithChild(new TextNode("Hello")).Build();
-        
+
         renderer.Render(tree1);
         ClearMockSystem(mockSystem);
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
         renderer.ApplyPatches(patches);
-        
+
         // Should clear old position (5,2) and draw at new position (10,2)
         // Note: Due to dirty region merging optimization, the clear might be a single
         // larger region covering both old and new positions
-        Assert.Contains(mockSystem.Fills, f => 
+        Assert.Contains(mockSystem.Fills, f =>
             f.x <= 5 && f.y == 2 && (f.x + f.width) >= 10 && f.height == 1 && f.fill == ' ');
         AssertWritten(mockSystem, 10, 2, "Hello");
     }
@@ -96,21 +96,21 @@ public class DiffEngineMovementTests
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         var tree1 = Element("text")
             .WithProp("x", 5).WithProp("y", 2).WithProp("style", Style.Default)
             .WithChild(new TextNode("Test")).Build();
-        
+
         var tree2 = Element("text")
             .WithProp("x", 5).WithProp("y", 4).WithProp("style", Style.Default)
             .WithChild(new TextNode("Test")).Build();
-        
+
         renderer.Render(tree1);
         ClearMockSystem(mockSystem);
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
         renderer.ApplyPatches(patches);
-        
+
         AssertCleared(mockSystem, 5, 2, 4, 1); // "Test" is 4 characters wide
         AssertWritten(mockSystem, 5, 4, "Test");
     }
@@ -126,24 +126,24 @@ public class DiffEngineMovementTests
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         var tree1 = Element("text")
             .WithProp("x", 5).WithProp("y", 2).WithProp("style", Style.Default)
             .WithChild(new TextNode("Hi")).Build();
-        
+
         var tree2 = Element("text")
             .WithProp("x", 5).WithProp("y", 2).WithProp("style", Style.Default)
             .WithChild(new TextNode("Hello World")).Build();
-        
+
         renderer.Render(tree1);
         ClearMockSystem(mockSystem);
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
         renderer.ApplyPatches(patches);
-        
+
         // Should clear old area and draw new content
         // The clear region might be optimized to cover the entire new text area
-        Assert.Contains(mockSystem.Fills, f => 
+        Assert.Contains(mockSystem.Fills, f =>
             f.x <= 5 && f.y == 2 && (f.x + f.width) >= 7 && f.height == 1 && f.fill == ' ');
         AssertWritten(mockSystem, 5, 2, "Hello World");
     }
@@ -155,21 +155,21 @@ public class DiffEngineMovementTests
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         var tree1 = Element("text")
             .WithProp("x", 5).WithProp("y", 2).WithProp("style", Style.Default)
             .WithChild(new TextNode("Hello World")).Build();
-        
+
         var tree2 = Element("text")
             .WithProp("x", 5).WithProp("y", 2).WithProp("style", Style.Default)
             .WithChild(new TextNode("Hi")).Build();
-        
+
         renderer.Render(tree1);
         ClearMockSystem(mockSystem);
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
         renderer.ApplyPatches(patches);
-        
+
         // Should clear the full old area (11 chars) and draw new content (2 chars)
         AssertCleared(mockSystem, 5, 2, 11, 1); // "Hello World" was 11 characters
         AssertWritten(mockSystem, 5, 2, "Hi");
@@ -186,25 +186,25 @@ public class DiffEngineMovementTests
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         var tree1 = Element("text")
             .WithProp("x", 10).WithProp("y", 2).WithProp("style", Style.Default)
             .WithChild(new TextNode("Hello")).Build();
-        
+
         var tree2 = Element("text")
             .WithProp("x", 7).WithProp("y", 2).WithProp("style", Style.Default)
             .WithChild(new TextNode("Hello")).Build();
-        
+
         renderer.Render(tree1);
         ClearMockSystem(mockSystem);
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
         renderer.ApplyPatches(patches);
-        
+
         // Should clear old position (10-14) and draw at new position (7-11)
         // Note: positions 10-11 overlap, so clearing strategy is important
         // Due to optimization, the clear might be merged with the new render area
-        Assert.Contains(mockSystem.Fills, f => 
+        Assert.Contains(mockSystem.Fills, f =>
             f.y == 2 && f.fill == ' ' && f.x <= 10 && (f.x + f.width) >= 15);
         AssertWritten(mockSystem, 7, 2, "Hello");
     }
@@ -220,31 +220,31 @@ public class DiffEngineMovementTests
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         var tree1 = Fragment(
             Element("text").WithProp("x", 0).WithProp("y", 0).WithChild(new TextNode("Col1")).Build(),
             Element("text").WithProp("x", 20).WithProp("y", 0).WithChild(new TextNode("Col2")).Build(),
             Element("text").WithProp("x", 40).WithProp("y", 0).WithChild(new TextNode("Col3")).Build()
         );
-        
+
         var tree2 = Fragment(
             Element("text").WithProp("x", 0).WithProp("y", 0).WithChild(new TextNode("Col1_Expanded")).Build(),
             Element("text").WithProp("x", 30).WithProp("y", 0).WithChild(new TextNode("Col2")).Build(), // Moved right
             Element("text").WithProp("x", 50).WithProp("y", 0).WithChild(new TextNode("Col3")).Build()  // Moved right
         );
-        
+
         renderer.Render(tree1);
         ClearMockSystem(mockSystem);
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
         renderer.ApplyPatches(patches);
-        
+
         // Should clear old positions of Col2 and Col3
         // Due to optimization, clears might be merged into larger regions
-        Assert.True(mockSystem.Fills.Any(f => f.y == 0 && f.fill == ' ' && 
+        Assert.True(mockSystem.Fills.Any(f => f.y == 0 && f.fill == ' ' &&
             ((f.x <= 20 && (f.x + f.width) >= 24) || (f.x <= 40 && (f.x + f.width) >= 44))),
             "Should have cleared old Col2 and Col3 positions");
-        
+
         // Should write new content - text and position updates may be separate
         // Check that Col1 area has the expanded text
         Assert.True(mockSystem.Writes.Any(w => w.x == 0 && w.y == 0 && w.text.Contains("Col1")),
@@ -264,7 +264,7 @@ public class DiffEngineMovementTests
         var mockSystem = new MockRenderingSystem();
         var renderer = new VirtualDomRenderer(mockSystem);
         var diffEngine = new DiffEngine();
-        
+
         var tree1 = Fragment(
             // Row 1
             Element("text").WithProp("x", 0).WithProp("y", 0).WithChild(new TextNode("A")).Build(),
@@ -275,7 +275,7 @@ public class DiffEngineMovementTests
             Element("text").WithProp("x", 10).WithProp("y", 1).WithChild(new TextNode("E")).Build(),
             Element("text").WithProp("x", 20).WithProp("y", 1).WithChild(new TextNode("F")).Build()
         );
-        
+
         var tree2 = Fragment(
             // Row 1 - all shifted right by different amounts
             Element("text").WithProp("x", 5).WithProp("y", 0).WithChild(new TextNode("A_expanded")).Build(),
@@ -286,13 +286,13 @@ public class DiffEngineMovementTests
             Element("text").WithProp("x", 20).WithProp("y", 1).WithChild(new TextNode("E")).Build(),
             Element("text").WithProp("x", 30).WithProp("y", 1).WithChild(new TextNode("F")).Build()
         );
-        
+
         renderer.Render(tree1);
         ClearMockSystem(mockSystem);
-        
+
         var patches = diffEngine.Diff(tree1, tree2);
         renderer.ApplyPatches(patches);
-        
+
         // Should clear all old positions that moved
         // Due to optimization, clears might be merged
         Assert.True(mockSystem.Fills.Any(f => f.fill == ' '),
@@ -302,12 +302,12 @@ public class DiffEngineMovementTests
             "Should clear B's old position");
         Assert.True(mockSystem.Fills.Any(f => f.y == 0 && f.x <= 20 && (f.x + f.width) > 20),
             "Should clear C's old position");
-        
+
         // Should write new content at new positions
         // Debug output to see what's actually written
         var writesDebug = string.Join(", ", mockSystem.Writes.Select(w => $"({w.x},{w.y}:'{w.text}')"));
         Assert.True(mockSystem.Writes.Count > 0, $"Should have writes. Actual: [{writesDebug}]");
-        
+
         // Text content updates and position updates may be separate
         // Also check if A is written anywhere
         Assert.True(mockSystem.Writes.Any(w => w.text.Contains("A") || w.text.Contains("expanded")),
@@ -332,13 +332,13 @@ public class DiffEngineMovementTests
 
     private static void AssertCleared(MockRenderingSystem mockSystem, int x, int y, int width, int height)
     {
-        Assert.Contains(mockSystem.Fills, f => 
+        Assert.Contains(mockSystem.Fills, f =>
             f.x == x && f.y == y && f.width == width && f.height == height && f.fill == ' ');
     }
 
     private static void AssertWritten(MockRenderingSystem mockSystem, int x, int y, string text)
     {
-        Assert.Contains(mockSystem.Writes, w => 
+        Assert.Contains(mockSystem.Writes, w =>
             w.x == x && w.y == y && w.text == text);
     }
 
