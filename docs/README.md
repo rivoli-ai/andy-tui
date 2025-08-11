@@ -19,19 +19,17 @@ Detailed documentation for each project in the framework:
 - [Andy.TUI](../src/Andy.TUI/Andy.TUI.md) — Main distribution package
 
 ## Core APIs
-- Virtual DOM API: VIRTUAL_DOM_API.md — Virtual nodes, builder API, diff engine, patches, and usage patterns.
-- Terminal API: TERMINAL_API.md — `ITerminal`, `AnsiTerminal`, styles, buffers, and usage examples.
-- Rendering System: RENDERING_SYSTEM_USAGE.md — `RenderingSystem`, `RenderScheduler`, dirty region updates, and patterns.
-- Observable API: OBSERVABLE_API.md — Observable properties, computed properties, collections, and subscription patterns.
+- Virtual DOM: `VIRTUAL_DOM_API.md`
+- Terminal: `TERMINAL_API.md`
+- Observables: `OBSERVABLE_API.md`
 
-## Advanced Topics
-- Z-Index Architecture: Z_INDEX_ARCHITECTURE.md — Relative vs absolute z-index, propagation, and rendering strategies.
-- Spatial Index Design: SPATIAL_INDEX_DESIGN.md — 3D spatial index, occlusion handling, and performance considerations.
-- Layout Testing Plan: LAYOUT_TESTING_PLAN.md — Strategy for validating layout rules and edge cases.
-- Diff Engine Testing Plan: DIFF_ENGINE_TESTING_PLAN.md — Test strategy for movements, resizing, and overlap scenarios.
+## Rendering & Spatial
+- Rendering System: `RENDERING_SYSTEM_USAGE.md`
+- Z-Index Architecture: `Z_INDEX_ARCHITECTURE.md`
+- Spatial Index Design: `SPATIAL_INDEX_DESIGN.md`
 
 ## Tooling & Debugging
-- Debug Logging: DEBUG_LOGGING.md — Enabling logs, categories, locations, and best practices.
+- Debug Logging: `DEBUG_LOGGING.md`
 
 ## Examples
 - Observable: `examples/Andy.TUI.Examples/ObservableSystemExample.cs`
@@ -44,11 +42,13 @@ Detailed documentation for each project in the framework:
 - Declarative widgets: `examples/Andy.TUI.Examples.Input/UIComponentsShowcase.cs`, `TableTest.cs`, `SelectInputTest.cs`
 - Z-Index and tabs: `examples/Andy.TUI.Examples.ZIndex/TabViewWorkingExample.cs`, `MinimalZIndexExample.cs`
 
-## Status & Planning
-- Implementation Status (Detailed): IMPLEMENTATION_STATUS_DETAILED.md — Current status and progress.
-- Declarative Implementation Plan: DECLARATIVE_IMPLEMENTATION_PLAN.md — Phases and roadmap for declarative stack.
-- Layout Fixes Summary: LAYOUT_FIXES_SUMMARY.md — Summary of layout changes and fixes.
-- Next Steps: NEXT_STEPS.md — Short-term action items and priorities.
+## Testing & Planning
+- Implementation Status (Detailed): `IMPLEMENTATION_STATUS_DETAILED.md`
+- Declarative Implementation Plan: `DECLARATIVE_IMPLEMENTATION_PLAN.md`
+- Layout Fixes Summary: `LAYOUT_FIXES_SUMMARY.md`
+- Layout Testing Plan: `LAYOUT_TESTING_PLAN.md`
+- Diff Engine Testing Plan: `DIFF_ENGINE_TESTING_PLAN.md`
+- Next Steps: `NEXT_STEPS.md`
 
 ## Deprecated
 - Historical feature comparison (removed): superseded by `andy-vs-bubbletea.md`.
