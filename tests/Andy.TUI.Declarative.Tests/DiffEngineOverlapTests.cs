@@ -213,7 +213,7 @@ public class DiffEngineOverlapTests
         var hasClearing = mockSystem.Fills.Any(f => f.fill == ' ' && 
             ((f.y == 0 && f.x <= 40 && f.x + f.width > 20) || // Covers row 0 movements
              (f.y == 1 && f.x <= 40 && f.x + f.width > 20))); // Covers row 1 movements
-        Assert.True(hasClearing, "Should have clearing for moved columns")
+        Assert.True(hasClearing, "Should have clearing for moved columns");
         
         // Should write new content at new positions
         Assert.Contains(mockSystem.Writes, w => 
