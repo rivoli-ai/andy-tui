@@ -25,6 +25,13 @@ public class RenderScheduler : IDisposable
     public int TargetFps { get; set; } = 60;
 
     /// <summary>
+    /// Gets or sets the render scheduling mode.
+    /// OnDemand renders only when there are dirty buffer regions or a force render is requested.
+    /// Fixed renders a frame at TargetFps regardless of dirty state.
+    /// </summary>
+    public RenderMode Mode { get; set; } = RenderMode.OnDemand;
+
+    /// <summary>
     /// Gets or sets the maximum time to wait for batching updates (in milliseconds).
     /// </summary>
     public int MaxBatchWaitMs { get; set; } = 16;
@@ -135,10 +142,20 @@ public class RenderScheduler : IDisposable
 
             try
             {
-                // Wait for render event or timeout
-                var waitTime = Math.Max(1, (int)(targetFrameTime.TotalMilliseconds - frameStopwatch.ElapsedMilliseconds));
-                _renderEvent.Wait(waitTime, _cancellationTokenSource.Token);
-                _renderEvent.Reset();
+                // Wait for either an update signal or the next frame boundary (for fixed mode)
+                var remaining = targetFrameTime - frameStopwatch.Elapsed;
+                var waitTime = Math.Max(0, (int)Math.Round(remaining.TotalMilliseconds));
+                if (Mode == RenderMode.Fixed)
+                {
+                    // In fixed mode, don't depend on signals; just sleep to the next frame
+                    if (waitTime > 0)
+                        Thread.Sleep(waitTime);
+                }
+                else
+                {
+                    _renderEvent.Wait(Math.Max(1, waitTime), _cancellationTokenSource.Token);
+                    _renderEvent.Reset();
+                }
 
                 // Process all queued updates
                 var updates = new List<Action>();
@@ -157,7 +174,7 @@ public class RenderScheduler : IDisposable
                 }
 
                 // Check if we need to render
-                if (_buffer.IsDirty || _forceRender)
+                if (Mode == RenderMode.Fixed || _buffer.IsDirty || _forceRender)
                 {
                     RenderFrame();
                     _forceRender = false;
@@ -186,11 +203,14 @@ public class RenderScheduler : IDisposable
                     renderTimes.Dequeue();
                 }
 
-                // Frame rate limiting
-                var elapsed = frameStopwatch.Elapsed;
-                if (elapsed < targetFrameTime)
+                // Frame rate limiting for on-demand mode only (fixed mode handled above)
+                if (Mode == RenderMode.OnDemand)
                 {
-                    Thread.Sleep(targetFrameTime - elapsed);
+                    var elapsed = frameStopwatch.Elapsed;
+                    if (elapsed < targetFrameTime)
+                    {
+                        Thread.Sleep(targetFrameTime - elapsed);
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -224,7 +244,7 @@ public class RenderScheduler : IDisposable
         var dirtyRegions = _buffer.SwapBuffers().ToList();
 
         // Always begin/end a frame when force-rendering, even if there are no dirty cells
-        var shouldBeginFrame = dirtyRegions.Count > 0 || _forceRender;
+        var shouldBeginFrame = dirtyRegions.Count > 0 || _forceRender || Mode == RenderMode.Fixed;
         if (shouldBeginFrame)
         {
             _renderer.BeginFrame();
@@ -270,6 +290,22 @@ public class RenderScheduler : IDisposable
         _cancellationTokenSource.Dispose();
         _renderEvent.Dispose();
     }
+}
+
+/// <summary>
+/// Controls how the render scheduler decides when to draw frames.
+/// </summary>
+public enum RenderMode
+{
+    /// <summary>
+    /// Render only when there are changes or a forced render is requested.
+    /// </summary>
+    OnDemand,
+
+    /// <summary>
+    /// Render at a fixed, configurable frame rate regardless of changes.
+    /// </summary>
+    Fixed
 }
 
 /// <summary>

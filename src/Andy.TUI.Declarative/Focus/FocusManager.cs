@@ -32,13 +32,22 @@ public class FocusManager
     /// </summary>
     public void UnregisterFocusable(IFocusable component)
     {
+        // Remember index before removal to choose a stable next focus target
+        var originalIndex = _focusableComponents.IndexOf(component);
         _focusableComponents.Remove(component);
-        
+
         if (_focusedComponent == component)
         {
-            // Move focus to next available component
-            var next = GetNextFocusable(FocusDirection.Next);
-            SetFocus(next);
+            var candidates = _focusableComponents.Where(c => c.CanFocus).ToList();
+            if (candidates.Count == 0)
+            {
+                SetFocus(null);
+            }
+            else
+            {
+                var nextIndex = Math.Min(Math.Max(originalIndex, 0), candidates.Count - 1);
+                SetFocus(candidates[nextIndex]);
+            }
         }
     }
     

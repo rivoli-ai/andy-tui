@@ -50,6 +50,8 @@ public class RenderingSystem : IRenderingSystem, IDisposable
         _buffer = new TerminalBuffer(terminal.Width, terminal.Height);
         _renderer = renderer ?? new AnsiRenderer(terminal);
         _scheduler = new RenderScheduler(terminal, _renderer, _buffer);
+        // Default to OnDemand; callers can set Fixed for constant refresh
+        _scheduler.Mode = RenderMode.OnDemand;
         
         // Subscribe to terminal resize events
         _terminal.SizeChanged += OnTerminalSizeChanged;

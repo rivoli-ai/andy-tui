@@ -220,6 +220,24 @@ public class RenderSchedulerTests : IDisposable
         // Cleanup
         _scheduler.Stop();
     }
+
+    [Fact]
+    public void FixedMode_RendersAtTargetFps_WithoutDirtyBuffer()
+    {
+        // Arrange
+        _scheduler.Mode = RenderMode.Fixed;
+        _scheduler.TargetFps = 30;
+        _scheduler.Start();
+
+        // Act
+        Thread.Sleep(1100); // ~1 second
+
+        // Assert
+        Assert.True(_scheduler.ActualFps >= 20, $"Expected fps >= 20, got {_scheduler.ActualFps}");
+
+        // Cleanup
+        _scheduler.Stop();
+    }
     
     [Fact]
     public void Dispose_StopsScheduler()

@@ -30,13 +30,19 @@ class UIComponentsShowcaseApp
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        var renderer = new DeclarativeRenderer(renderingSystem);
+        // Ensure smooth, steady refresh for animations and spinners
+        renderingSystem.Scheduler.Mode = RenderMode.Fixed;
+        renderingSystem.Scheduler.TargetFps = 30;
+        var input = new CrossPlatformInputHandler();
+        var renderer = new DeclarativeRenderer(renderingSystem, input);
         
         renderingSystem.Initialize();
         
         // Start progress animation
         _progressTimer = new Timer(_ => {
             _downloadProgress = (_downloadProgress + 5) % 101;
+            // Request a render to reflect progress promptly
+            renderer.RequestRender();
         }, null, 0, 200);
         
         renderer.Run(() => CreateUI());

@@ -29,28 +29,26 @@ public class InputRenderingTests
         var binding = new Binding<string>(() => name, v => name = v);
         var textField = new TextField("Enter your name...", binding);
 
-        var context = new DeclarativeContext(() => { });
+        bool renderRequested = false;
+        var context = new DeclarativeContext(() => { renderRequested = true; });
         var instance = context.ViewInstanceManager.GetOrCreateInstance(textField, "test-textfield");
+        instance.Context = context;
         var textFieldInstance = Assert.IsType<TextFieldInstance>(instance);
 
         // Act - Initial layout/render
         instance.CalculateLayout(LayoutConstraints.Loose(80, 24));
         instance.Render();
         renderingSystem.Render();
-
-        // Check initial dirty state  
-        var wasInitiallyDirty = renderingSystem.Buffer.IsDirty;
+        renderRequested = false; // Reset flag after initial render
 
         // Simulate typing a character
         textFieldInstance.OnGotFocus(); // TextField needs focus to handle key presses
         textFieldInstance.HandleKeyPress(new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
 
-        // Force the rendering system to process
-        renderingSystem.Render();
-
         // Assert
-        Assert.True(renderingSystem.Buffer.IsDirty || wasInitiallyDirty, "Buffer should be dirty after first keypress");
+        Assert.True(renderRequested, "Render should be requested after first keypress");
     }
+
 
     [Fact]
     public void TextField_TextUpdate_ShouldUpdateRender()
@@ -171,21 +169,25 @@ public class InputRenderingTests
         tabView.Add("Tab2", new Text("Content 2"));
         tabView.Add("Tab3", new Text("Content 3"));
 
-        var context = new DeclarativeContext(() => { });
+        bool renderRequested = false;
+        var context = new DeclarativeContext(() => { renderRequested = true; });
         var instance = context.ViewInstanceManager.GetOrCreateInstance(tabView, "test-tabview");
+        instance.Context = context;
         var tabViewInstance = Assert.IsType<TabViewInstance>(instance);
 
         // Act - Initial layout/render
         instance.CalculateLayout(LayoutConstraints.Loose(80, 24));
         var initialTree = instance.Render();
         renderingSystem.Render();
+        renderRequested = false; // Reset flag after initial render
 
-        // Switch to next tab
+        // Switch to next tab using right arrow (Tab key doesn't switch tabs in TabView)
         tabViewInstance.OnGotFocus(); // TabView needs focus to handle key presses
-        tabViewInstance.HandleKeyPress(new ConsoleKeyInfo('\t', ConsoleKey.Tab, false, false, false));
+        tabViewInstance.HandleKeyPress(new ConsoleKeyInfo('\0', ConsoleKey.RightArrow, false, false, false));
         var afterTabTree = instance.Render();
 
-        // Assert - Trees should be different
+        // Assert - Render should be requested and trees should be different
+        Assert.True(renderRequested, "Render should be requested after tab switch");
         Assert.NotEqual(initialTree, afterTabTree);
     }
 
@@ -201,27 +203,24 @@ public class InputRenderingTests
         var binding = new Binding<string>(() => name, v => name = v);
         var textField = new TextField("", binding);
 
-        var context = new DeclarativeContext(() => { });
+        bool renderRequested = false;
+        var context = new DeclarativeContext(() => { renderRequested = true; });
         var instance = context.ViewInstanceManager.GetOrCreateInstance(textField, "test-textfield-arrow");
+        instance.Context = context;
         var textFieldInstance = Assert.IsType<TextFieldInstance>(instance);
 
         // Act - Initial layout/render
         instance.CalculateLayout(LayoutConstraints.Loose(80, 24));
         instance.Render();
         renderingSystem.Render();
-
-        // Check initial dirty state
-        var wasInitiallyDirty = renderingSystem.Buffer.IsDirty;
+        renderRequested = false; // Reset flag after initial render
 
         // Press left arrow key
         textFieldInstance.OnGotFocus(); // TextField needs focus to handle key presses
         textFieldInstance.HandleKeyPress(new ConsoleKeyInfo('\0', ConsoleKey.LeftArrow, false, false, false));
 
-        // Force the rendering system to process
-        renderingSystem.Render();
-
         // Assert
-        Assert.True(renderingSystem.Buffer.IsDirty || wasInitiallyDirty, "Buffer should be dirty after arrow key press");
+        Assert.True(renderRequested, "Render should be requested after arrow key press");
     }
 
     [Fact]

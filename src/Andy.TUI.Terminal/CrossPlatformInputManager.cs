@@ -227,6 +227,17 @@ public class CrossPlatformInputManager : IInputManager
         }
         
         // Special key sequences
+        // Normalize Tab and Enter across terminals
+        if (sequence == "\t")
+        {
+            inputEvent = new InputEvent(InputEventType.KeyPress, new KeyInfo(ConsoleKey.Tab, '\t', 0));
+            return true;
+        }
+        if (sequence == "\r" || sequence == "\n")
+        {
+            inputEvent = new InputEvent(InputEventType.KeyPress, new KeyInfo(ConsoleKey.Enter, '\r', 0));
+            return true;
+        }
         if (TryParseSpecialKeySequence(sequence, out inputEvent))
         {
             return true;

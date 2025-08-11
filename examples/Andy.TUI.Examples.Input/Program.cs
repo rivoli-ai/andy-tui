@@ -129,7 +129,8 @@ class InputDemoApp
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        var renderer = new DeclarativeRenderer(renderingSystem);
+        var input = new CrossPlatformInputHandler();
+        var renderer = new DeclarativeRenderer(renderingSystem, input);
 
         renderingSystem.Initialize();
 

@@ -54,6 +54,7 @@ public class TextFieldInstance : ViewInstance, IFocusable
                 {
                     _textBinding.Value = currentText.Remove(_cursorPosition - 1, 1);
                     _cursorPosition--;
+                    if (_cursorPosition < 0) _cursorPosition = 0;
                 }
                 return true;
 
@@ -93,8 +94,12 @@ public class TextFieldInstance : ViewInstance, IFocusable
             default:
                 if (!char.IsControl(keyInfo.KeyChar))
                 {
+                    // Clamp cursor within current text bounds to avoid exceptions
+                    if (_cursorPosition < 0) _cursorPosition = 0;
+                    if (_cursorPosition > currentText.Length) _cursorPosition = currentText.Length;
                     _textBinding.Value = currentText.Insert(_cursorPosition, keyInfo.KeyChar.ToString());
                     _cursorPosition++;
+                    InvalidateView();
                     return true;
                 }
                 break;
