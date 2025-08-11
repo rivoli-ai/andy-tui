@@ -43,11 +43,10 @@ Detailed documentation for each project in the framework:
 - Z-Index and tabs: `examples/Andy.TUI.Examples.ZIndex/TabViewWorkingExample.cs`, `MinimalZIndexExample.cs`
 
 ## Testing & Planning
+- Unified Testing Strategy: `TESTING_STRATEGY.md`
 - Implementation Status (Detailed): `IMPLEMENTATION_STATUS_DETAILED.md`
 - Declarative Implementation Plan: `DECLARATIVE_IMPLEMENTATION_PLAN.md`
 - Layout Fixes Summary: `LAYOUT_FIXES_SUMMARY.md`
-- Layout Testing Plan: `LAYOUT_TESTING_PLAN.md`
-- Diff Engine Testing Plan: `DIFF_ENGINE_TESTING_PLAN.md`
 - Next Steps: `NEXT_STEPS.md`
 
 ## Deprecated

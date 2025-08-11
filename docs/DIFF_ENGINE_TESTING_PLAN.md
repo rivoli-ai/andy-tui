@@ -1,8 +1,6 @@
-# Diff Engine Movement and Overlap Testing Plan
+# Diff/Renderer Movement & Overlap Testing (Consolidated)
 
-## Overview
-
-This document outlines the comprehensive testing plan for fixing the diff engine's handling of content movement, resizing, and overlapping scenarios. The core issue is that when UI components move or change size, the old content remains visible, creating visual duplicates and overlaps.
+This content has moved to the unified document: see `TESTING_STRATEGY.md`.
 
 ## Problem Statement
 
