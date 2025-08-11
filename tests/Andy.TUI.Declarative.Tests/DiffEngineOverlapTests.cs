@@ -86,10 +86,13 @@ public class DiffEngineOverlapTests
         var writesDebug = string.Join(", ", mockSystem.Writes.Select(w => $"({w.x},{w.y}:'{w.text}')"));
         
         // Assert
-        // Should have cleared the old text area (position 5-9, row 2) with spaces
+        // The renderer should clear dirty regions and rewrite content
         Assert.True(mockSystem.Fills.Count > 0, $"Should have clearing operations. Fills: [{fillsDebug}], Writes: [{writesDebug}]");
+        
+        // The clearing may be consolidated into a single region covering both old and new positions
+        // Check that at least the area from x=3 to x=9 (covering both positions) is cleared
         Assert.Contains(mockSystem.Fills, f => 
-            f.x == 5 && f.y == 2 && f.width >= 5 && f.fill == ' ');
+            f.y == 2 && f.x <= 5 && (f.x + f.width) >= 10 && f.fill == ' ');
         
         // Should have written new text at new position (3, 2)
         Assert.Contains(mockSystem.Writes, w => 
