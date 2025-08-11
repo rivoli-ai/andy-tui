@@ -599,14 +599,15 @@ public class BoxInstance : ViewInstance
         // Render children with their calculated positions
         foreach (var child in _childInstances)
         {
-            var childNode = child.Render();
-            
-            // Apply absolute positioning based on layout
+            // Apply absolute positioning based on layout BEFORE rendering
             var absoluteX = layout.ContentX + (int)Math.Round(child.Layout.X);
             var absoluteY = layout.ContentY + (int)Math.Round(child.Layout.Y);
             
             child.Layout.AbsoluteX = absoluteX;
             child.Layout.AbsoluteY = absoluteY;
+            
+            // Now render child with correct absolute position
+            var childNode = child.Render();
             
             // Position the child node
             // IMPORTANT: Child instances already render absolute positions based on

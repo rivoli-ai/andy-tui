@@ -131,6 +131,9 @@ public class ComponentPositioningTest : TestBase
         }
         
         // Act
+        // Enable comprehensive logging for debugging
+        Andy.TUI.Diagnostics.ComprehensiveLoggingInitializer.Initialize(isTestMode: true);
+        
         renderingSystem.Initialize();
         renderer.Render(CreateUI());
         renderingSystem.Render();
