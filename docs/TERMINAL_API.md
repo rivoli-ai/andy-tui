@@ -134,6 +134,8 @@ renderingSystem.DrawBox(0, 0, 80, 24, style, BoxStyle.Double);
 renderingSystem.Render();
 ```
 
+Note: Avoid manual timing loops; use `RenderScheduler.QueueRender` to schedule frames. See `docs/RENDERING_SYSTEM_USAGE.md`.
+
 ### Box Styles
 
 ```csharp

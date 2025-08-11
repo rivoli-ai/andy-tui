@@ -7,10 +7,11 @@ A declarative terminal UI framework for .NET that combines the best of Ink, Yoga
 > Andy.TUI is currently in active development and is **not ready for production use**. The library is incomplete with many features that are partially implemented or don't work correctly yet. APIs are subject to breaking changes without notice. 
 > 
 > **Known Issues:**
-> - Some layout edge cases may cause incorrect rendering
-> - Certain components have incomplete implementations
-> - Performance optimizations are ongoing
-> - Cross-platform compatibility is still being refined
+> - Rendering system currently uses two conflicting paths (element-based RenderElement and visitor-based Accept), which can cause double-rendering and positioning glitches. We are unifying this into a single rendering approach.
+> - Incremental patching in `VirtualDomRenderer` has known clearing/duplication bugs in some move/resize scenarios; some flows temporarily force full re-renders as a workaround.
+> - Clipping behavior is inconsistent and will be implemented in the unified renderer.
+> - API inconsistencies when adding children are being standardized (declarative components use collection-initializer syntax; virtual DOM nodes are built via builders/`AddChild`).
+> - Some layout edge cases remain; performance optimizations are ongoing; cross‑platform behavior continues to be refined.
 > 
 > We welcome contributors and early adopters who are interested in helping shape the framework, but please be aware of its experimental nature.
 
@@ -381,6 +382,27 @@ Example log output:
 2. **Keyboard Input Issues**: Check `EventRouter.log` and `FocusManager.log`
 3. **Component State Problems**: Check the specific component's log file
 4. **Performance Issues**: Look for excessive render cycles or large patch counts
+
+### Comprehensive logging in tests
+
+For richer logs during automated tests, initialize the comprehensive logging system:
+
+```csharp
+using Andy.TUI.Diagnostics;
+
+[Fact]
+public void MyTest()
+{
+    using (ComprehensiveLoggingInitializer.BeginTestSession(nameof(MyTest)))
+    {
+        // Test code here
+    }
+}
+// or
+ComprehensiveLoggingInitializer.Initialize(isTestMode: true);
+```
+
+This writes structured logs per category to `TestLogs/` and avoids console noise.
 
 ## Architecture
 

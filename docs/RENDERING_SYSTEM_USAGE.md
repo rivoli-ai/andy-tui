@@ -142,6 +142,13 @@ renderingSystem.Shutdown();
 - Queue the next frame from within the current frame's callback
 - Use event-driven rendering for interactive applications
 
+## Current Limitations and Migration Notes
+
+- The low-level `VirtualDomRenderer` incremental patching path has known issues with clearing old regions for moves/resizes, which can lead to duplication artifacts. Some flows use full re-renders as a temporary workaround.
+- Work is in progress to unify rendering to a single approach and make clipping/z-index behavior consistent. Expect API/behavior changes in this area.
+
+For details on the planned renderer unification and z-index/spatial indexing, see `docs/Z_INDEX_ARCHITECTURE.md` and `docs/SPATIAL_INDEX_DESIGN.md`.
+
 ## Common Mistakes
 
 ### ❌ Wrong: Fighting with the scheduler

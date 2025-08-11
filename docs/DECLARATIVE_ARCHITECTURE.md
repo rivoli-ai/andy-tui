@@ -99,6 +99,8 @@ graph TD
     F --> G[Terminal Output]
 ```
 
+Note: The current terminal renderer mixes two approaches (element traversal and visitor-based rendering). We are consolidating this into a single path to fix duplication and positioning issues. See `docs/NEXT_STEPS.md`.
+
 ## Key Features
 
 ### 1. SwiftUI-like Collection Initializers

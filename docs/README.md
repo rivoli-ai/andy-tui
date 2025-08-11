@@ -34,15 +34,15 @@ Detailed documentation for each project in the framework:
 - Debug Logging: DEBUG_LOGGING.md — Enabling logs, categories, locations, and best practices.
 
 ## Examples
-- Observable: examples/Andy.TUI.Examples/ObservableSystemExample.cs
-- Observable Collection: examples/Andy.TUI.Examples/ObservableCollectionExample.cs
-- Virtual DOM: examples/VirtualDom/BasicVirtualDomExample.cs, AdvancedVirtualDomExample.cs, ReactiveVirtualDomExample.cs
-- Terminal basics: examples/Andy.TUI.Examples.Terminal/BasicTerminalExample.cs
-- Rendering system: examples/Andy.TUI.Examples.Terminal/RenderingSystemExample.cs, AdvancedRenderingExample.cs
-- Styled text: examples/Andy.TUI.Examples.Terminal/StyledTextExample.cs
-- Declarative menu: examples/Andy.TUI.Examples.Input/Program.cs
-- Declarative widgets: examples/Andy.TUI.Examples.Input/UIComponentsShowcase.cs, TableTest.cs, SelectInputTest.cs
-- Z-Index and tabs: examples/Andy.TUI.Examples.ZIndex/TabViewWorkingExample.cs, MinimalZIndexExample.cs
+- Observable: `examples/Andy.TUI.Examples/ObservableSystemExample.cs`
+- Observable Collection: `examples/Andy.TUI.Examples/ObservableCollectionExample.cs`
+- Virtual DOM: `examples/VirtualDom/BasicVirtualDomExample.cs`, `AdvancedVirtualDomExample.cs`, `ReactiveVirtualDomExample.cs`
+- Terminal basics: `examples/Andy.TUI.Examples.Terminal/BasicTerminalExample.cs`
+- Rendering system: `examples/Andy.TUI.Examples.Terminal/RenderingSystemExample.cs`, `AdvancedRenderingExample.cs`
+- Styled text: `examples/Andy.TUI.Examples.Terminal/StyledTextExample.cs`
+- Declarative menu: `examples/Andy.TUI.Examples.Input/Program.cs`
+- Declarative widgets: `examples/Andy.TUI.Examples.Input/UIComponentsShowcase.cs`, `TableTest.cs`, `SelectInputTest.cs`
+- Z-Index and tabs: `examples/Andy.TUI.Examples.ZIndex/TabViewWorkingExample.cs`, `MinimalZIndexExample.cs`
 
 ## Status & Planning
 - Implementation Status (Detailed): IMPLEMENTATION_STATUS_DETAILED.md — Current status and progress.
@@ -51,6 +51,6 @@ Detailed documentation for each project in the framework:
 - Next Steps: NEXT_STEPS.md — Short-term action items and priorities.
 
 ## Deprecated
-- Historical feature comparison (removed): superseded by andy-vs-bubbletea.md.
+- Historical feature comparison (removed): superseded by `andy-vs-bubbletea.md`.
 
 If you spot inconsistencies, open an issue or PR — keeping docs aligned with code is a priority.

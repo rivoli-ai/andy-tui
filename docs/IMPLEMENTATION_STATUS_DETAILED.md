@@ -35,7 +35,7 @@ Terminal Grid (20x5):
 2 ••••••••Hello•••••••  ← Clean movement
 ```
 
-**Root Cause**: VirtualDomRenderer.VisitUpdateProps not clearing old regions properly
+**Root Cause**: `VirtualDomRenderer` applies patches via both an element traversal path and a visitor path. In `VisitUpdateProps`, old regions are not reliably cleared before drawing, which, combined with dual paths, causes duplication. Renderer unification is planned to resolve this.
 
 ### 2. Element Resize Scenarios
 

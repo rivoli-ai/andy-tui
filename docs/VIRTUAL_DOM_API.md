@@ -316,7 +316,7 @@ var userCard = Component<UserCard>(new Dictionary<string, object?> {
 1. **Use Keys for Dynamic Lists**: Always provide stable keys when rendering lists that can change
 2. **Minimize Property Changes**: Group related updates together to reduce patches
 3. **Leverage Fragments**: Use fragments to avoid unnecessary wrapper elements
-4. **Reuse Builders**: Create helper functions for common UI patterns
+4. **Use builders/AddChild in VDOM; collection initializer syntax in Declarative components**: Keep APIs consistent with their layer
 5. **Batch Updates**: Collect multiple state changes before diffing for better performance
 
 ## Performance Considerations

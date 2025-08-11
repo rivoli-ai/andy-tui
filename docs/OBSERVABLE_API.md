@@ -289,6 +289,10 @@ firstName.ValueChanged += (s, e) => UpdateFullName();
 lastName.ValueChanged += (s, e) => UpdateFullName();
 ```
 
+### Using with Declarative Components
+
+Use `Binding<T>` in declarative components for two-way data binding rather than subscribing manually; subscriptions are managed by the framework.
+
 ### 2. Batch Collection Operations
 
 ```csharp

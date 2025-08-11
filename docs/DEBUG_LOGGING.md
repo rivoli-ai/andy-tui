@@ -44,13 +44,13 @@ Concrete implementation that:
 
 ## Usage
 
-### Enabling Debug Logging
+### Enabling Debug Logging (environment variables)
 
 ```bash
 # Enable with default level (Debug)
 export ANDY_TUI_DEBUG=1
 
-# Set specific log level
+# Set specific log level (Debug, Info, Warning, Error)
 export ANDY_TUI_DEBUG=Info
 
 # Custom log directory
@@ -58,6 +58,26 @@ export ANDY_TUI_DEBUG_DIR=/path/to/logs
 
 # Run application
 dotnet run --project examples/Andy.TUI.Examples.Input
+```
+
+### Comprehensive logging initializer (tests and apps)
+
+In addition to the lightweight `DebugContext`, the diagnostics package provides a comprehensive initializer that writes categorized logs, disables console noise in tests, and exports failure logs automatically.
+
+```csharp
+using Andy.TUI.Diagnostics;
+
+// One-time app startup
+ComprehensiveLoggingInitializer.Initialize();
+
+// For tests
+using (ComprehensiveLoggingInitializer.BeginTestSession("MyTest"))
+{
+    // ... test code ...
+}
+
+// Or explicitly enable test mode
+ComprehensiveLoggingInitializer.Initialize(isTestMode: true, customLogPath: "./TestLogs");
 ```
 
 ### In Your Code
@@ -90,7 +110,7 @@ public class MyComponent : ViewInstance
 
 ### Log Output
 
-Logs are organized by timestamp and category:
+Logs are organized by timestamp and category (DebugContext) or under `TestLogs/` when using ComprehensiveLoggingInitializer:
 ```
 /tmp/andy-tui-debug/20250804_175311/
 ├── DeclarativeRenderer.log
@@ -170,22 +190,16 @@ Look for:
 
 Enable debug logging in tests:
 ```csharp
-[Fact]
-public void MyTest()
+// Preferred: structured, per-test session
+using (ComprehensiveLoggingInitializer.BeginTestSession(nameof(MyTest)))
 {
-    // Initialize debug context for test
-    Environment.SetEnvironmentVariable("ANDY_TUI_DEBUG", "Debug");
-    DebugContext.Initialize();
-    
-    try
-    {
-        // Test code
-    }
-    finally
-    {
-        DebugContext.Shutdown();
-    }
+    // Test code
 }
+
+// Lightweight alternative:
+Environment.SetEnvironmentVariable("ANDY_TUI_DEBUG", "Debug");
+DebugContext.Initialize();
+try { /* test */ } finally { DebugContext.Shutdown(); }
 ```
 
 ## Future Enhancements
