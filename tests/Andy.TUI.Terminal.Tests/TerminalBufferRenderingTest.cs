@@ -35,8 +35,11 @@ public class TerminalBufferRenderingTest
         var line = GetLineFromBuffer(buffer, 0);
         _output.WriteLine($"Line after overwrite: '{line}'");
         
-        // The line should be "Short is a long text" because WriteText doesn't clear
-        Assert.Equal("Short is a long text", line.TrimEnd());
+        // The line should be "Shortis a long text" because WriteText doesn't clear
+        // "This is a long text" -> positions: T h i s ' ' i s ' ' a ...
+        // "Short" overwrites positions 0-4: S h o r t
+        // Result: "Shortis a long text" (position 5 'i' is preserved)
+        Assert.Equal("Shortis a long text", line.TrimEnd());
     }
     
     [Fact]
@@ -79,8 +82,8 @@ public class TerminalBufferRenderingTest
         var line = GetLineFromBuffer(buffer, 0);
         _output.WriteLine($"Overlapped text: '{line}'");
         
-        // Result should be "ACCCAAA" - last write wins for each position
-        Assert.Equal("ACCCAAA", line.TrimEnd());
+        // Result should be "ACCCBAA" - last write wins for each position
+        Assert.Equal("ACCCBAA", line.TrimEnd());
     }
     
     [Fact]
@@ -109,17 +112,19 @@ public class TerminalBufferRenderingTest
     
     private string GetLineFromBuffer(TerminalBuffer buffer, int y)
     {
+        var frontBuffer = buffer.GetFrontBuffer();
         var line = "";
         for (int x = 0; x < buffer.Width; x++)
         {
-            // Use reflection or make buffer expose a test method to read cells
-            // For now, we'll use WriteText behavior to infer content
-            // In real implementation, we'd need a GetCell method or test accessor
-            line += ' '; // Placeholder - need actual cell access
+            if (frontBuffer.TryGetCell(x, y, out var cell))
+            {
+                line += cell.Character;
+            }
+            else
+            {
+                line += ' ';
+            }
         }
-        
-        // Temporary workaround - we need proper access to buffer cells
-        // For now, return placeholder
         return line;
     }
     

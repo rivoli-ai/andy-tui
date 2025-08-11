@@ -180,9 +180,9 @@ public class AnsiRendererTests
         
         // Assert
         Assert.Contains("Hello", output);
-        // Should only move cursor once for consecutive cells
+        // Should optimize consecutive cells - expecting 1 cursor move for the entire string
         var cursorMoves = output.Split("\x1b[").Count(s => s.StartsWith("1;"));
-        Assert.Equal(2, cursorMoves); // One in the position string, one for initial position
+        Assert.Equal(1, cursorMoves); // One cursor move for the optimized string
     }
     
     [Fact]
