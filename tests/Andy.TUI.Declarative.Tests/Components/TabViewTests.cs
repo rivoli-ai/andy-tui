@@ -32,15 +32,15 @@ public class TabViewTests
         // First need to calculate layout
         var constraints = LayoutConstraints.Loose(80, 24);
         instance.CalculateLayout(constraints);
-        
+
         var rendered = instance.Render();
 
         // Assert
         Assert.NotNull(rendered);
-        
+
         // Convert to string to check content
         var output = VirtualNodeToString(rendered);
-        
+
         // Debug output
         if (string.IsNullOrEmpty(output))
         {
@@ -48,15 +48,15 @@ public class TabViewTests
             Assert.True(instance.Layout.Width > 0, "Layout width should be > 0");
             Assert.True(instance.Layout.Height > 0, "Layout height should be > 0");
         }
-        
+
         // Should contain tab headers
         Assert.Contains("Tab 1", output);
         Assert.Contains("Tab 2", output);
         Assert.Contains("Tab 3", output);
-        
+
         // Should contain selected content
         Assert.Contains("Content 1", output);
-        
+
         // Should not contain non-selected content
         Assert.DoesNotContain("Content 2", output);
         Assert.DoesNotContain("Content 3", output);
@@ -75,10 +75,10 @@ public class TabViewTests
         var manager = context.ViewInstanceManager;
         var instance = manager.GetOrCreateInstance(tabView, "test-tabview") as TabViewInstance;
         Assert.NotNull(instance);
-        
+
         // Focus the TabView
         instance.OnGotFocus();
-        
+
         // Calculate layout
         var constraints = LayoutConstraints.Loose(80, 24);
         instance.CalculateLayout(constraints);
@@ -88,11 +88,11 @@ public class TabViewTests
 
         // Assert
         Assert.True(handled);
-        
+
         // Re-render after key press
         var rendered = instance.Render();
         var output = VirtualNodeToString(rendered);
-        
+
         // Should now show second tab content
         Assert.Contains("Content 2", output);
         Assert.DoesNotContain("Content 1", output);
@@ -112,10 +112,10 @@ public class TabViewTests
         var manager = context.ViewInstanceManager;
         var instance = manager.GetOrCreateInstance(tabView, "test-tabview") as TabViewInstance;
         Assert.NotNull(instance);
-        
+
         // Focus the TabView
         instance.OnGotFocus();
-        
+
         // Calculate layout
         var constraints = LayoutConstraints.Loose(80, 24);
         instance.CalculateLayout(constraints);
@@ -125,10 +125,10 @@ public class TabViewTests
 
         // Assert
         Assert.True(handled);
-        
+
         var rendered = instance.Render();
         var output = VirtualNodeToString(rendered);
-        
+
         // Should wrap to first tab
         Assert.Contains("Content 1", output);
         Assert.DoesNotContain("Content 2", output);
@@ -141,7 +141,7 @@ public class TabViewTests
         // Arrange
         var tabView = new TabView(selectedIndex: 0);
         tabView.Add("Tab 1", new Text("Content 1"));
-        
+
         var context = new DeclarativeContext(() => { });
         var manager = context.ViewInstanceManager;
         var instance = manager.GetOrCreateInstance(tabView, "test-tabview") as TabViewInstance;
@@ -164,7 +164,7 @@ public class TabViewTests
     {
         // Arrange
         var tabView = new TabView(selectedIndex: 0);
-        
+
         var context = new DeclarativeContext(() => { });
         var manager = context.ViewInstanceManager;
         var instance = manager.GetOrCreateInstance(tabView, "test-tabview") as TabViewInstance;
@@ -188,7 +188,7 @@ public class TabViewTests
         var manager = context.ViewInstanceManager;
         var instance = manager.GetOrCreateInstance(tabView, "test-tabview") as TabViewInstance;
         Assert.NotNull(instance);
-        
+
         instance.OnGotFocus();
 
         // Act
@@ -202,7 +202,7 @@ public class TabViewTests
     {
         if (node is TextNode text)
             return text.Content;
-        
+
         if (node is ElementNode element)
         {
             var result = "";
@@ -212,7 +212,7 @@ public class TabViewTests
             }
             return result;
         }
-        
+
         if (node is FragmentNode fragment)
         {
             var result = "";
@@ -222,7 +222,7 @@ public class TabViewTests
             }
             return result;
         }
-        
+
         return "";
     }
 }

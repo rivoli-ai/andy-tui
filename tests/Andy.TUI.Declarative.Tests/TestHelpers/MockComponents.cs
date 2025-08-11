@@ -19,14 +19,14 @@ public class FixedSizeComponent : ISimpleComponent
     public float Width { get; set; } = 100;
     public float Height { get; set; } = 50;
     public string Id { get; set; } = "fixed";
-    
-    public ISimpleComponent Copy() => new FixedSizeComponent 
-    { 
-        Width = Width, 
+
+    public ISimpleComponent Copy() => new FixedSizeComponent
+    {
+        Width = Width,
         Height = Height,
         Id = Id
     };
-    
+
     public VirtualNode Render() => Fragment(); // Components don't render themselves
 }
 
@@ -36,15 +36,15 @@ public class FixedSizeComponent : ISimpleComponent
 public class FixedSizeInstance : ViewInstance
 {
     private FixedSizeComponent _component = null!;
-    
+
     public FixedSizeInstance(string id) : base(id) { }
-    
+
     protected override void OnUpdate(ISimpleComponent viewDeclaration)
     {
-        _component = viewDeclaration as FixedSizeComponent 
+        _component = viewDeclaration as FixedSizeComponent
             ?? throw new ArgumentException("Expected FixedSizeComponent");
     }
-    
+
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
         return new LayoutBox
@@ -53,7 +53,7 @@ public class FixedSizeInstance : ViewInstance
             Height = constraints.ConstrainHeight(_component.Height)
         };
     }
-    
+
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         return Fragment(); // Empty render for testing
@@ -70,7 +70,7 @@ public class AutoSizeComponent : ISimpleComponent
     public float MinWidth { get; set; } = 0;
     public float MinHeight { get; set; } = 0;
     public string Id { get; set; } = "auto";
-    
+
     public ISimpleComponent Copy() => new AutoSizeComponent
     {
         PreferredWidth = PreferredWidth,
@@ -79,7 +79,7 @@ public class AutoSizeComponent : ISimpleComponent
         MinHeight = MinHeight,
         Id = Id
     };
-    
+
     public VirtualNode Render() => Fragment(); // Components don't render themselves
 }
 
@@ -89,39 +89,39 @@ public class AutoSizeComponent : ISimpleComponent
 public class AutoSizeInstance : ViewInstance
 {
     private AutoSizeComponent _component = null!;
-    
+
     public AutoSizeInstance(string id) : base(id) { }
-    
+
     protected override void OnUpdate(ISimpleComponent viewDeclaration)
     {
-        _component = viewDeclaration as AutoSizeComponent 
+        _component = viewDeclaration as AutoSizeComponent
             ?? throw new ArgumentException("Expected AutoSizeComponent");
     }
-    
+
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
         // Use preferred size if available, otherwise use minimum
         var width = _component.PreferredWidth ?? _component.MinWidth;
         var height = _component.PreferredHeight ?? _component.MinHeight;
-        
+
         // If constraints are infinite, use preferred size
         if (float.IsPositiveInfinity(constraints.MaxWidth))
         {
             width = _component.PreferredWidth ?? _component.MinWidth;
         }
-        
+
         if (float.IsPositiveInfinity(constraints.MaxHeight))
         {
             height = _component.PreferredHeight ?? _component.MinHeight;
         }
-        
+
         return new LayoutBox
         {
             Width = constraints.ConstrainWidth(width),
             Height = constraints.ConstrainHeight(height)
         };
     }
-    
+
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         return Fragment(); // Empty render for testing
@@ -135,13 +135,13 @@ public class TestContainer : ISimpleComponent
 {
     public List<ISimpleComponent> Children { get; set; } = new();
     public string Id { get; set; } = "container";
-    
+
     public ISimpleComponent Copy() => new TestContainer
     {
         Children = Children.Select(c => c).ToList(), // Shallow copy for testing
         Id = Id
     };
-    
+
     public VirtualNode Render() => Fragment(); // Components don't render themselves
 }
 
@@ -152,14 +152,14 @@ public class TestContainerInstance : ViewInstance, IContainerInstance
 {
     private TestContainer _component = null!;
     private readonly List<ViewInstance> _childInstances = new();
-    
+
     public TestContainerInstance(string id) : base(id) { }
-    
+
     protected override void OnUpdate(ISimpleComponent viewDeclaration)
     {
-        _component = viewDeclaration as TestContainer 
+        _component = viewDeclaration as TestContainer
             ?? throw new ArgumentException("Expected TestContainer");
-        
+
         // Update child instances
         var testContext = Context as TestDeclarativeContext;
         if (testContext != null)
@@ -184,45 +184,45 @@ public class TestContainerInstance : ViewInstance, IContainerInstance
             }
         }
     }
-    
+
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
         var layout = new LayoutBox();
         float maxWidth = 0;
         float totalHeight = 0;
-        
+
         // Simple vertical stacking for testing
         foreach (var child in _childInstances)
         {
             child.CalculateLayout(constraints);
             child.Layout.Y = totalHeight;
-            
+
             maxWidth = Math.Max(maxWidth, child.Layout.Width);
             totalHeight += child.Layout.Height;
         }
-        
+
         layout.Width = constraints.ConstrainWidth(maxWidth);
         layout.Height = constraints.ConstrainHeight(totalHeight);
-        
+
         return layout;
     }
-    
+
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         var childNodes = new List<VirtualNode>();
-        
+
         foreach (var child in _childInstances)
         {
             // Update absolute positions
             child.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(child.Layout.X);
             child.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(child.Layout.Y);
-            
+
             childNodes.Add(child.Render());
         }
-        
+
         return Fragment(childNodes.ToArray());
     }
-    
+
     public IReadOnlyList<ViewInstance> GetChildInstances() => _childInstances;
 }
 
@@ -238,13 +238,13 @@ public class ExtremeValueComponent : ISimpleComponent
         NaN,
         Normal
     }
-    
+
     public SizeMode WidthMode { get; set; } = SizeMode.Normal;
     public SizeMode HeightMode { get; set; } = SizeMode.Normal;
     public float NormalWidth { get; set; } = 100;
     public float NormalHeight { get; set; } = 50;
     public string Id { get; set; } = "extreme";
-    
+
     public ISimpleComponent Copy() => new ExtremeValueComponent
     {
         WidthMode = WidthMode,
@@ -253,7 +253,7 @@ public class ExtremeValueComponent : ISimpleComponent
         NormalHeight = NormalHeight,
         Id = Id
     };
-    
+
     public VirtualNode Render() => Fragment(); // Components don't render themselves
 }
 
@@ -263,31 +263,31 @@ public class ExtremeValueComponent : ISimpleComponent
 public class ExtremeValueInstance : ViewInstance
 {
     private ExtremeValueComponent _component = null!;
-    
+
     public ExtremeValueInstance(string id) : base(id) { }
-    
+
     protected override void OnUpdate(ISimpleComponent viewDeclaration)
     {
-        _component = viewDeclaration as ExtremeValueComponent 
+        _component = viewDeclaration as ExtremeValueComponent
             ?? throw new ArgumentException("Expected ExtremeValueComponent");
     }
-    
+
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
         var width = GetSizeValue(_component.WidthMode, _component.NormalWidth);
         var height = GetSizeValue(_component.HeightMode, _component.NormalHeight);
-        
+
         // Handle NaN by converting to 0
         if (float.IsNaN(width)) width = 0;
         if (float.IsNaN(height)) height = 0;
-        
+
         return new LayoutBox
         {
             Width = constraints.ConstrainWidth(width),
             Height = constraints.ConstrainHeight(height)
         };
     }
-    
+
     private float GetSizeValue(ExtremeValueComponent.SizeMode mode, float normalValue)
     {
         return mode switch
@@ -298,7 +298,7 @@ public class ExtremeValueInstance : ViewInstance
             _ => normalValue
         };
     }
-    
+
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         return Fragment(); // Empty render for testing

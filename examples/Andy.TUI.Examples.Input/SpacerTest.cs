@@ -16,10 +16,10 @@ class SpacerTestApp
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        
+
         renderingSystem.Initialize();
         terminal.Clear();
-        
+
         // Create UI with spacers
         var ui = new VStack(spacing: 1) {
             // Header pushed to top
@@ -43,11 +43,11 @@ class SpacerTestApp
             // Footer pushed to bottom
             new Text("Footer (pushed to bottom)").Bold().Color(Color.Cyan)
         };
-        
+
         // Render
         var renderer = new DeclarativeRenderer(renderingSystem, this);
         renderer.Render(ui);
-        
+
         Console.SetCursorPosition(0, terminal.Height - 2);
         Console.WriteLine("Press any key to exit...");
         Console.ReadKey();

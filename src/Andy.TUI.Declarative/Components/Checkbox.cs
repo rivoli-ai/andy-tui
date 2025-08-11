@@ -14,7 +14,7 @@ public class Checkbox : ISimpleComponent
     private readonly string _checkedMark;
     private readonly string _uncheckedMark;
     private readonly bool _labelFirst;
-    
+
     public Checkbox(
         string label,
         Binding<bool> isChecked,
@@ -28,14 +28,14 @@ public class Checkbox : ISimpleComponent
         _uncheckedMark = uncheckedMark;
         _labelFirst = labelFirst;
     }
-    
+
     // Internal accessors for view instance
     internal string GetLabel() => _label;
     internal Binding<bool> GetIsCheckedBinding() => _isChecked;
     internal string GetCheckedMark() => _checkedMark;
     internal string GetUncheckedMark() => _uncheckedMark;
     internal bool GetLabelFirst() => _labelFirst;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("Checkbox declarations should not be rendered directly. Use ViewInstanceManager.");

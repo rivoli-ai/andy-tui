@@ -45,7 +45,7 @@ public class Badge : ISimpleComponent
     private readonly bool _bold;
     private readonly string _prefix;
     private readonly string _suffix;
-    
+
     public Badge(
         string content,
         BadgeStyle style = BadgeStyle.Default,
@@ -65,7 +65,7 @@ public class Badge : ISimpleComponent
         _prefix = prefix ?? "";
         _suffix = suffix ?? "";
     }
-    
+
     // Internal accessors for view instance
     internal string GetContent() => _content;
     internal BadgeStyle GetStyle() => _style;
@@ -75,12 +75,12 @@ public class Badge : ISimpleComponent
     internal bool GetBold() => _bold;
     internal string GetPrefix() => _prefix;
     internal string GetSuffix() => _suffix;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("Badge declarations should not be rendered directly. Use ViewInstanceManager.");
     }
-    
+
     // Helper method to get colors based on variant
     internal static (Color foreground, Color background) GetVariantColors(BadgeVariant variant)
     {
@@ -95,7 +95,7 @@ public class Badge : ISimpleComponent
             _ => (Color.White, Color.DarkGray)
         };
     }
-    
+
     // Helper method to get badge borders based on style
     internal static (string left, string right) GetStyleBorders(BadgeStyle style)
     {

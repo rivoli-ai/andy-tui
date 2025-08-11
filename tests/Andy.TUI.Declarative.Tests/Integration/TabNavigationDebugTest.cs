@@ -14,12 +14,12 @@ namespace Andy.TUI.Declarative.Tests.Integration;
 public class TabNavigationDebugTest
 {
     private readonly ITestOutputHelper _output;
-    
+
     public TabNavigationDebugTest(ITestOutputHelper output)
     {
         _output = output;
     }
-    
+
     [Fact]
     public void TabNavigation_ShouldMoveFocusBetweenComponents()
     {
@@ -50,7 +50,7 @@ public class TabNavigationDebugTest
         _output.WriteLine("Pressing first TAB");
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(50);
-        
+
         // Tab to second input
         _output.WriteLine("Pressing second TAB");
         input.EmitKey('\t', ConsoleKey.Tab);
@@ -63,7 +63,7 @@ public class TabNavigationDebugTest
 
         // Check state
         _output.WriteLine($"Name: '{name}', Pass: '{pass}'");
-        
+
         // Ensure app is still running and state updated
         Assert.True(thread.IsAlive);
         Assert.Equal(string.Empty, name);

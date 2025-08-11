@@ -9,22 +9,22 @@ public interface IFocusable : ISimpleComponent
     /// Gets whether this component can currently receive focus.
     /// </summary>
     bool CanFocus { get; }
-    
+
     /// <summary>
     /// Gets whether this component currently has focus.
     /// </summary>
     bool IsFocused { get; }
-    
+
     /// <summary>
     /// Called when the component receives focus.
     /// </summary>
     void OnGotFocus();
-    
+
     /// <summary>
     /// Called when the component loses focus.
     /// </summary>
     void OnLostFocus();
-    
+
     /// <summary>
     /// Handles keyboard input when focused.
     /// </summary>

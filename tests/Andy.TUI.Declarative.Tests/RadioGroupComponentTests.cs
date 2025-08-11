@@ -40,8 +40,8 @@ public class RadioGroupComponentTests
 
         // Act
         var radioGroup = new RadioGroup<string>(
-            "Label", 
-            options, 
+            "Label",
+            options,
             binding,
             optionRenderer: item => $"Item: {item}",
             selectedMark: "(✓)",
@@ -66,7 +66,7 @@ public class RadioGroupComponentTests
             value => selectedValue = value
         );
         var radioGroup = new RadioGroup<string>("Test", options, binding);
-        
+
         // Act
         var instance = manager.GetOrCreateInstance(radioGroup, "radio1") as RadioGroupInstance<string>;
         Assert.NotNull(instance);
@@ -77,7 +77,7 @@ public class RadioGroupComponentTests
         Assert.True(instance.HandleKeyPress(new ConsoleKeyInfo('\0', ConsoleKey.DownArrow, false, false, false)));
         Assert.True(instance.HandleKeyPress(new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false)));
         Assert.True(instance.HandleKeyPress(new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false)));
-        
+
         // Test Home/End
         Assert.True(instance.HandleKeyPress(new ConsoleKeyInfo('\0', ConsoleKey.Home, false, false, false)));
         Assert.True(instance.HandleKeyPress(new ConsoleKeyInfo('\0', ConsoleKey.End, false, false, false)));
@@ -95,7 +95,7 @@ public class RadioGroupComponentTests
             value => { }
         );
         var radioGroup = new RadioGroup<string>("Size", options, binding, vertical: false);
-        
+
         // Act
         var instance = manager.GetOrCreateInstance(radioGroup, "radio1");
 
@@ -145,7 +145,7 @@ public class RadioGroupComponentTests
             value => { }
         );
         var radioGroup = new RadioGroup<string>("Answer", options, binding);
-        
+
         // Act
         var instance = manager.GetOrCreateInstance(radioGroup, "radio1") as RadioGroupInstance<string>;
         Assert.NotNull(instance);
@@ -153,10 +153,10 @@ public class RadioGroupComponentTests
         // Assert
         Assert.True(instance.CanFocus);
         Assert.False(instance.IsFocused);
-        
+
         instance.OnGotFocus();
         Assert.True(instance.IsFocused);
-        
+
         instance.OnLostFocus();
         Assert.False(instance.IsFocused);
     }

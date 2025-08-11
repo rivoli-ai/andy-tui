@@ -44,7 +44,7 @@ public class VStack : ISimpleComponent, IEnumerable<ISimpleComponent>
     // Required for IEnumerable
     public IEnumerator<ISimpleComponent> GetEnumerator() => _children.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    
+
     // Internal method to access children for component registration
     internal IReadOnlyList<ISimpleComponent> GetChildren() => _children;
     internal int GetSpacing() => _spacing;

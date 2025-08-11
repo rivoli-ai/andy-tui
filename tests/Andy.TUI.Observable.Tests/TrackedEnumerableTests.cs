@@ -11,9 +11,9 @@ public class TrackedEnumerableTests
         var source = new[] { 1, 2, 3, 4, 5 };
         var property = new ObservableProperty<int>(42);
         var tracked = new TrackedEnumerable<int>(source, property);
-        
+
         var result = tracked.ToList();
-        
+
         Assert.Equal(5, result.Count);
         Assert.Equal(source, result);
     }
@@ -25,19 +25,19 @@ public class TrackedEnumerableTests
         var property = new ObservableProperty<string>("test");
         var tracked = new TrackedEnumerable<string>(source, property);
         bool wasTracked = false;
-        
+
         // Create a computed property to test tracking
         var computed = new ComputedProperty<string>(() =>
         {
             wasTracked = true;
             return string.Join(",", tracked);
         });
-        
+
         wasTracked = false;
         var result = computed.Value;
         Assert.True(wasTracked);
         Assert.Equal("a,b,c", result);
-        
+
         // Change the property to verify dependency
         wasTracked = false;
         property.Value = "changed";
@@ -52,14 +52,14 @@ public class TrackedEnumerableTests
         var source = new[] { 10, 20, 30 };
         var property = new ObservableProperty<int>(0);
         var tracked = new TrackedEnumerable<int>(source, property);
-        
+
         // Test non-generic IEnumerable
         var result = new List<int>();
         foreach (var item in (IEnumerable)tracked)
         {
             result.Add((int)item);
         }
-        
+
         Assert.Equal(source, result);
     }
 
@@ -70,7 +70,7 @@ public class TrackedEnumerableTests
         var property = new ObservableProperty<int>(0);
         var tracked = new TrackedEnumerable<int>(source, property);
         var trackCount = 0;
-        
+
         var computed = new ComputedProperty<int>(() =>
         {
             trackCount++;
@@ -79,7 +79,7 @@ public class TrackedEnumerableTests
             var sum2 = tracked.Sum();
             return sum1 + sum2;
         });
-        
+
         trackCount = 0;
         var result = computed.Value;
         Assert.Equal(1, trackCount); // Only one computation
@@ -92,9 +92,9 @@ public class TrackedEnumerableTests
         var source = Array.Empty<string>();
         var property = new ObservableProperty<string>("test");
         var tracked = new TrackedEnumerable<string>(source, property);
-        
+
         var result = tracked.ToList();
-        
+
         Assert.Empty(result);
     }
 
@@ -104,12 +104,12 @@ public class TrackedEnumerableTests
         var source = Enumerable.Range(1, 10);
         var property = new ObservableProperty<int>(0);
         var tracked = new TrackedEnumerable<int>(source, property);
-        
+
         var result = tracked
             .Where(x => x % 2 == 0)
             .Select(x => x * 2)
             .ToList();
-        
+
         Assert.Equal(new[] { 4, 8, 12, 16, 20 }, result);
     }
 
@@ -120,19 +120,19 @@ public class TrackedEnumerableTests
         var property = new ObservableProperty<int>(0);
         var tracked = new TrackedEnumerable<int>(source, property);
         var wasTracked = false;
-        
+
         var computed = new ComputedProperty<IEnumerable<int>>(() =>
         {
             wasTracked = true;
             // Return without enumerating
             return tracked.Where(x => x > 1);
         });
-        
+
         // Getting the enumerable tracks the computed property
         wasTracked = false;
         var enumerable = computed.Value;
         Assert.True(wasTracked);
-        
+
         // The TrackedEnumerable should track when we actually enumerate
         var dependencies = new List<IObservableProperty>();
         using (var tracker = DependencyTracker.BeginTracking())
@@ -140,7 +140,7 @@ public class TrackedEnumerableTests
             var result = enumerable.ToList();
             dependencies.AddRange(DependencyTracker.Current!.Dependencies);
         }
-        
+
         // Should have tracked both the computed property and the observable property
         Assert.Contains(property, dependencies);
         Assert.Equal(new[] { 2, 3 }, enumerable.ToList());
@@ -151,14 +151,14 @@ public class TrackedEnumerableTests
     {
         var collection = new ObservableCollection<int>(new[] { 1, 2, 3 });
         var tracked = new TrackedEnumerable<int>(collection, collection);
-        
+
         var sum = new ComputedProperty<int>(() => tracked.Sum());
-        
+
         Assert.Equal(6, sum.Value);
-        
+
         collection.Add(4);
         Assert.Equal(10, sum.Value);
-        
+
         collection.Remove(2);
         Assert.Equal(8, sum.Value);
     }

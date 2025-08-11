@@ -55,7 +55,7 @@ public class GradientComponentTests
     {
         // Test various interpolation factors
         var factors = new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
-        
+
         foreach (var factor in factors)
         {
             // Act
@@ -86,7 +86,7 @@ public class GradientComponentTests
     public void Gradient_ShowcaseExamples()
     {
         // Test examples from FinalComponentsShowcase
-        
+
         // Horizontal gradient
         var horizontal = new Gradient("Horizontal Gradient Text", Color.Red, Color.Blue);
         Assert.NotNull(horizontal);

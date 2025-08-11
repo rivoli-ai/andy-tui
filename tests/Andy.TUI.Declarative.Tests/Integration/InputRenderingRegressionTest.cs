@@ -23,12 +23,12 @@ namespace Andy.TUI.Declarative.Tests.Integration;
 public class InputRenderingRegressionTest
 {
     private readonly ITestOutputHelper _output;
-    
+
     public InputRenderingRegressionTest(ITestOutputHelper output)
     {
         _output = output;
     }
-    
+
     /// <summary>
     /// Tests that typing in a TextField actually updates the rendered output.
     /// This was broken due to:
@@ -41,51 +41,52 @@ public class InputRenderingRegressionTest
     {
         // This test directly verifies the TextField handles input correctly
         // It was the broken flow that has been fixed
-        
+
         // Arrange
         string name = "";
         bool nameWasUpdated = false;
-        
+
         var binding = new Binding<string>(
-            () => name, 
-            v => {
+            () => name,
+            v =>
+            {
                 _output.WriteLine($"Name binding updated: '{name}' -> '{v}'");
                 name = v;
                 nameWasUpdated = true;
             });
-        
+
         var textField = new TextField("Enter your name...", binding);
-        
+
         // Create the view instance like the renderer would
         var context = new DeclarativeContext(() => { });
         var instance = context.ViewInstanceManager.GetOrCreateInstance(textField, "test-field");
         var textFieldInstance = instance as TextFieldInstance;
         Assert.NotNull(textFieldInstance);
-        
+
         // Act - Simulate the exact scenario that was broken
-        
+
         // 1. TextField needs to be focused to handle input
         textFieldInstance!.OnGotFocus();
         _output.WriteLine("TextField focused");
-        
+
         // 2. Type a character
         _output.WriteLine("Simulating typing 'b' in the TextField...");
         var keyHandled = textFieldInstance.HandleKeyPress(
             new ConsoleKeyInfo('b', ConsoleKey.B, false, false, false));
-        
+
         // Assert - Verify the issue is fixed
-        
+
         // The key should have been handled
         Assert.True(keyHandled, "TextField should have handled the key press");
-        
+
         // The binding should have been updated
         Assert.True(nameWasUpdated, "Name binding was not updated when key was pressed");
         Assert.Equal("b", name);
         _output.WriteLine($"✓ Name was updated to: '{name}'");
-        
+
         _output.WriteLine("Regression test passed - TextField input is working!");
     }
-    
+
     /// <summary>
     /// Tests that the VirtualDomRenderer correctly handles patch paths with [0] prefix.
     /// This was the specific issue that prevented updates from being rendered.

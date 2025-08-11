@@ -1,7 +1,6 @@
-# Layout System Comprehensive Testing Plan
+# Layout Testing Plan (Consolidated)
 
-## Overview
-This document outlines a comprehensive testing strategy for the Andy.TUI layout system to ensure robust and predictable layout calculations across all scenarios. The goal is to prevent edge cases where measurements unintentionally become extreme values (infinity, zero) when they should have reasonable values.
+This content has moved to the unified document: see `TESTING_STRATEGY.md`.
 
 ## Implementation Status (Updated: January 2025)
 ✅ **Phase 1 Complete**: Test infrastructure has been successfully implemented

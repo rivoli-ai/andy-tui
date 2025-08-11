@@ -18,22 +18,22 @@ public class HStackInstance : ViewInstance
 {
     private int _spacing;
     private readonly List<ViewInstance> _childInstances = new();
-    
+
     public HStackInstance(string id) : base(id)
     {
     }
-    
+
     protected override void OnUpdate(ISimpleComponent viewDeclaration)
     {
         if (viewDeclaration is not HStack hstack)
             throw new ArgumentException("Expected HStack declaration");
-        
+
         _spacing = hstack.GetSpacing();
-        
+
         // Update child instances
         var children = hstack.GetChildren();
         var manager = Context?.ViewInstanceManager;
-        
+
         if (manager != null)
         {
             _childInstances.Clear();
@@ -45,28 +45,28 @@ public class HStackInstance : ViewInstance
             }
         }
     }
-    
+
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
         var layout = new LayoutBox();
-        
+
         if (_childInstances.Count == 0)
         {
             layout.Width = 0;
             layout.Height = 0;
             return layout;
         }
-        
+
         // First pass: calculate natural sizes and identify spacers/flex items
         float totalNaturalWidth = 0;
         float maxHeight = 0;
         var spacerIndices = new List<int>();
         var childInfos = new List<(ViewInstance instance, float naturalWidth, float flexGrow, float flexShrink, bool isSpacer)>();
-        
+
         for (int i = 0; i < _childInstances.Count; i++)
         {
             var child = _childInstances[i];
-            
+
             if (child is SpacerInstance spacer)
             {
                 spacerIndices.Add(i);
@@ -82,7 +82,7 @@ public class HStackInstance : ViewInstance
                 var flexShrink = 1f;
                 var flexBasis = Length.Auto;
                 float naturalWidth;
-                
+
                 if (child is BoxInstance boxChild && boxChild.GetBox() != null)
                 {
                     var box = boxChild.GetBox()!;
@@ -90,7 +90,7 @@ public class HStackInstance : ViewInstance
                     flexShrink = box.FlexShrink;
                     flexBasis = box.FlexBasis;
                 }
-                
+
                 // Calculate natural width based on flex-basis or content
                 if (!flexBasis.IsAuto)
                 {
@@ -103,10 +103,10 @@ public class HStackInstance : ViewInstance
                         0, float.PositiveInfinity,
                         constraints.MinHeight, constraints.MaxHeight
                     );
-                    
+
                     child.CalculateLayout(childConstraints);
                     naturalWidth = child.Layout.Width;
-                    
+
                     // For auto-width children that end up with 0 width, give them a minimum size
                     // This prevents layout issues in flex containers
                     if (naturalWidth == 0 && child is BoxInstance boxInstanceZero && boxInstanceZero.GetBox() != null)
@@ -118,11 +118,11 @@ public class HStackInstance : ViewInstance
                         }
                     }
                 }
-                
+
                 childInfos.Add((child, naturalWidth, flexGrow, flexShrink, false));
-                
+
                 totalNaturalWidth += naturalWidth;
-                
+
                 // Measure height separately if needed
                 if (flexBasis.IsAuto)
                 {
@@ -140,22 +140,22 @@ public class HStackInstance : ViewInstance
                 }
             }
         }
-        
+
         // Add spacing
         float totalSpacing = 0;
         if (_childInstances.Count > 1)
         {
             totalSpacing = _spacing * (_childInstances.Count - 1);
         }
-        
+
         // Calculate if we need to shrink or grow
         float totalRequiredWidth = totalNaturalWidth + totalSpacing;
         float availableWidth = constraints.MaxWidth;
         float remainingSpace = availableWidth - totalRequiredWidth;
-        
+
         // Calculate final widths
         var finalWidths = new List<float>();
-        
+
         if (remainingSpace < 0 && totalNaturalWidth > 0)
         {
             // Need to shrink - calculate total weighted shrink
@@ -167,7 +167,7 @@ public class HStackInstance : ViewInstance
                     totalWeightedShrink += naturalWidth * flexShrink;
                 }
             }
-            
+
             // Shrink non-spacer items proportionally
             var shrinkAmount = Math.Abs(remainingSpace);
             foreach (var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) in childInfos)
@@ -197,7 +197,7 @@ public class HStackInstance : ViewInstance
             {
                 totalFlexGrow += flexGrow;
             }
-            
+
             if (totalFlexGrow > 0)
             {
                 // Distribute based on flex grow
@@ -224,12 +224,12 @@ public class HStackInstance : ViewInstance
                 finalWidths.Add(naturalWidth);
             }
         }
-        
+
         // Calculate final dimensions
         float finalTotalWidth = finalWidths.Sum() + totalSpacing;
         layout.Width = constraints.ConstrainWidth(finalTotalWidth);
         layout.Height = constraints.ConstrainHeight(maxHeight);
-        
+
         // Position children with final sizes
         float currentX = 0;
         for (int i = 0; i < _childInstances.Count; i++)
@@ -237,7 +237,7 @@ public class HStackInstance : ViewInstance
             var child = _childInstances[i];
             var finalWidth = finalWidths[i];
             var (instance, naturalWidth, flexGrow, flexShrink, isSpacer) = childInfos[i];
-            
+
             // Recalculate child with final width constraint
             // For HStack (row layout), only stretch children with auto height
             bool childHasFixedHeight = false;
@@ -245,48 +245,48 @@ public class HStackInstance : ViewInstance
             {
                 childHasFixedHeight = !boxChild.GetBox()!.Height.IsAuto;
             }
-            
+
             var childConstraints = childHasFixedHeight
                 ? new LayoutConstraints(finalWidth, finalWidth, constraints.MinHeight, constraints.MaxHeight)
                 : new LayoutConstraints(finalWidth, finalWidth, layout.Height, layout.Height);
             child.CalculateLayout(childConstraints);
             // Force the final width to honor flex shrink distribution even if child enforces MinWidth
             child.Layout.Width = finalWidth;
-            
+
             // Center children vertically if they're smaller than the container
             child.Layout.X = currentX;
             child.Layout.Y = (layout.Height - child.Layout.Height) / 2;
-            
+
             currentX += finalWidth;
             if (i < _childInstances.Count - 1)
             {
                 currentX += _spacing;
             }
         }
-        
+
         return layout;
     }
-    
+
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         if (_childInstances.Count == 0)
             return Fragment();
-        
+
         var childElements = new List<VirtualNode>();
-        
+
         foreach (var child in _childInstances)
         {
             // Update child's absolute position
             child.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(child.Layout.X);
             child.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(child.Layout.Y);
-            
+
             // Render child with its layout
             var childNode = child.Render();
             childElements.Add(childNode);
         }
-        
+
         return Fragment(childElements.ToArray());
     }
-    
+
     public IReadOnlyList<ViewInstance> GetChildInstances() => _childInstances;
 }

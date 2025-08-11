@@ -7,6 +7,7 @@ using Andy.TUI.Declarative.Components;
 using Andy.TUI.Layout;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.ViewInstances;
+using Andy.TUI.Declarative.Focus;
 
 namespace Andy.TUI.Declarative;
 
@@ -20,31 +21,31 @@ public abstract class ViewInstance
     private bool _needsUpdate = true;
     private bool _needsLayout = true;
     private LayoutBox _layout = new();
-    
+
     /// <summary>
     /// Gets the unique identifier for this view instance.
     /// </summary>
     public string Id => _id;
-    
+
     /// <summary>
     /// Gets whether this view needs to be updated.
     /// </summary>
     public bool NeedsUpdate => _needsUpdate;
-    
+
     /// <summary>
     /// Gets whether this view needs layout recalculation.
     /// </summary>
     public bool NeedsLayout => _needsLayout;
-    
+
     private DeclarativeContext? _context;
-    
+
     /// <summary>
     /// Gets or sets the context for this view instance.
     /// </summary>
-    public DeclarativeContext? Context 
-    { 
+    public DeclarativeContext? Context
+    {
         get => _context;
-        set 
+        set
         {
             if (_context != value)
             {
@@ -53,28 +54,25 @@ public abstract class ViewInstance
                 {
                     _context.FocusManager.UnregisterFocusable(focusable);
                 }
-                
+
                 _context = value;
-                
-                // Register with new context
-                if (_context != null && this is IFocusable newFocusable)
-                {
-                    _context.FocusManager.RegisterFocusable(newFocusable);
-                }
+
+                // Don't automatically register focusable components here
+                // Registration will be done explicitly after tree is built
             }
         }
     }
-    
+
     /// <summary>
     /// Gets the calculated layout box for this view.
     /// </summary>
     public LayoutBox Layout => _layout;
-    
+
     protected ViewInstance(string id)
     {
         _id = id ?? throw new ArgumentNullException(nameof(id));
     }
-    
+
     /// <summary>
     /// Marks this view as needing an update.
     /// </summary>
@@ -83,12 +81,12 @@ public abstract class ViewInstance
         _needsUpdate = true;
         Context?.RequestRender();
     }
-    
+
     #region Z-Index Support
-    
+
     private int _relativeZIndex = 0;
     private int _absoluteZIndex = 0;
-    
+
     /// <summary>
     /// Gets or sets the z-index relative to the parent component.
     /// </summary>
@@ -97,12 +95,12 @@ public abstract class ViewInstance
         get => _relativeZIndex;
         set => _relativeZIndex = value;
     }
-    
+
     /// <summary>
     /// Gets the computed absolute z-index after hierarchical resolution.
     /// </summary>
     public virtual int AbsoluteZIndex => _absoluteZIndex;
-    
+
     /// <summary>
     /// Updates the absolute z-index based on the parent's context.
     /// </summary>
@@ -110,14 +108,14 @@ public abstract class ViewInstance
     public virtual void UpdateAbsoluteZIndex(int parentAbsoluteZ)
     {
         _absoluteZIndex = parentAbsoluteZ + _relativeZIndex;
-        
+
         // Propagate to children if any
         foreach (var child in GetChildren())
         {
             child.UpdateAbsoluteZIndex(_absoluteZIndex);
         }
     }
-    
+
     /// <summary>
     /// Gets the child instances for z-index propagation.
     /// Override in container components.
@@ -126,9 +124,9 @@ public abstract class ViewInstance
     {
         return Enumerable.Empty<ViewInstance>();
     }
-    
+
     #endregion
-    
+
     /// <summary>
     /// Marks this view as needing layout recalculation.
     /// </summary>
@@ -137,7 +135,7 @@ public abstract class ViewInstance
         _needsLayout = true;
         Context?.RequestRender();
     }
-    
+
     /// <summary>
     /// Updates this view instance from a view declaration.
     /// </summary>
@@ -146,7 +144,7 @@ public abstract class ViewInstance
         OnUpdate(viewDeclaration);
         _needsUpdate = false;
     }
-    
+
     /// <summary>
     /// Calculates the layout for this view given constraints.
     /// </summary>
@@ -155,7 +153,7 @@ public abstract class ViewInstance
         _layout = PerformLayout(constraints);
         _needsLayout = false;
     }
-    
+
     /// <summary>
     /// Performs layout calculation for this view.
     /// Override to implement custom layout logic.
@@ -169,7 +167,7 @@ public abstract class ViewInstance
             Height = constraints.MaxHeight
         };
     }
-    
+
     /// <summary>
     /// Renders this view instance to virtual DOM using the calculated layout.
     /// </summary>
@@ -177,17 +175,17 @@ public abstract class ViewInstance
     {
         return RenderWithLayout(_layout);
     }
-    
+
     /// <summary>
     /// Renders this view instance with the given layout information.
     /// </summary>
     protected abstract VirtualNode RenderWithLayout(LayoutBox layout);
-    
+
     /// <summary>
     /// Called when the view needs to update from a declaration.
     /// </summary>
     protected abstract void OnUpdate(ISimpleComponent viewDeclaration);
-    
+
     /// <summary>
     /// Called when this view instance is being disposed.
     /// </summary>
@@ -208,30 +206,95 @@ public class ViewInstanceManager
 {
     private readonly Dictionary<string, ViewInstance> _instances = new();
     private readonly DeclarativeContext _context;
-    
+
     public ViewInstanceManager(DeclarativeContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
-    
+
     /// <summary>
     /// Gets or creates a view instance for the given declaration.
     /// </summary>
     public ViewInstance GetOrCreateInstance(ISimpleComponent viewDeclaration, string path)
     {
         var key = $"{path}:{viewDeclaration.GetType().Name}";
-        
+
         if (!_instances.TryGetValue(key, out var instance))
         {
             instance = CreateInstance(viewDeclaration, key);
             instance.Context = _context;
             _instances[key] = instance;
         }
-        
+
         instance.Update(viewDeclaration);
         return instance;
     }
-    
+
+    /// <summary>
+    /// Collects all focusable components from the view tree and registers them in document order.
+    /// </summary>
+    public void RegisterFocusableComponents(ViewInstance rootInstance)
+    {
+        // Collect focusable components in document order
+        var focusableComponents = new List<IFocusable>();
+        CollectFocusableComponents(rootInstance, focusableComponents);
+
+        // Set the focusable order in the FocusManager
+        _context.FocusManager.SetFocusableOrder(focusableComponents);
+    }
+
+    private void CollectFocusableComponents(ViewInstance instance, List<IFocusable> focusableComponents)
+    {
+        // Process containers by recursing into children
+        if (instance is VStackInstance vstack)
+        {
+            foreach (var child in vstack.GetChildInstances())
+            {
+                CollectFocusableComponents(child, focusableComponents);
+            }
+        }
+        else if (instance is HStackInstance hstack)
+        {
+            foreach (var child in hstack.GetChildInstances())
+            {
+                CollectFocusableComponents(child, focusableComponents);
+            }
+        }
+        else if (instance is BoxInstance box)
+        {
+            foreach (var child in box.GetChildInstances())
+            {
+                CollectFocusableComponents(child, focusableComponents);
+            }
+        }
+        else if (instance is ZStackInstance zstack)
+        {
+            foreach (var child in zstack.GetChildInstances())
+            {
+                CollectFocusableComponents(child, focusableComponents);
+            }
+        }
+        else if (instance is GridInstance grid)
+        {
+            foreach (var child in grid.GetChildInstances())
+            {
+                CollectFocusableComponents(child, focusableComponents);
+            }
+        }
+        else if (instance is ModalInstance modal && modal.GetContentInstance() != null)
+        {
+            CollectFocusableComponents(modal.GetContentInstance()!, focusableComponents);
+        }
+        else
+        {
+            // For non-container instances, add if focusable
+            if (instance is IFocusable focusable && focusable.CanFocus)
+            {
+                focusableComponents.Add(focusable);
+            }
+        }
+    }
+
     /// <summary>
     /// Clears the instance cache to force recreation of all components.
     /// </summary>
@@ -244,7 +307,7 @@ public class ViewInstanceManager
         }
         _instances.Clear();
     }
-    
+
     /// <summary>
     /// Creates a new view instance for the given declaration.
     /// </summary>
@@ -277,7 +340,7 @@ public class ViewInstanceManager
             _ => CreateGenericInstance(viewDeclaration, id)
         };
     }
-    
+
     private ViewInstance CreateGenericInstance(ISimpleComponent viewDeclaration, string id)
     {
         var type = viewDeclaration.GetType();
@@ -285,7 +348,7 @@ public class ViewInstanceManager
         {
             var genericTypeDef = type.GetGenericTypeDefinition();
             var itemType = type.GetGenericArguments()[0];
-            
+
             if (genericTypeDef == typeof(Dropdown<>))
             {
                 var instanceType = typeof(DropdownInstance<>).MakeGenericType(itemType);
@@ -312,10 +375,10 @@ public class ViewInstanceManager
                 return (ViewInstance)Activator.CreateInstance(instanceType, id)!;
             }
         }
-        
+
         throw new NotSupportedException($"No instance type for {type}");
     }
-    
+
     /// <summary>
     /// Clears all view instances.
     /// </summary>

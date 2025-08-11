@@ -41,7 +41,7 @@ public class LoadingAnimationsExample
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
         renderingSystem.Initialize();
-        
+
         // Configure render scheduler
         renderingSystem.Scheduler.TargetFps = 20; // 20 FPS for smooth animation
 
@@ -77,7 +77,7 @@ public class LoadingAnimationsExample
         {
             if (exit || !animations.Any(a => !a.IsComplete))
                 return;
-                
+
             renderingSystem.Clear();
 
             // Update animations
@@ -111,16 +111,16 @@ public class LoadingAnimationsExample
             var fps = frameCount / totalElapsed;
             var statsStyle = Style.Default.WithForegroundColor(Color.Green);
             renderingSystem.WriteText(renderingSystem.Terminal.Width - 15, 1, $"FPS: {fps:F1}", statsStyle);
-            
+
             frameCount++;
-            
+
             // Queue next frame
             renderingSystem.Scheduler.QueueRender(renderFrame);
         };
-        
+
         // Start animation
         renderingSystem.Scheduler.QueueRender(renderFrame);
-        
+
         // Wait for exit
         while (!exit && animations.Any(a => !a.IsComplete))
         {
@@ -343,13 +343,13 @@ public class LoadingAnimationsExample
         {
             var waveHeight = Math.Sin((i * 0.5) + time) * 2;
             var waveY = y + (int)waveHeight + 1;
-            
+
             // Clear column
             for (int clearY = y - 1; clearY <= y + 3; clearY++)
             {
                 renderingSystem.Buffer.SetCell(x + i, clearY, ' ', Style.Default);
             }
-            
+
             // Draw wave point
             if (waveY >= y - 1 && waveY <= y + 3)
             {
@@ -369,7 +369,7 @@ public class LoadingAnimationsExample
 
         var matrixWidth = Math.Min(width - 20, 20);
         var random = new Random(animation.Frame);
-        
+
         for (int i = 0; i < matrixWidth; i += 2)
         {
             if (random.NextDouble() > 0.7)
@@ -377,7 +377,7 @@ public class LoadingAnimationsExample
                 var intensity = random.NextDouble();
                 var green = (byte)(intensity * 255);
                 var style = Style.Default.WithForegroundColor(Color.FromRgb(0, green, 0));
-                
+
                 var matrixChar = random.NextDouble() > 0.5 ? '1' : '0';
                 renderingSystem.Buffer.SetCell(x + i, y, matrixChar, style);
             }

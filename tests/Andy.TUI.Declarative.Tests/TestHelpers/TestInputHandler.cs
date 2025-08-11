@@ -8,10 +8,10 @@ public class TestInputHandler : IInputHandler
 {
     public event EventHandler<KeyEventArgs>? KeyPressed;
 #pragma warning disable CS0067
-public event EventHandler<MouseEventArgs>? MouseMoved;
-public event EventHandler<MouseEventArgs>? MousePressed;
-public event EventHandler<MouseEventArgs>? MouseReleased;
-public event EventHandler<MouseWheelEventArgs>? MouseWheel;
+    public event EventHandler<MouseEventArgs>? MouseMoved;
+    public event EventHandler<MouseEventArgs>? MousePressed;
+    public event EventHandler<MouseEventArgs>? MouseReleased;
+    public event EventHandler<MouseWheelEventArgs>? MouseWheel;
 #pragma warning restore CS0067
 
     public bool SupportsMouseInput => false;

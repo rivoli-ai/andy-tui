@@ -13,14 +13,14 @@ public class ZStack : ISimpleComponent, IEnumerable<ISimpleComponent>
 {
     private readonly List<ISimpleComponent> _children = new();
     private readonly AlignItems _alignment;
-    
+
     /// <summary>
     /// Creates a new ZStack with center alignment.
     /// </summary>
     public ZStack() : this(AlignItems.Center)
     {
     }
-    
+
     /// <summary>
     /// Creates a new ZStack with the specified alignment.
     /// </summary>
@@ -29,7 +29,7 @@ public class ZStack : ISimpleComponent, IEnumerable<ISimpleComponent>
     {
         _alignment = alignment;
     }
-    
+
     // Collection initializer support
     public void Add(ISimpleComponent component)
     {
@@ -38,7 +38,7 @@ public class ZStack : ISimpleComponent, IEnumerable<ISimpleComponent>
             _children.Add(component);
         }
     }
-    
+
     public void Add(string text)
     {
         if (!string.IsNullOrEmpty(text))
@@ -46,16 +46,16 @@ public class ZStack : ISimpleComponent, IEnumerable<ISimpleComponent>
             _children.Add(new Text(text));
         }
     }
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("ZStack declarations should not be rendered directly. Use ViewInstanceManager.");
     }
-    
+
     // IEnumerable implementation
     public IEnumerator<ISimpleComponent> GetEnumerator() => _children.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    
+
     // Internal methods for view instance access
     internal IReadOnlyList<ISimpleComponent> GetChildren() => _children;
     internal AlignItems GetAlignment() => _alignment;

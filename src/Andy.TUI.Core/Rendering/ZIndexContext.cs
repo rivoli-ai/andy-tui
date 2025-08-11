@@ -43,7 +43,7 @@ public class ZIndexContext
     {
         if (_zIndexStack.Count == 0)
             throw new InvalidOperationException("No component context to exit.");
-            
+
         _zIndexStack.Pop();
         _componentStack.Pop();
     }
@@ -83,7 +83,7 @@ public class ZIndexContext
     public ZIndexContextSnapshot CreateSnapshot()
     {
         return new ZIndexContextSnapshot(
-            _zIndexStack.ToArray(), 
+            _zIndexStack.ToArray(),
             _componentStack.ToArray()
         );
     }
@@ -96,7 +96,7 @@ public class ZIndexContext
     {
         _zIndexStack.Clear();
         _componentStack.Clear();
-        
+
         // Restore in reverse order since we're pushing onto stacks
         for (int i = snapshot.ZIndexStack.Length - 1; i >= 0; i--)
         {

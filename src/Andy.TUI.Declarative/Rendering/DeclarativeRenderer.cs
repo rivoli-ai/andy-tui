@@ -22,16 +22,18 @@ public class DeclarativeRenderer
     private VirtualNode? _previousTree;
     private bool _needsRender = true;
     private bool _hasSetInitialFocus = false;
+    private bool _autoFocus = true;  // Make auto-focus configurable
 
-    public DeclarativeRenderer(IRenderingSystem renderingSystem, object? owner = null)
+    public DeclarativeRenderer(IRenderingSystem renderingSystem, object? owner = null, bool autoFocus = true)
     {
         _renderingSystem = renderingSystem ?? throw new ArgumentNullException(nameof(renderingSystem));
         _virtualDomRenderer = new VirtualDomRenderer(renderingSystem);
         _context = new DeclarativeContext(() => _needsRender = true);
         _diffEngine = new DiffEngine();
         _logger = DebugContext.Logger.ForCategory("DeclarativeRenderer");
+        _autoFocus = autoFocus;
 
-        _logger.Info("DeclarativeRenderer initialized");
+        _logger.Info($"DeclarativeRenderer initialized (autoFocus={autoFocus})");
 
         // Re-render on terminal resize when possible
         if (_renderingSystem is RenderingSystem rs)
@@ -40,8 +42,8 @@ public class DeclarativeRenderer
         }
     }
 
-    public DeclarativeRenderer(IRenderingSystem renderingSystem, IInputHandler inputHandler, object? owner = null)
-        : this(renderingSystem, owner)
+    public DeclarativeRenderer(IRenderingSystem renderingSystem, IInputHandler inputHandler, object? owner = null, bool autoFocus = true)
+        : this(renderingSystem, owner, autoFocus)
     {
         _externalInputHandler = inputHandler;
     }
@@ -70,7 +72,7 @@ public class DeclarativeRenderer
             {
                 // Poll for input events
                 inputHandler.Poll();
-                
+
                 if (_needsRender)
                 {
                     _logger.Debug("Render requested, executing render cycle");
@@ -122,15 +124,15 @@ public class DeclarativeRenderer
 
         // Update absolute z-indices from root
         rootInstance.UpdateAbsoluteZIndex(0);
-
-        // Prime focus list by walking the rendered instances hierarchy
-        // Initial focus set below will pick the first focusable if none is focused yet
-        // (FocusManager gets registrations via ViewInstance.Context setter)
         _logger.Debug("Updated absolute z-indices");
+
+        // Register focusable components in document order after tree is built
+        _context.ViewInstanceManager.RegisterFocusableComponents(rootInstance);
+        _logger.Debug("Registered focusable components in document order");
 
         // Render the virtual DOM from instances
         var newTree = rootInstance.Render();
-        _logger.Debug("Virtual DOM rendered - tree depth: {0}, node count: {1}", 
+        _logger.Debug("Virtual DOM rendered - tree depth: {0}, node count: {1}",
             CalculateTreeDepth(newTree), CountNodes(newTree));
 
         // Apply diff-based rendering
@@ -144,7 +146,7 @@ public class DeclarativeRenderer
             _logger.Debug("Performing diff-based render");
             var patches = _diffEngine.Diff(_previousTree, newTree);
             _logger.Debug("Generated {0} patches", patches.Count);
-            
+
             // Log patch summary
             if (patches.Count > 0)
             {
@@ -171,11 +173,11 @@ public class DeclarativeRenderer
         {
             // Process any queued render operations first to ensure buffer is updated
             rs.Scheduler.ProcessQueuedOperations();
-            
+
             _logger.Debug("Buffer dirty state before flush: {0}", rs.Buffer.IsDirty);
             // Debug logging (uncomment to debug buffer state)
             // Console.Error.WriteLine($"[DeclarativeRenderer] Buffer dirty before flush: {rs.Buffer.IsDirty}");
-            
+
             // Now force a render to flush the buffer to screen
             rs.Render();
             _logger.Debug("Forced render flush");
@@ -194,8 +196,8 @@ public class DeclarativeRenderer
         _previousTree = newTree;
         _logger.Debug("Render complete");
 
-        // Set initial focus if not already done
-        if (!_hasSetInitialFocus)
+        // Set initial focus if not already done and auto-focus is enabled
+        if (!_hasSetInitialFocus && _autoFocus)
         {
             _logger.Debug("Setting initial focus");
             _context.FocusManager.MoveFocus(Focus.FocusDirection.Next);
@@ -230,12 +232,12 @@ public class DeclarativeRenderer
         _context.EventRouter.RouteKeyPress(keyInfo);
         // Console.Error.WriteLine($"[DeclarativeRenderer] After routing key, needsRender: {_needsRender}");
     }
-    
+
     private int CalculateTreeDepth(VirtualNode node, int currentDepth = 0)
     {
         if (node.Children == null || node.Children.Count == 0)
             return currentDepth;
-            
+
         int maxDepth = currentDepth;
         foreach (var child in node.Children)
         {
@@ -243,12 +245,12 @@ public class DeclarativeRenderer
         }
         return maxDepth;
     }
-    
+
     private int CountNodes(VirtualNode node)
     {
         if (node.Children == null || node.Children.Count == 0)
             return 1;
-            
+
         return 1 + node.Children.Sum(CountNodes);
     }
 

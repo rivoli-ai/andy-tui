@@ -17,12 +17,12 @@ namespace Andy.TUI.Declarative.Tests.Integration;
 public class TextInputRenderingTest
 {
     private readonly ITestOutputHelper _output;
-    
+
     public TextInputRenderingTest(ITestOutputHelper output)
     {
         _output = output;
     }
-    
+
     [Fact]
     public void TextField_ShouldRenderTypedText()
     {
@@ -49,7 +49,7 @@ public class TextInputRenderingTest
         // Focus the field
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(100);
-        
+
         // Type "Hello"
         input.EmitKey('H', ConsoleKey.H);
         Thread.Sleep(50);
@@ -61,10 +61,10 @@ public class TextInputRenderingTest
         Thread.Sleep(50);
         input.EmitKey('o', ConsoleKey.O);
         Thread.Sleep(100);
-        
+
         // Verify the text was stored
         Assert.Equal("Hello", fieldValue);
-        
+
         // Verify the value was captured correctly
         // We can't check rendered output easily with MockTerminal
 
@@ -72,7 +72,7 @@ public class TextInputRenderingTest
         renderingSystem.Shutdown();
         thread.Join(100);
     }
-    
+
     [Fact]
     public void TextField_Backspace_ShouldDeleteCharacters()
     {
@@ -99,7 +99,7 @@ public class TextInputRenderingTest
         // Focus the field
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(100);
-        
+
         // Type "Test"
         input.EmitKey('T', ConsoleKey.T);
         Thread.Sleep(50);
@@ -109,31 +109,31 @@ public class TextInputRenderingTest
         Thread.Sleep(50);
         input.EmitKey('t', ConsoleKey.T);
         Thread.Sleep(100);
-        
+
         Assert.Equal("Test", fieldValue);
-        
+
         // Press backspace twice
         input.EmitKey('\b', ConsoleKey.Backspace);
         Thread.Sleep(50);
         input.EmitKey('\b', ConsoleKey.Backspace);
         Thread.Sleep(100);
-        
+
         // Should have deleted last two characters
         Assert.Equal("Te", fieldValue);
-        
+
         // Type "xt" to make "Text"
         input.EmitKey('x', ConsoleKey.X);
         Thread.Sleep(50);
         input.EmitKey('t', ConsoleKey.T);
         Thread.Sleep(100);
-        
+
         Assert.Equal("Text", fieldValue);
 
         // Cleanup
         renderingSystem.Shutdown();
         thread.Join(100);
     }
-    
+
     [Fact]
     public void SecureTextField_ShouldMaskPassword()
     {
@@ -160,7 +160,7 @@ public class TextInputRenderingTest
         // Focus the field
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(100);
-        
+
         // Type "Secret"
         input.EmitKey('S', ConsoleKey.S);
         Thread.Sleep(50);
@@ -174,10 +174,10 @@ public class TextInputRenderingTest
         Thread.Sleep(50);
         input.EmitKey('t', ConsoleKey.T);
         Thread.Sleep(100);
-        
+
         // Verify the actual value is stored
         Assert.Equal("Secret", password);
-        
+
         // The secure field should mask the input
         // We can verify the actual value is stored correctly
 
@@ -185,7 +185,7 @@ public class TextInputRenderingTest
         renderingSystem.Shutdown();
         thread.Join(100);
     }
-    
+
     [Fact]
     public void MultipleTextFields_ShouldMaintainSeparateValues()
     {
@@ -221,7 +221,7 @@ public class TextInputRenderingTest
         input.EmitKey('h', ConsoleKey.H);
         input.EmitKey('n', ConsoleKey.N);
         Thread.Sleep(50);
-        
+
         // Fill second field
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(50);
@@ -231,7 +231,7 @@ public class TextInputRenderingTest
         input.EmitKey('.', ConsoleKey.OemPeriod);
         input.EmitKey('c', ConsoleKey.C);
         Thread.Sleep(50);
-        
+
         // Fill third field
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(50);
@@ -239,7 +239,7 @@ public class TextInputRenderingTest
         input.EmitKey('5', ConsoleKey.D5);
         input.EmitKey('5', ConsoleKey.D5);
         Thread.Sleep(50);
-        
+
         // Go back to first field and add more
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(50);
@@ -247,7 +247,7 @@ public class TextInputRenderingTest
         input.EmitKey('o', ConsoleKey.O);
         input.EmitKey('e', ConsoleKey.E);
         Thread.Sleep(100);
-        
+
         // Verify all values are correct
         Assert.Equal("johndoe", username);
         Assert.Equal("j@e.c", email);

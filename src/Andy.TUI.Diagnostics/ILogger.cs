@@ -11,27 +11,27 @@ public interface ILogger
     /// Logs a debug message.
     /// </summary>
     void Debug(string message, params object[] args);
-    
+
     /// <summary>
     /// Logs an informational message.
     /// </summary>
     void Info(string message, params object[] args);
-    
+
     /// <summary>
     /// Logs a warning message.
     /// </summary>
     void Warning(string message, params object[] args);
-    
+
     /// <summary>
     /// Logs an error message.
     /// </summary>
     void Error(string message, params object[] args);
-    
+
     /// <summary>
     /// Logs an error with exception details.
     /// </summary>
     void Error(Exception exception, string message, params object[] args);
-    
+
     /// <summary>
     /// Creates a child logger with a specific category.
     /// </summary>

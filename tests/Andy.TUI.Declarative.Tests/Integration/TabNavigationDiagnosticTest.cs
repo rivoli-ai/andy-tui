@@ -13,12 +13,12 @@ namespace Andy.TUI.Declarative.Tests.Integration;
 public class TabNavigationDiagnosticTest
 {
     private readonly ITestOutputHelper _output;
-    
+
     public TabNavigationDiagnosticTest(ITestOutputHelper output)
     {
         _output = output;
     }
-    
+
     [Fact]
     public void DiagnoseTabNavigation()
     {
@@ -51,7 +51,7 @@ public class TabNavigationDiagnosticTest
         input.EmitKey('0', ConsoleKey.D0);
         Thread.Sleep(50);
         _output.WriteLine($"Name: '{name}', Pass: '{pass}', Button: '{buttonClicks}'");
-        
+
         // First TAB then type
         _output.WriteLine("=== TAB once, then type '1' ===");
         input.EmitKey('\t', ConsoleKey.Tab);
@@ -59,7 +59,7 @@ public class TabNavigationDiagnosticTest
         input.EmitKey('1', ConsoleKey.D1);
         Thread.Sleep(50);
         _output.WriteLine($"Name: '{name}', Pass: '{pass}', Button: '{buttonClicks}'");
-        
+
         // Second TAB then type
         _output.WriteLine("=== TAB again, then type '2' ===");
         input.EmitKey('\t', ConsoleKey.Tab);
@@ -67,7 +67,7 @@ public class TabNavigationDiagnosticTest
         input.EmitKey('2', ConsoleKey.D2);
         Thread.Sleep(50);
         _output.WriteLine($"Name: '{name}', Pass: '{pass}', Button: '{buttonClicks}'");
-        
+
         // Third TAB then type and Enter
         _output.WriteLine("=== TAB again, then type '3' and Enter ===");
         input.EmitKey('\t', ConsoleKey.Tab);
@@ -77,7 +77,7 @@ public class TabNavigationDiagnosticTest
         input.EmitKey('\r', ConsoleKey.Enter);
         Thread.Sleep(50);
         _output.WriteLine($"Name: '{name}', Pass: '{pass}', Button: '{buttonClicks}'");
-        
+
         // Fourth TAB (should cycle back) then type
         _output.WriteLine("=== TAB again (should cycle), then type '4' ===");
         input.EmitKey('\t', ConsoleKey.Tab);
@@ -85,10 +85,10 @@ public class TabNavigationDiagnosticTest
         input.EmitKey('4', ConsoleKey.D4);
         Thread.Sleep(50);
         _output.WriteLine($"Name: '{name}', Pass: '{pass}', Button: '{buttonClicks}'");
-        
+
         _output.WriteLine("=== Final state ===");
         _output.WriteLine($"Name: '{name}', Pass: '{pass}', Button: '{buttonClicks}'");
-        
+
         // Analyze results and fail with diagnostic info
         string diagnosis;
         if (name.Length == 0 && pass.Length > 0)
@@ -107,10 +107,10 @@ public class TabNavigationDiagnosticTest
         {
             diagnosis = "No input received by any field";
         }
-        
+
         // Force failure to see output
         Assert.Fail($"DIAGNOSIS: {diagnosis}\nName: '{name}'\nPass: '{pass}'\nButton: '{buttonClicks}'");
-        
+
         // Cleanup
         renderingSystem.Shutdown();
         thread.Join(100);

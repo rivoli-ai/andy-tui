@@ -16,10 +16,10 @@ class ZStackTestApp
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        
+
         renderingSystem.Initialize();
         terminal.Clear();
-        
+
         // Create UI demonstrating ZStack layering
         var ui = new VStack(spacing: 2) {
             new Text("ZStack Demo - Layered Views").Bold().Color(Color.Cyan),
@@ -51,7 +51,7 @@ class ZStackTestApp
                 .WithHeight(4)
                 .WithPadding(1)
             },
-            
+
             new Spacer(minLength: 2),
             
             // Example 2: Different alignments
@@ -61,18 +61,18 @@ class ZStackTestApp
                     new Box { new Text("Bottom") }.WithWidth(15).WithHeight(5).WithPadding(1),
                     new Text("Top-Left").Color(Color.Green)
                 },
-                
+
                 new ZStack(AlignItems.Center) {
                     new Box { new Text("Bottom") }.WithWidth(15).WithHeight(5).WithPadding(1),
                     new Text("Center").Color(Color.Yellow)
                 },
-                
+
                 new ZStack(AlignItems.FlexEnd) {
                     new Box { new Text("Bottom") }.WithWidth(15).WithHeight(5).WithPadding(1),
                     new Text("Bot-Right").Color(Color.Red)
                 }
             },
-            
+
             new Spacer(minLength: 2),
             
             // Example 3: Card with overlay
@@ -100,11 +100,11 @@ class ZStackTestApp
                 .WithWidth(35)
             }
         };
-        
+
         // Render
         var renderer = new DeclarativeRenderer(renderingSystem, this);
         renderer.Render(ui);
-        
+
         Console.SetCursorPosition(0, terminal.Height - 2);
         Console.WriteLine("Press any key to exit...");
         Console.ReadKey();

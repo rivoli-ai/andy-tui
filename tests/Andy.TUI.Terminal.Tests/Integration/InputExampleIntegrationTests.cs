@@ -85,7 +85,7 @@ public class InputExampleIntegrationTests
         // Should render the input text
         var textCall = _textCalls.Find(call => call.text == "John Doe");
         Assert.NotEqual(default, textCall);
-        
+
         // Text should be positioned inside the box (with 1-unit offset)
         Assert.Equal(boxCall.x + 1, textCall.x);
         Assert.Equal(boxCall.y + 1, textCall.y);
@@ -125,7 +125,7 @@ public class InputExampleIntegrationTests
     public void InputExample_Dropdown_Closed_ShouldRenderMainBoxWithArrow()
     {
         // Arrange
-        var dropdownNode = CreateDropdownNode("United States", "Select country...", 
+        var dropdownNode = CreateDropdownNode("United States", "Select country...",
             new[] { "United States", "Canada" }, false, 0, false);
 
         // Act
@@ -149,7 +149,7 @@ public class InputExampleIntegrationTests
     public void InputExample_Dropdown_Open_ShouldRenderItemsList()
     {
         // Arrange
-        var dropdownNode = CreateDropdownNode(null, "Select country...", 
+        var dropdownNode = CreateDropdownNode(null, "Select country...",
             new[] { "United States", "Canada", "Germany" }, true, 1, true);
 
         // Act
@@ -168,7 +168,7 @@ public class InputExampleIntegrationTests
         var usCall = _textCalls.Find(call => call.text == "United States");
         var canadaCall = _textCalls.Find(call => call.text == "Canada");
         var germanyCall = _textCalls.Find(call => call.text == "Germany");
-        
+
         Assert.NotEqual(default, usCall);
         Assert.NotEqual(default, canadaCall);
         Assert.NotEqual(default, germanyCall);
@@ -210,22 +210,22 @@ public class InputExampleIntegrationTests
         // Assert
         // Verify title is rendered
         Assert.Contains(_textCalls, call => call.text == "Andy.TUI Input Components Demo");
-        
+
         // Verify separator is rendered
         Assert.Contains(_textCalls, call => call.text == "==============================");
-        
+
         // Verify labels are rendered
         Assert.Contains(_textCalls, call => call.text == "Name:");
         Assert.Contains(_textCalls, call => call.text == "Password:");
         Assert.Contains(_textCalls, call => call.text == "Country:");
-        
+
         // Verify input boxes are rendered
         Assert.True(_boxCalls.Count >= 3, "Should render at least 3 input boxes");
-        
+
         // Verify buttons are rendered
         Assert.Contains(_textCalls, call => call.text == "Submit");
         Assert.Contains(_textCalls, call => call.text == "Cancel");
-        
+
         // Verify instructions are rendered
         Assert.Contains(_textCalls, call => call.text.Contains("Tab/Shift+Tab: Navigate"));
     }
@@ -250,10 +250,10 @@ public class InputExampleIntegrationTests
 
         // Title should be at the top
         Assert.True(titleCall.y < nameLabel.y, $"Title should be above name label. {debugInfo}");
-        
+
         // Submit button should be below the form fields
         Assert.True(nameLabel.y < submitButton.y, "Submit button should be below form fields");
-        
+
         // Elements should have reasonable spacing
         Assert.True(submitButton.y - nameLabel.y > 5, "Should have reasonable spacing between form and buttons");
     }
@@ -279,7 +279,7 @@ public class InputExampleIntegrationTests
     private VirtualNode CreateTextInputNode(string value, string placeholder, bool isFocused)
     {
         var style = isFocused ? Style.Default.WithForegroundColor(Color.Cyan) : Style.Default;
-        var textStyle = string.IsNullOrEmpty(value) 
+        var textStyle = string.IsNullOrEmpty(value)
             ? Style.Default.WithForegroundColor(Color.DarkGray)
             : Style.Default;
         var displayText = string.IsNullOrEmpty(value) ? placeholder : value;
@@ -306,7 +306,7 @@ public class InputExampleIntegrationTests
         return CreateTextInputNode(maskedValue, placeholder, isFocused);
     }
 
-    private VirtualNode CreateDropdownNode(string? value, string placeholder, string[] items, 
+    private VirtualNode CreateDropdownNode(string? value, string placeholder, string[] items,
         bool isOpen, int highlightedIndex, bool isFocused)
     {
         var nodes = new List<VirtualNode>();

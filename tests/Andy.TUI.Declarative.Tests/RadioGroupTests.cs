@@ -75,13 +75,13 @@ public class RadioGroupTests
         // Act - Select first option, then navigate to second, then select
         instance.HandleKeyPress(new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false));
         Assert.Equal("A", binding.Value.Value); // First selection worked
-        
+
         // Update should be called after binding changes (simulating PropertyChanged event)
         instance.Update(radioGroup);
-        
+
         // Try to navigate down after selection - this is where the bug was
         var downHandled = instance.HandleKeyPress(new ConsoleKeyInfo('\0', ConsoleKey.DownArrow, false, false, false));
-        
+
         // Select the new option
         var spaceHandled = instance.HandleKeyPress(new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false));
 
@@ -119,7 +119,7 @@ public class RadioGroupTests
         // Navigate to third option
         instance.HandleKeyPress(new ConsoleKeyInfo('\0', ConsoleKey.DownArrow, false, false, false));
         instance.HandleKeyPress(new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false));
-        
+
         // Assert final state
         Assert.Equal("Third", binding.Value.Value);
         Assert.Equal("Third", host.SelectedValue.Value);

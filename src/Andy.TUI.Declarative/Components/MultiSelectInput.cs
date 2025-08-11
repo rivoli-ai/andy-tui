@@ -16,7 +16,7 @@ public class MultiSelectInput<T> : ISimpleComponent
     private readonly Func<T, string> _itemRenderer;
     private readonly string _checkedMark;
     private readonly string _uncheckedMark;
-    
+
     public MultiSelectInput(
         IReadOnlyList<T> items,
         Binding<ISet<T>> selectedItems,
@@ -30,14 +30,14 @@ public class MultiSelectInput<T> : ISimpleComponent
         _checkedMark = checkedMark;
         _uncheckedMark = uncheckedMark;
     }
-    
+
     // Internal accessors for view instance
     internal IReadOnlyList<T> GetItems() => _items;
     internal Binding<ISet<T>> GetSelectedItemsBinding() => _selectedItems;
     internal Func<T, string> GetItemRenderer() => _itemRenderer;
     internal string GetCheckedMark() => _checkedMark;
     internal string GetUncheckedMark() => _uncheckedMark;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("MultiSelectInput declarations should not be rendered directly. Use ViewInstanceManager.");

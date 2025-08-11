@@ -22,8 +22,8 @@ public class Button : ISimpleComponent
 
     public Button Primary()
     {
-        return new Button(_title, _action) 
-        { 
+        return new Button(_title, _action)
+        {
             _backgroundColor = Color.Blue,
             _textColor = Color.White
         };
@@ -31,13 +31,13 @@ public class Button : ISimpleComponent
 
     public Button Secondary()
     {
-        return new Button(_title, _action) 
-        { 
+        return new Button(_title, _action)
+        {
             _backgroundColor = Color.Gray,
             _textColor = Color.White
         };
     }
-    
+
     // Internal accessors for view instance
     internal string GetTitle() => _title;
     internal Action GetAction() => _action;

@@ -5,6 +5,7 @@ using Andy.TUI.VirtualDom;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Layout;
 using Andy.TUI.Declarative.ViewInstances;
+using Andy.TUI.Declarative.Components;
 using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative;
@@ -17,55 +18,56 @@ public class VStackInstance : ViewInstance
 {
     private int _spacing;
     private readonly List<ViewInstance> _childInstances = new();
-    
+
     public VStackInstance(string id) : base(id)
     {
     }
-    
+
     protected override void OnUpdate(ISimpleComponent viewDeclaration)
     {
         if (viewDeclaration is not VStack vstack)
             throw new ArgumentException("Expected VStack declaration");
-        
+
         _spacing = vstack.GetSpacing();
-        
+
         // Update child instances
         var children = vstack.GetChildren();
         var manager = Context?.ViewInstanceManager;
-        
+
         if (manager != null)
         {
             _childInstances.Clear();
             for (int i = 0; i < children.Count; i++)
             {
                 var childPath = $"{Id}/{i}";
-                var childInstance = manager.GetOrCreateInstance(children[i], childPath);
+                var child = children[i];
+                var childInstance = manager.GetOrCreateInstance(child, childPath);
                 _childInstances.Add(childInstance);
             }
         }
     }
-    
+
     protected override LayoutBox PerformLayout(LayoutConstraints constraints)
     {
         var layout = new LayoutBox();
-        
+
         if (_childInstances.Count == 0)
         {
             layout.Width = 0;
             layout.Height = 0;
             return layout;
         }
-        
+
         // First pass: calculate natural sizes and identify spacers/flex items
         float totalNaturalHeight = 0;
         float maxWidth = 0;
         var spacerIndices = new List<int>();
         var childInfos = new List<(ViewInstance instance, float naturalHeight, float flexGrow, float flexShrink, bool isSpacer)>();
-        
+
         for (int i = 0; i < _childInstances.Count; i++)
         {
             var child = _childInstances[i];
-            
+
             if (child is SpacerInstance spacer)
             {
                 spacerIndices.Add(i);
@@ -81,7 +83,7 @@ public class VStackInstance : ViewInstance
                 var flexShrink = 1f;
                 var flexBasis = Length.Auto;
                 float naturalHeight;
-                
+
                 if (child is BoxInstance boxChild && boxChild.GetBox() != null)
                 {
                     var box = boxChild.GetBox()!;
@@ -89,7 +91,7 @@ public class VStackInstance : ViewInstance
                     flexShrink = box.FlexShrink;
                     flexBasis = box.FlexBasis;
                 }
-                
+
                 // Calculate natural height based on flex-basis or content
                 if (!flexBasis.IsAuto)
                 {
@@ -102,15 +104,15 @@ public class VStackInstance : ViewInstance
                         constraints.MinWidth, constraints.MaxWidth,
                         0, float.PositiveInfinity
                     );
-                    
+
                     child.CalculateLayout(childConstraints);
                     naturalHeight = child.Layout.Height;
                 }
-                
+
                 childInfos.Add((child, naturalHeight, flexGrow, flexShrink, false));
-                
+
                 totalNaturalHeight += naturalHeight;
-                
+
                 // Measure width separately if needed
                 if (flexBasis.IsAuto)
                 {
@@ -128,22 +130,22 @@ public class VStackInstance : ViewInstance
                 }
             }
         }
-        
+
         // Add spacing
         float totalSpacing = 0;
         if (_childInstances.Count > 1)
         {
             totalSpacing = _spacing * (_childInstances.Count - 1);
         }
-        
+
         // Calculate if we need to shrink or grow
         float totalRequiredHeight = totalNaturalHeight + totalSpacing;
         float availableHeight = constraints.MaxHeight;
         float remainingSpace = availableHeight - totalRequiredHeight;
-        
+
         // Calculate final heights
         var finalHeights = new List<float>();
-        
+
         if (remainingSpace < 0 && totalNaturalHeight > 0)
         {
             // Need to shrink - calculate total weighted shrink
@@ -155,7 +157,7 @@ public class VStackInstance : ViewInstance
                     totalWeightedShrink += naturalHeight * flexShrink;
                 }
             }
-            
+
             // Shrink non-spacer items proportionally
             var shrinkAmount = Math.Abs(remainingSpace);
             foreach (var (instance, naturalHeight, flexGrow, flexShrink, isSpacer) in childInfos)
@@ -187,7 +189,7 @@ public class VStackInstance : ViewInstance
             {
                 totalFlexGrow += flexGrow;
             }
-            
+
             if (totalFlexGrow > 0)
             {
                 // Distribute based on flex grow
@@ -214,12 +216,12 @@ public class VStackInstance : ViewInstance
                 finalHeights.Add(naturalHeight);
             }
         }
-        
+
         // Calculate final dimensions
         float finalTotalHeight = finalHeights.Sum() + totalSpacing;
         layout.Width = constraints.ConstrainWidth(maxWidth);
         layout.Height = constraints.ConstrainHeight(finalTotalHeight);
-        
+
         // Position children with final sizes
         float currentY = 0;
         for (int i = 0; i < _childInstances.Count; i++)
@@ -227,48 +229,48 @@ public class VStackInstance : ViewInstance
             var child = _childInstances[i];
             var finalHeight = finalHeights[i];
             var (instance, naturalHeight, flexGrow, flexShrink, isSpacer) = childInfos[i];
-            
+
             // Recalculate child with final height constraint
             var childConstraints = new LayoutConstraints(
                 constraints.MinWidth, constraints.MaxWidth,
                 finalHeight, finalHeight
             );
             child.CalculateLayout(childConstraints);
-            
+
             // Left-align children by default
             child.Layout.X = 0;
             child.Layout.Y = currentY;
-            
+
             currentY += finalHeight;
             if (i < _childInstances.Count - 1)
             {
                 currentY += _spacing;
             }
         }
-        
+
         return layout;
     }
-    
+
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         if (_childInstances.Count == 0)
             return Fragment();
-        
+
         var childElements = new List<VirtualNode>();
-        
+
         foreach (var child in _childInstances)
         {
             // Update child's absolute position
             child.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(child.Layout.X);
             child.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(child.Layout.Y);
-            
+
             // Render child with its layout
             var childNode = child.Render();
             childElements.Add(childNode);
         }
-        
+
         return Fragment(childElements.ToArray());
     }
-    
+
     public IReadOnlyList<ViewInstance> GetChildInstances() => _childInstances;
 }

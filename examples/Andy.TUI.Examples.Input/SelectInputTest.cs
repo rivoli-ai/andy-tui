@@ -27,25 +27,25 @@ class SelectInputTestApp
         new Country { Code = "NG", Name = "Nigeria", Population = 211_000_000 },
         new Country { Code = "BD", Name = "Bangladesh", Population = 169_000_000 }
     };
-    
+
     private readonly string[] colors = { "Red", "Green", "Blue", "Yellow", "Magenta", "Cyan", "White", "Black" };
     private readonly string[] fruits = { "Apple", "Banana", "Orange", "Grape", "Mango", "Pear" };
-    
+
     private Optional<Country> selectedCountry = Optional<Country>.None;
     private Optional<string> selectedColor = Optional<string>.None;
     private Optional<string> selectedFruit = Optional<string>.None;
-    
+
     public void Run()
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
         var renderer = new DeclarativeRenderer(renderingSystem);
-        
+
         renderingSystem.Initialize();
-        
+
         renderer.Run(() => CreateUI());
     }
-    
+
     private ISimpleComponent CreateUI()
     {
         return new VStack(spacing: 1) {
@@ -64,7 +64,7 @@ class SelectInputTestApp
             selectedCountry.TryGetValue(out var country)
                 ? new Text($"   Population: {country.Population:N0}").Color(Color.Green)
                 : new Text("   No country selected").Color(Color.DarkGray),
-            
+
             new Newline(),
             
             // Color Selection
@@ -77,7 +77,7 @@ class SelectInputTestApp
             selectedColor.TryGetValue(out var color)
                 ? new Text($"   Selected: {color}").Color(ParseColor(color))
                 : new Text("   No color selected").Color(Color.DarkGray),
-            
+
             new Newline(),
             
             // Fruit Selection
@@ -90,7 +90,7 @@ class SelectInputTestApp
             selectedFruit.TryGetValue(out var fruit)
                 ? new Text($"   You selected: {fruit}").Color(Color.Green)
                 : new Text("   No fruit selected").Color(Color.DarkGray),
-            
+
             new Newline(),
             
             // Navigation help
@@ -103,7 +103,7 @@ class SelectInputTestApp
                     new Text("• Ctrl+C: Exit")
                 }
             }.WithPadding(1),
-            
+
             new Newline(),
             
             // Buttons
@@ -117,7 +117,7 @@ class SelectInputTestApp
             }
         };
     }
-    
+
     private Color ParseColor(string colorName)
     {
         return colorName switch
@@ -133,7 +133,7 @@ class SelectInputTestApp
             _ => Color.Gray
         };
     }
-    
+
     private void HandleSubmit()
     {
         Console.Clear();
@@ -144,7 +144,7 @@ class SelectInputTestApp
         Console.WriteLine($"Fruit: {(selectedFruit.TryGetValue(out var f) ? f : "None")}");
         Environment.Exit(0);
     }
-    
+
     // Sample data class
     public class Country
     {

@@ -13,12 +13,12 @@ namespace Andy.TUI.Declarative.Tests.Integration;
 public class FocusDebugTest
 {
     private readonly ITestOutputHelper _output;
-    
+
     public FocusDebugTest(ITestOutputHelper output)
     {
         _output = output;
     }
-    
+
     [Fact]
     public void FocusManager_ShouldHaveFocusableComponents()
     {
@@ -49,13 +49,13 @@ public class FocusDebugTest
         _output.WriteLine("=== Pressing first TAB ===");
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(100);
-        
+
         // Type in first field
         _output.WriteLine("=== Typing 'N' in first field ===");
         input.EmitKey('N', ConsoleKey.N);
         Thread.Sleep(100);
         _output.WriteLine($"After typing N - Name: '{name}', Pass: '{pass}'");
-        
+
         // Tab again - should focus second TextField
         _output.WriteLine("=== Pressing second TAB ===");
         input.EmitKey('\t', ConsoleKey.Tab);
@@ -66,12 +66,12 @@ public class FocusDebugTest
         input.EmitKey('P', ConsoleKey.P);
         Thread.Sleep(100);
         _output.WriteLine($"After typing P - Name: '{name}', Pass: '{pass}'");
-        
+
         // Tab again - should focus Button
         _output.WriteLine("=== Pressing third TAB ===");
         input.EmitKey('\t', ConsoleKey.Tab);
         Thread.Sleep(100);
-        
+
         // Press Enter on button
         _output.WriteLine("=== Pressing Enter on button ===");
         input.EmitKey('\r', ConsoleKey.Enter);
@@ -80,7 +80,7 @@ public class FocusDebugTest
         // Check results
         _output.WriteLine($"=== Final state ===");
         _output.WriteLine($"Name: '{name}', Pass: '{pass}'");
-        
+
         // We expect name to have 'N' and pass to have 'P'
         Assert.Equal("N", name);
         Assert.Equal("P", pass);

@@ -443,6 +443,10 @@ The library is organized into several key components:
 
 This project is in early development. For the implementation roadmap, see docs/DECLARATIVE_IMPLEMENTATION_PLAN.md.
 
+### Acknowledgments
+
+Andy.TUI is inspired by great terminal UI ecosystems. Special thanks to the authors and community of [Charmbracelet Bubble Tea](https://github.com/charmbracelet/bubbletea) for their MIT-licensed work and examples. While Andy.TUI is architected very differently, Bubble Tea’s examples have been invaluable references to validate features and ensure parity in user experience for our .NET library. See `docs/BubbleTea-Examples-Parity.md` for our parity plan.
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

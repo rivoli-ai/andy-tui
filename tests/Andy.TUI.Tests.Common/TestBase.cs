@@ -14,29 +14,29 @@ public abstract class TestBase : IDisposable
     private readonly IDisposable? _testSession;
     private readonly ITestOutputHelper? _output;
     protected readonly ILogger Logger;
-    
+
     protected TestBase(ITestOutputHelper? output = null, [CallerMemberName] string? testName = null)
     {
         _output = output;
-        
+
         // Initialize comprehensive logging for tests
         ComprehensiveLoggingInitializer.Initialize(isTestMode: true);
-        
+
         // Create a test session with unique correlation ID
         testName ??= GetType().Name;
         _testSession = ComprehensiveLoggingInitializer.BeginTestSession(testName);
-        
+
         // Get logger for this test class
         Logger = LogManager.GetLogger(GetType());
-        
+
         // Log test start
         Logger.Info($"=== Starting Test: {testName} ===");
-        
+
         // Set up context data
         EnhancedLogger.ContextData["TestClass"] = GetType().Name;
         EnhancedLogger.ContextData["TestMethod"] = testName;
     }
-    
+
     /// <summary>
     /// Logs a test step for clarity in logs.
     /// </summary>
@@ -46,7 +46,7 @@ public abstract class TestBase : IDisposable
         Logger.Info($"STEP: {message}");
         _output?.WriteLine($"STEP: {message}");
     }
-    
+
     /// <summary>
     /// Logs an assertion for clarity in logs.
     /// </summary>
@@ -56,7 +56,7 @@ public abstract class TestBase : IDisposable
         Logger.Info($"ASSERT: {message}");
         _output?.WriteLine($"ASSERT: {message}");
     }
-    
+
     /// <summary>
     /// Logs test data for debugging.
     /// </summary>
@@ -65,7 +65,7 @@ public abstract class TestBase : IDisposable
         Logger.Debug($"DATA: {name} = {value}");
         _output?.WriteLine($"DATA: {name} = {value}");
     }
-    
+
     /// <summary>
     /// Creates a scope for a specific test scenario.
     /// </summary>
@@ -73,10 +73,10 @@ public abstract class TestBase : IDisposable
     {
         Logger.Info($">>> BEGIN SCENARIO: {scenario}");
         _output?.WriteLine($">>> BEGIN SCENARIO: {scenario}");
-        
+
         return new ScenarioScope(Logger, _output, scenario);
     }
-    
+
     /// <summary>
     /// Exports the test logs if there were failures.
     /// </summary>
@@ -85,21 +85,21 @@ public abstract class TestBase : IDisposable
         if (exception != null)
         {
             Logger.Error(exception, "Test failed with exception");
-            
+
             var testName = EnhancedLogger.ContextData["TestMethod"]?.ToString() ?? "Unknown";
             var exportPath = Path.Combine(
                 Directory.GetCurrentDirectory(),
                 "TestLogs",
                 "Failures",
                 $"{testName}_{DateTime.Now:yyyyMMdd_HHmmss}.log");
-                
+
             Directory.CreateDirectory(Path.GetDirectoryName(exportPath)!);
             LogManager.ExportLogs(exportPath);
-            
+
             _output?.WriteLine($"Test logs exported to: {exportPath}");
         }
     }
-    
+
     /// <summary>
     /// Gets a summary of the test execution.
     /// </summary>
@@ -108,11 +108,11 @@ public abstract class TestBase : IDisposable
         var inspector = new LogInspector();
         return inspector.GenerateReport(includeRecentLogs: true);
     }
-    
+
     public virtual void Dispose()
     {
         Logger.Info("=== Test Completed ===");
-        
+
         // Get test statistics
         var stats = LogManager.GetStatistics();
         if (stats.LevelCounts.GetValueOrDefault(LogLevel.Error, 0) > 0)
@@ -120,17 +120,17 @@ public abstract class TestBase : IDisposable
             _output?.WriteLine($"Test had {stats.LevelCounts[LogLevel.Error]} errors");
             _output?.WriteLine(LogManager.GetErrorSummary());
         }
-        
+
         _testSession?.Dispose();
     }
-    
+
     private class ScenarioScope : IDisposable
     {
         private readonly ILogger _logger;
         private readonly ITestOutputHelper? _output;
         private readonly string _scenario;
         private readonly DateTime _startTime;
-        
+
         public ScenarioScope(ILogger logger, ITestOutputHelper? output, string scenario)
         {
             _logger = logger;
@@ -138,7 +138,7 @@ public abstract class TestBase : IDisposable
             _scenario = scenario;
             _startTime = DateTime.UtcNow;
         }
-        
+
         public void Dispose()
         {
             var duration = DateTime.UtcNow - _startTime;

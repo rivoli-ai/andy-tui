@@ -16,10 +16,10 @@ class OverflowTestApp
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        
+
         renderingSystem.Initialize();
         terminal.Clear();
-        
+
         // Create UI demonstrating overflow handling
         var ui = new VStack(spacing: 2) {
             new Text("Overflow Demo").Bold().Color(Color.Cyan),
@@ -36,7 +36,7 @@ class OverflowTestApp
             .WithHeight(2)
             .WithPadding(1)
             .WithOverflow(Overflow.Visible),
-            
+
             new Spacer(minLength: 2),
             
             // Overflow: Hidden
@@ -51,7 +51,7 @@ class OverflowTestApp
             .WithHeight(2)
             .WithPadding(1)
             .WithOverflow(Overflow.Hidden),
-            
+
             new Spacer(minLength: 2),
             
             // Nested boxes with overflow
@@ -65,7 +65,7 @@ class OverflowTestApp
                 .WithWidth(20)
                 .WithHeight(3)
                 .WithOverflow(Overflow.Hidden),
-                
+
                 new Box {
                     new Text("Another nested box").Color(Color.Red)
                 }
@@ -77,11 +77,11 @@ class OverflowTestApp
             .WithPadding(1)
             .WithOverflow(Overflow.Hidden)
         };
-        
+
         // Render
         var renderer = new DeclarativeRenderer(renderingSystem, this);
         renderer.Render(ui);
-        
+
         Console.SetCursorPosition(0, terminal.Height - 2);
         Console.WriteLine("Press any key to exit...");
         Console.ReadKey();

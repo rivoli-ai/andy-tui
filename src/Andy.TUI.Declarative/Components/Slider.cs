@@ -32,7 +32,7 @@ public class Slider : ISimpleComponent
     private readonly char _thumbChar;
     private readonly Color _trackColor;
     private readonly Color _thumbColor;
-    
+
     public Slider(
         Binding<float> value,
         float minValue = 0f,
@@ -62,7 +62,7 @@ public class Slider : ISimpleComponent
         _trackColor = trackColor ?? Color.DarkGray;
         _thumbColor = thumbColor ?? Color.Cyan;
     }
-    
+
     // Internal accessors for view instance
     internal Binding<float> GetValueBinding() => _value;
     internal float GetMinValue() => _minValue;
@@ -77,7 +77,7 @@ public class Slider : ISimpleComponent
     internal char GetThumbChar() => _thumbChar;
     internal Color GetTrackColor() => _trackColor;
     internal Color GetThumbColor() => _thumbColor;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("Slider declarations should not be rendered directly. Use ViewInstanceManager.");

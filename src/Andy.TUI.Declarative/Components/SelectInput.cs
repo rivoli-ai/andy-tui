@@ -17,7 +17,7 @@ public class SelectInput<T> : ISimpleComponent
     private readonly string _placeholder;
 
     public SelectInput(
-        IEnumerable<T> items, 
+        IEnumerable<T> items,
         Binding<Optional<T>> selectedItem,
         Func<T, string>? itemRenderer = null,
         int visibleItems = 5,

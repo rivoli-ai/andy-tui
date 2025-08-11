@@ -17,7 +17,7 @@ public class RadioGroup<T> : ISimpleComponent
     private readonly string _selectedMark;
     private readonly string _unselectedMark;
     private readonly bool _vertical;
-    
+
     public RadioGroup(
         string label,
         IReadOnlyList<T> options,
@@ -35,7 +35,7 @@ public class RadioGroup<T> : ISimpleComponent
         _unselectedMark = unselectedMark;
         _vertical = vertical;
     }
-    
+
     // Internal accessors for view instance
     internal string GetLabel() => _label;
     internal IReadOnlyList<T> GetOptions() => _options;
@@ -44,7 +44,7 @@ public class RadioGroup<T> : ISimpleComponent
     internal string GetSelectedMark() => _selectedMark;
     internal string GetUnselectedMark() => _unselectedMark;
     internal bool GetVertical() => _vertical;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("RadioGroup declarations should not be rendered directly. Use ViewInstanceManager.");

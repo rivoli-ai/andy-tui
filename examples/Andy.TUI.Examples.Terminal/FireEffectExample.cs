@@ -18,33 +18,33 @@ public class FireEffectExample
         public double Life { get; set; }
         public double MaxLife { get; set; }
         public ParticleType Type { get; set; }
-        
+
         public void Update()
         {
             // Apply physics
             X += VelocityX;
             Y += VelocityY;
-            
+
             // Gravity and air resistance
             VelocityY -= 0.1; // Upward movement
             VelocityX *= 0.98; // Air resistance
             VelocityY *= 0.95;
-            
+
             // Cool down over time
             Temperature *= 0.98;
             Life -= 1;
-            
+
             // Add some turbulence
             var turbulence = (Math.Sin(X * 0.1) + Math.Cos(Y * 0.15)) * 0.1;
             VelocityX += turbulence;
         }
-        
+
         public bool IsAlive => Life > 0 && Temperature > 0.1;
-        
+
         public Color GetColor()
         {
             var intensity = Temperature * (Life / MaxLife);
-            
+
             return Type switch
             {
                 ParticleType.Fire => GetFireColor(intensity),
@@ -53,11 +53,11 @@ public class FireEffectExample
                 _ => Color.White
             };
         }
-        
+
         public char GetCharacter()
         {
             var intensity = Temperature * (Life / MaxLife);
-            
+
             return Type switch
             {
                 ParticleType.Fire => GetFireChar(intensity),
@@ -66,7 +66,7 @@ public class FireEffectExample
                 _ => ' '
             };
         }
-        
+
         private static Color GetFireColor(double intensity)
         {
             if (intensity > 0.8)
@@ -80,13 +80,13 @@ public class FireEffectExample
             else
                 return Color.FromRgb(150, 0, 0); // Cool - dark red
         }
-        
+
         private static Color GetSmokeColor(double intensity)
         {
             var gray = (byte)(50 + intensity * 150);
             return Color.FromRgb(gray, gray, gray);
         }
-        
+
         private static Color GetSparkColor(double intensity)
         {
             if (intensity > 0.7)
@@ -96,7 +96,7 @@ public class FireEffectExample
             else
                 return Color.FromRgb(255, 100, 0); // Orange
         }
-        
+
         private static char GetFireChar(double intensity)
         {
             if (intensity > 0.8)
@@ -110,7 +110,7 @@ public class FireEffectExample
             else
                 return '·';
         }
-        
+
         private static char GetSmokeChar(double intensity)
         {
             if (intensity > 0.6)
@@ -120,7 +120,7 @@ public class FireEffectExample
             else
                 return '░';
         }
-        
+
         private static char GetSparkChar(double intensity)
         {
             if (intensity > 0.8)
@@ -133,21 +133,21 @@ public class FireEffectExample
                 return '.';
         }
     }
-    
+
     private enum ParticleType
     {
         Fire,
         Smoke,
         Spark
     }
-    
+
     private class FireSource
     {
         public double X { get; set; }
         public double Y { get; set; }
         public double Intensity { get; set; }
         public double Width { get; set; }
-        
+
         public IEnumerable<Particle> EmitParticles(Random random, int count)
         {
             for (int i = 0; i < count; i++)
@@ -168,7 +168,7 @@ public class FireEffectExample
                 yield return particle;
             }
         }
-        
+
         private static ParticleType GetRandomParticleType(Random random)
         {
             var r = random.NextDouble();
@@ -180,7 +180,7 @@ public class FireEffectExample
                 return ParticleType.Spark;
         }
     }
-    
+
     public static void Run()
     {
         Console.WriteLine("=== ASCII Fire Effect ===");
@@ -188,19 +188,19 @@ public class FireEffectExample
         Console.WriteLine("Use arrow keys to move the fire source");
         Console.WriteLine("Press any key to start...");
         Console.ReadKey(true);
-        
+
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
         renderingSystem.Initialize();
-        
+
         // Hide cursor
         terminal.CursorVisible = false;
-        
+
         // Create input handler
         var inputHandler = new ConsoleInputHandler();
         bool exit = false;
         var pressedKeys = new HashSet<ConsoleKey>();
-        
+
         inputHandler.KeyPressed += (_, e) =>
         {
             if (e.Key == ConsoleKey.Escape || e.Key == ConsoleKey.Q)
@@ -209,7 +209,7 @@ public class FireEffectExample
                 pressedKeys.Add(e.Key);
         };
         inputHandler.Start();
-        
+
         // Initialize fire simulation
         var random = new Random();
         var particles = new List<Particle>();
@@ -220,23 +220,23 @@ public class FireEffectExample
             Intensity = 1.0,
             Width = 10
         };
-        
+
         // Animation parameters
         var frameCount = 0;
         var startTime = DateTime.Now;
-        
+
         // Configure render scheduler
         renderingSystem.Scheduler.TargetFps = 30;
-        
+
         // Animation render function
         Action? renderFrame = null;
         renderFrame = () =>
         {
             if (exit)
                 return;
-                
+
             renderingSystem.Clear();
-            
+
             // Handle input for moving fire source
             if (pressedKeys.Contains(ConsoleKey.LeftArrow))
             {
@@ -258,90 +258,90 @@ public class FireEffectExample
                 fireSource.Intensity = Math.Max(0.2, fireSource.Intensity - 0.1);
                 pressedKeys.Remove(ConsoleKey.DownArrow);
             }
-            
+
             // Emit new particles
             var emissionRate = (int)(fireSource.Intensity * 8);
             var newParticles = fireSource.EmitParticles(random, emissionRate);
             particles.AddRange(newParticles);
-            
+
             // Update all particles
             for (int i = particles.Count - 1; i >= 0; i--)
             {
                 var particle = particles[i];
                 particle.Update();
-                
-                if (!particle.IsAlive || particle.Y < 0 || 
+
+                if (!particle.IsAlive || particle.Y < 0 ||
                     particle.X < 0 || particle.X >= renderingSystem.Terminal.Width)
                 {
                     particles.RemoveAt(i);
                 }
             }
-            
+
             // Draw ground/base
             DrawGround(renderingSystem);
-            
+
             // Draw fire source
             DrawFireSource(renderingSystem, fireSource);
-            
+
             // Sort particles by Y coordinate (back to front)
             var sortedParticles = particles.OrderBy(p => p.Y).ToList();
-            
+
             // Draw particles
             foreach (var particle in sortedParticles)
             {
                 var x = (int)Math.Round(particle.X);
                 var y = (int)Math.Round(particle.Y);
-                
+
                 if (x >= 0 && x < renderingSystem.Terminal.Width && y >= 0 && y < renderingSystem.Terminal.Height)
                 {
                     var color = particle.GetColor();
                     var character = particle.GetCharacter();
                     var style = Style.Default.WithForegroundColor(color);
-                    
+
                     renderingSystem.Buffer.SetCell(x, y, character, style);
                 }
             }
-            
+
             // Draw UI
             DrawUI(renderingSystem, fireSource, particles.Count, frameCount, startTime);
-            
+
             frameCount++;
-            
+
             // Queue next frame
             renderingSystem.Scheduler.QueueRender(renderFrame);
         };
-        
+
         // Start animation
         renderingSystem.Scheduler.QueueRender(renderFrame);
-        
+
         // Wait for exit
         while (!exit)
         {
             Thread.Sleep(50);
         }
-        
+
         inputHandler.Stop();
         inputHandler.Dispose();
-        
+
         // Restore cursor
         terminal.CursorVisible = true;
         renderingSystem.Shutdown();
-        
+
         Console.Clear();
         Console.WriteLine("\nFire extinguished!");
     }
-    
+
     private static void DrawGround(RenderingSystem renderingSystem)
     {
         var groundColor = Color.FromRgb(100, 50, 0);
         var style = Style.Default.WithBackgroundColor(groundColor);
-        
+
         for (int x = 0; x < renderingSystem.Terminal.Width; x++)
         {
             renderingSystem.Buffer.SetCell(x, renderingSystem.Terminal.Height - 1, ' ', style);
             renderingSystem.Buffer.SetCell(x, renderingSystem.Terminal.Height - 2, ' ', style);
         }
-        
+
         // Add some texture
         var textureStyle = Style.Default.WithForegroundColor(Color.FromRgb(80, 40, 0));
         for (int x = 0; x < renderingSystem.Terminal.Width; x += 3)
@@ -349,12 +349,12 @@ public class FireEffectExample
             renderingSystem.Buffer.SetCell(x, renderingSystem.Terminal.Height - 2, '▄', textureStyle);
         }
     }
-    
+
     private static void DrawFireSource(RenderingSystem renderingSystem, FireSource source)
     {
         var sourceColor = Color.FromRgb(200, 0, 0);
         var style = Style.Default.WithForegroundColor(sourceColor);
-        
+
         // Draw fire source as glowing coals
         for (int i = 0; i < source.Width; i++)
         {
@@ -363,7 +363,7 @@ public class FireEffectExample
             {
                 var intensity = 1.0 - Math.Abs(i - source.Width / 2.0) / (source.Width / 2.0);
                 var glowIntensity = intensity * source.Intensity;
-                
+
                 if (glowIntensity > 0.8)
                     renderingSystem.Buffer.SetCell(x, (int)source.Y, '█', style);
                 else if (glowIntensity > 0.5)
@@ -373,33 +373,33 @@ public class FireEffectExample
             }
         }
     }
-    
-    private static void DrawUI(RenderingSystem renderingSystem, FireSource source, int particleCount, 
+
+    private static void DrawUI(RenderingSystem renderingSystem, FireSource source, int particleCount,
         int frameCount, DateTime startTime)
     {
         var uiStyle = Style.Default.WithForegroundColor(Color.White);
         var highlightStyle = Style.Default.WithForegroundColor(Color.Yellow);
-        
+
         // Title
         renderingSystem.WriteText(2, 1, "🔥 ASCII Fire Effect", highlightStyle);
-        
+
         // Controls
         renderingSystem.WriteText(2, 3, "Controls:", uiStyle);
         renderingSystem.WriteText(2, 4, "← → Move fire source", Style.Default.WithForegroundColor(Color.Green));
         renderingSystem.WriteText(2, 5, "↑ ↓ Adjust intensity", Style.Default.WithForegroundColor(Color.Green));
         renderingSystem.WriteText(2, 6, "ESC/Q Exit", Style.Default.WithForegroundColor(Color.Red));
-        
+
         // Stats
         var elapsed = (DateTime.Now - startTime).TotalSeconds;
         var fps = frameCount / elapsed;
-        
+
         renderingSystem.WriteText(2, 8, $"Fire Intensity: {source.Intensity:F1}", uiStyle);
         renderingSystem.WriteText(2, 9, $"Particles: {particleCount}", uiStyle);
         renderingSystem.WriteText(2, 10, $"FPS: {fps:F1}", uiStyle);
-        
+
         // Heat scale legend
         renderingSystem.WriteText(renderingSystem.Terminal.Width - 20, 3, "Heat Scale:", uiStyle);
-        
+
         var heatColors = new[]
         {
             (Color.White, "█ White (Hottest)"),
@@ -408,7 +408,7 @@ public class FireEffectExample
             (Color.FromRgb(255, 50, 0), "█ Red"),
             (Color.FromRgb(150, 0, 0), "█ Dark Red (Cool)")
         };
-        
+
         for (int i = 0; i < heatColors.Length; i++)
         {
             var (color, text) = heatColors[i];

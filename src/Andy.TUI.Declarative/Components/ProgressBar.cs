@@ -33,7 +33,7 @@ public class ProgressBar : ISimpleComponent
     private readonly Color _emptyColor;
     private readonly bool _showPercentage;
     private readonly string _label;
-    
+
     public ProgressBar(
         float value,
         float minValue = 0f,
@@ -59,7 +59,7 @@ public class ProgressBar : ISimpleComponent
         _showPercentage = showPercentage;
         _label = label ?? "";
     }
-    
+
     // Internal accessors for view instance
     internal float GetValue() => _value;
     internal float GetMinValue() => _minValue;
@@ -72,12 +72,12 @@ public class ProgressBar : ISimpleComponent
     internal Color GetEmptyColor() => _emptyColor;
     internal bool GetShowPercentage() => _showPercentage;
     internal string GetLabel() => _label;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("ProgressBar declarations should not be rendered directly. Use ViewInstanceManager.");
     }
-    
+
     // Helper method to get style characters
     public static (char filled, char empty) GetStyleChars(ProgressBarStyle style)
     {

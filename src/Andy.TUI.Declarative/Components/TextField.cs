@@ -25,7 +25,7 @@ public class TextField : ISimpleComponent
     {
         return new TextField(_placeholder, _text, true);
     }
-    
+
     // Internal accessors for view instance
     internal string GetPlaceholder() => _placeholder;
     internal Binding<string> GetBinding() => _text;

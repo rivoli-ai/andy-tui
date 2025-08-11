@@ -31,7 +31,7 @@ public class Spinner : ISimpleComponent
     private readonly string _label;
     private readonly bool _labelFirst;
     private readonly int _frameDelay;
-    
+
     public Spinner(
         SpinnerStyle style = SpinnerStyle.Dots,
         string[]? customFrames = null,
@@ -47,7 +47,7 @@ public class Spinner : ISimpleComponent
         _labelFirst = labelFirst;
         _frameDelay = Math.Max(10, frameDelay);
     }
-    
+
     // Internal accessors for view instance
     internal SpinnerStyle GetStyle() => _style;
     internal string[] GetCustomFrames() => _customFrames;
@@ -55,12 +55,12 @@ public class Spinner : ISimpleComponent
     internal string GetLabel() => _label;
     internal bool GetLabelFirst() => _labelFirst;
     internal int GetFrameDelay() => _frameDelay;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("Spinner declarations should not be rendered directly. Use ViewInstanceManager.");
     }
-    
+
     // Helper method to get spinner frames
     public static string[] GetFrames(SpinnerStyle style)
     {

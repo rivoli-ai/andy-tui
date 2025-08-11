@@ -31,7 +31,7 @@ public class Modal : ISimpleComponent
     private readonly bool _closeOnBackdropClick;
     private readonly Color _backdropColor;
     private readonly float _backdropOpacity;
-    
+
     public Modal(
         string title,
         ISimpleComponent content,
@@ -53,37 +53,37 @@ public class Modal : ISimpleComponent
         _backdropColor = backdropColor ?? Color.Black;
         _backdropOpacity = Math.Clamp(backdropOpacity, 0f, 1f);
     }
-    
+
     public Modal Size(ModalSize size)
     {
-        return new Modal(_title, _content, _isOpen, size, _showCloseButton, 
+        return new Modal(_title, _content, _isOpen, size, _showCloseButton,
             _closeOnEscape, _closeOnBackdropClick, _backdropColor, _backdropOpacity);
     }
-    
+
     public Modal HideCloseButton()
     {
-        return new Modal(_title, _content, _isOpen, _size, false, 
+        return new Modal(_title, _content, _isOpen, _size, false,
             _closeOnEscape, _closeOnBackdropClick, _backdropColor, _backdropOpacity);
     }
-    
+
     public Modal DisableEscapeClose()
     {
-        return new Modal(_title, _content, _isOpen, _size, _showCloseButton, 
+        return new Modal(_title, _content, _isOpen, _size, _showCloseButton,
             false, _closeOnBackdropClick, _backdropColor, _backdropOpacity);
     }
-    
+
     public Modal DisableBackdropClick()
     {
-        return new Modal(_title, _content, _isOpen, _size, _showCloseButton, 
+        return new Modal(_title, _content, _isOpen, _size, _showCloseButton,
             _closeOnEscape, false, _backdropColor, _backdropOpacity);
     }
-    
+
     public Modal BackdropColor(Color color, float opacity = 0.5f)
     {
-        return new Modal(_title, _content, _isOpen, _size, _showCloseButton, 
+        return new Modal(_title, _content, _isOpen, _size, _showCloseButton,
             _closeOnEscape, _closeOnBackdropClick, color, opacity);
     }
-    
+
     // Internal accessors for view instance
     internal string GetTitle() => _title;
     internal ISimpleComponent GetContent() => _content;
@@ -94,7 +94,7 @@ public class Modal : ISimpleComponent
     internal bool GetCloseOnBackdropClick() => _closeOnBackdropClick;
     internal Color GetBackdropColor() => _backdropColor;
     internal float GetBackdropOpacity() => _backdropOpacity;
-    
+
     public VirtualNode Render()
     {
         throw new InvalidOperationException("Modal declarations should not be rendered directly. Use ViewInstanceManager.");
@@ -107,25 +107,25 @@ public class Modal : ISimpleComponent
 public static class Dialog
 {
     public static Modal Alert(
-        string title, 
-        string message, 
+        string title,
+        string message,
         Binding<bool> isOpen,
         string buttonText = "OK")
     {
-        var content = new VStack(spacing: 2) 
+        var content = new VStack(spacing: 2)
         {
             new Text(message),
-            new HStack 
-            { 
+            new HStack
+            {
                 new Spacer(),
                 new Button(buttonText, () => isOpen.Value = false).Primary()
             }
         };
-        
+
         return new Modal(title, content, isOpen, ModalSize.Small)
             .DisableBackdropClick();
     }
-    
+
     public static Modal Confirm(
         string title,
         string message,
@@ -134,25 +134,25 @@ public static class Dialog
         string confirmText = "Yes",
         string cancelText = "No")
     {
-        var content = new VStack(spacing: 2) 
+        var content = new VStack(spacing: 2)
         {
             new Text(message),
-            new HStack(spacing: 2) 
-            { 
+            new HStack(spacing: 2)
+            {
                 new Spacer(),
                 new Button(cancelText, () => isOpen.Value = false).Secondary(),
-                new Button(confirmText, () => 
+                new Button(confirmText, () =>
                 {
                     onConfirm();
                     isOpen.Value = false;
                 }).Primary()
             }
         };
-        
+
         return new Modal(title, content, isOpen, ModalSize.Small)
             .DisableBackdropClick();
     }
-    
+
     public static Modal Prompt(
         string title,
         string message,
@@ -163,22 +163,22 @@ public static class Dialog
         string submitText = "Submit",
         string cancelText = "Cancel")
     {
-        var content = new VStack(spacing: 2) 
+        var content = new VStack(spacing: 2)
         {
             new Text(message),
             new TextField(placeholder, inputValue),
-            new HStack(spacing: 2) 
-            { 
+            new HStack(spacing: 2)
+            {
                 new Spacer(),
                 new Button(cancelText, () => isOpen.Value = false).Secondary(),
-                new Button(submitText, () => 
+                new Button(submitText, () =>
                 {
                     onSubmit(inputValue.Value);
                     isOpen.Value = false;
                 }).Primary()
             }
         };
-        
+
         return new Modal(title, content, isOpen, ModalSize.Small)
             .DisableBackdropClick();
     }

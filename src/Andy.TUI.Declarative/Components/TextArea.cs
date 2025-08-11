@@ -39,7 +39,7 @@ public class TextArea : ISimpleComponent
     {
         return new TextArea(_placeholder, _text, _rows, _cols, wrap);
     }
-    
+
     // Internal accessors for view instance
     internal string GetPlaceholder() => _placeholder;
     internal Binding<string> GetBinding() => _text;

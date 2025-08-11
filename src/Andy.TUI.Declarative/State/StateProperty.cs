@@ -88,7 +88,7 @@ public class StateProperty<T> : INotifyPropertyChanged
     {
         if (obj is StateProperty<T> other)
             return EqualityComparer<T>.Default.Equals(_value, other._value);
-        
+
         if (obj is T directValue)
             return EqualityComparer<T>.Default.Equals(_value, directValue);
 

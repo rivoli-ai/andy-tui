@@ -73,23 +73,23 @@ public class WeatherDashboardExample
         var currentWeather = GenerateCurrentWeather();
         var forecast = GenerateForecast();
         var temperatureHistory = GenerateTemperatureHistory();
-        
+
         int selectedCity = 0;
         var cities = new[] { "New York", "London", "Tokyo", "Sydney", "Paris" };
 
         var frameCount = 0;
         var startTime = DateTime.Now;
-        
+
         // Configure render scheduler
         renderingSystem.Scheduler.TargetFps = 20;
-        
+
         // Animation render function
         Action? renderFrame = null;
         renderFrame = () =>
         {
             if (exit)
                 return;
-                
+
             renderingSystem.Clear();
 
             // Handle input
@@ -116,18 +116,18 @@ public class WeatherDashboardExample
             }
 
             // Draw dashboard
-            DrawWeatherDashboard(renderingSystem, currentWeather, forecast, temperatureHistory, 
+            DrawWeatherDashboard(renderingSystem, currentWeather, forecast, temperatureHistory,
                                frameCount, startTime, selectedCity, cities.Length);
 
             frameCount++;
-            
+
             // Queue next frame
             renderingSystem.Scheduler.QueueRender(renderFrame);
         };
-        
+
         // Start animation
         renderingSystem.Scheduler.QueueRender(renderFrame);
-        
+
         // Wait for exit
         while (!exit)
         {
@@ -144,7 +144,7 @@ public class WeatherDashboardExample
         Console.WriteLine("\nWeather dashboard closed. Stay safe out there!");
     }
 
-    private static void DrawWeatherDashboard(RenderingSystem renderingSystem, WeatherData weather, 
+    private static void DrawWeatherDashboard(RenderingSystem renderingSystem, WeatherData weather,
                                            List<ForecastDay> forecast, List<int> temperatureHistory,
                                            int frameCount, DateTime startTime, int selectedCity, int totalCities)
     {
@@ -360,7 +360,7 @@ public class WeatherDashboardExample
 
         var graphHeight = 8;
         var graphWidth = Math.Min(temperatures.Count, 30);
-        
+
         var minTemp = temperatures.Min();
         var maxTemp = temperatures.Max();
         var tempRange = Math.Max(1, maxTemp - minTemp);
@@ -400,7 +400,7 @@ public class WeatherDashboardExample
         var infoStyle = Style.Default.WithForegroundColor(Color.White);
 
         renderingSystem.WriteText(x, y, "Details", headerStyle);
-        
+
         // Air quality indicator
         var aqiColor = weather.UVIndex < 3 ? Color.Green : weather.UVIndex < 6 ? Color.Yellow : Color.Red;
         var aqiStyle = Style.Default.WithForegroundColor(aqiColor);

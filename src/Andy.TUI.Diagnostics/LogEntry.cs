@@ -20,9 +20,9 @@ public class LogEntry
     public Exception? Exception { get; init; }
     public Dictionary<string, object?> Context { get; init; } = new();
     public string? CorrelationId { get; init; }
-    
+
     public string FormattedMessage => FormatMessage();
-    
+
     private string FormatMessage()
     {
         var parts = new List<string>
@@ -31,25 +31,25 @@ public class LogEntry
             $"[{Level,-7}]",
             $"[{Category}]"
         };
-        
+
         if (!string.IsNullOrEmpty(ThreadId))
             parts.Add($"[T:{ThreadId}]");
-            
+
         if (!string.IsNullOrEmpty(CorrelationId))
             parts.Add($"[C:{CorrelationId}]");
-            
+
         parts.Add(Message);
-        
+
         if (SourceFile != null && SourceLine != null)
             parts.Add($"@ {SourceFile}:{SourceLine}");
-            
+
         if (Exception != null)
         {
             parts.Add($"\n  Exception: {Exception.GetType().Name}: {Exception.Message}");
             if (Exception.StackTrace != null)
                 parts.Add($"\n  {Exception.StackTrace.Replace("\n", "\n  ")}");
         }
-        
+
         if (Context.Count > 0)
         {
             parts.Add("\n  Context:");
@@ -58,7 +58,7 @@ public class LogEntry
                 parts.Add($"\n    {kvp.Key}: {kvp.Value}");
             }
         }
-        
+
         return string.Join(" ", parts);
     }
 }

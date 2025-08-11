@@ -17,7 +17,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private VirtualNode? _currentTree;
     private RenderedElement? _rootElement;
     private readonly ILogger _logger;
-    
+
     // Clipping state
     private bool _hasClipping = false;
     private int _clipX = 0;
@@ -53,9 +53,9 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     {
         var startTime = DateTime.UtcNow;
         _logger.Debug($"Starting full render. Tree nodes: {CountNodes(tree)}");
-            _currentTree = tree;
-            _renderedElements.Clear();
-            _dirtyRegionTracker.Clear();
+        _currentTree = tree;
+        _renderedElements.Clear();
+        _dirtyRegionTracker.Clear();
 
         // Clear the entire render area to remove any stale content from previous frames
         for (int y = 0; y < _renderingSystem.Height; y++)
@@ -70,11 +70,11 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
         // Second pass: render elements in z-order
         RenderInZOrder(_rootElement);
-        
+
         var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
         _logger.Debug($"Render complete. Rendered elements: {_renderedElements.Count}, Time: {elapsed:F2}ms");
     }
-    
+
     private int CountNodes(VirtualNode node)
     {
         if (node.Children != null && node.Children.Count > 0)
@@ -103,7 +103,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
         // Re-render only dirty regions
         RenderDirtyRegions();
-        
+
         var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
         _logger.Debug($"Applied {patches.Count} patches in {elapsed:F2}ms");
     }
@@ -260,7 +260,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             }
             return;
         }
-        
+
         // Special handling for clipping nodes - set clipping then render children
         if (element.Node is ClippingNode)
         {
@@ -270,7 +270,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             _currentRenderContext = null;
             return;
         }
-        
+
         _currentRenderContext = new RenderContext { X = x, Y = y, Element = element };
         // Debug: RenderElement at ({x},{y})
         element.Node.Accept(this);
@@ -317,7 +317,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         {
             var x = _currentRenderContext.X;
             var y = _currentRenderContext.Y;
-            
+
             // Apply clipping if active
             if (_hasClipping)
             {
@@ -327,10 +327,10 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                     _logger.Debug($"Clipping text at ({x},{y}) - outside bounds ({_clipX},{_clipY},{_clipWidth},{_clipHeight})");
                     return; // Don't render text outside clipping bounds
                 }
-                
+
                 // TODO: Clip text that partially extends outside bounds
             }
-            
+
             // Get style from parent element if it's a text element
             var style = Style.Default;
             if (_currentRenderContext.Element?.Node is ElementNode elementNode &&
@@ -410,16 +410,16 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             var oldClipWidth = _clipWidth;
             var oldClipHeight = _clipHeight;
             var oldHasClipping = _hasClipping;
-            
+
             // Set new clipping bounds
             _clipX = node.X;
             _clipY = node.Y;
             _clipWidth = node.Width;
             _clipHeight = node.Height;
             _hasClipping = true;
-            
+
             _logger.Debug($"Set clipping bounds to ({_clipX},{_clipY},{_clipWidth},{_clipHeight})");
-            
+
             // Render children with clipping - need to render through RenderedElement structure
             // Find the RenderedElement for this clipping node and render its children
             if (_currentRenderContext.Element != null)
@@ -433,11 +433,11 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                         childX = x;
                     if (childElement.Node.Props.TryGetValue("y", out var yProp) && yProp is int y)
                         childY = y;
-                        
+
                     RenderElement(childElement, childX, childY);
                 }
             }
-            
+
             // Restore old clipping bounds
             _clipX = oldClipX;
             _clipY = oldClipY;
@@ -460,7 +460,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             var prefixedPath = new[] { 0 }.Concat(patch.Path).ToArray();
             _renderedElements.TryGetValue(prefixedPath, out element);
         }
-        
+
         if (element != null)
         {
             _dirtyRegionTracker.MarkDirty(new Rectangle(element.X, element.Y, element.Width, element.Height));
@@ -472,7 +472,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     {
         // Debug logging (uncomment to debug patch path issues)
         // Console.Error.WriteLine($"[VirtualDomRenderer] VisitUpdateProps: Looking for path [{string.Join(",", patch.Path)}]");
-        
+
         // Patches use relative paths, but we store with [0] prefix for the root
         // Try both the original path and with [0] prefix
         var element = default(RenderedElement);
@@ -483,7 +483,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             // Console.Error.WriteLine($"[VirtualDomRenderer] Trying prefixed path [{string.Join(",", prefixedPath)}]");
             _renderedElements.TryGetValue(prefixedPath, out element);
         }
-        
+
         if (element != null)
         {
             // Console.Error.WriteLine($"[VirtualDomRenderer] Found element at path [{string.Join(",", patch.Path)}]");
@@ -492,7 +492,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             var originalY = element.Y;
             var originalWidth = element.Width;
             var originalHeight = element.Height;
-            
+
             // Mark old position as dirty (for clearing) using original dimensions
             _dirtyRegionTracker.MarkDirty(new Rectangle(originalX, originalY, originalWidth, originalHeight));
 
@@ -568,7 +568,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                 // Console.Error.WriteLine($"[VirtualDomRenderer] Trying prefixed parent path [{string.Join(",", prefixedParentPath)}]");
                 _renderedElements.TryGetValue(prefixedParentPath, out parentElement);
             }
-            
+
             if (parentElement != null)
             {
                 // Compute clear width as max of old and new to ensure trailing chars are cleared

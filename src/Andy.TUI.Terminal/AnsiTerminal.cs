@@ -15,16 +15,16 @@ public class AnsiTerminal : ITerminal, IDisposable
     private int _width;
     private int _height;
     private bool _alternateScreen;
-    
+
     public int Width => _width;
     public int Height => _height;
-    
+
     public (int Column, int Row) CursorPosition
     {
         get => (Console.CursorLeft, Console.CursorTop);
         set => MoveCursor(value.Column, value.Row);
     }
-    
+
     public bool CursorVisible
     {
         get
@@ -45,22 +45,22 @@ public class AnsiTerminal : ITerminal, IDisposable
             _buffer.Append(value ? "\x1b[?25h" : "\x1b[?25l");
         }
     }
-    
+
     public bool SupportsColor => true;
     public bool SupportsAnsi => true;
-    
+
     public event EventHandler<TerminalSizeChangedEventArgs>? SizeChanged;
-    
+
     public AnsiTerminal() : this(Console.Out)
     {
     }
-    
+
     public AnsiTerminal(TextWriter output)
     {
         _output = output ?? throw new ArgumentNullException(nameof(output));
         _buffer = new StringBuilder(1024);
         UpdateSize();
-        
+
         // Start monitoring size changes
         if (OperatingSystem.IsWindows())
         {
@@ -73,12 +73,12 @@ public class AnsiTerminal : ITerminal, IDisposable
             Console.CancelKeyPress += OnCancelKeyPress;
         }
     }
-    
+
     private void UpdateSize()
     {
         var oldWidth = _width;
         var oldHeight = _height;
-        
+
         try
         {
             _width = Console.WindowWidth;
@@ -90,67 +90,67 @@ public class AnsiTerminal : ITerminal, IDisposable
             _width = 80;
             _height = 24;
         }
-        
+
         if (oldWidth != _width || oldHeight != _height)
         {
             SizeChanged?.Invoke(this, new TerminalSizeChangedEventArgs(_width, _height, oldWidth, oldHeight));
         }
     }
-    
+
     private void OnCancelKeyPress(object? sender, ConsoleCancelEventArgs e)
     {
         // Check for size changes on Ctrl+C (not ideal but works)
         UpdateSize();
     }
-    
+
     public void Clear()
     {
         _buffer.Append("\x1b[2J\x1b[H");
         Flush();
     }
-    
+
     public void ClearLine()
     {
         _buffer.Append("\x1b[K");
     }
-    
+
     public void MoveCursor(int column, int row)
     {
         // ANSI uses 1-based positioning
         _buffer.Append($"\x1b[{row + 1};{column + 1}H");
     }
-    
+
     public void Write(string text)
     {
         if (string.IsNullOrEmpty(text))
             return;
-            
+
         _buffer.Append(text);
     }
-    
+
     public void WriteLine(string text)
     {
         Write(text);
         _buffer.AppendLine();
     }
-    
+
     public void SetForegroundColor(ConsoleColor color)
     {
         var ansiCode = GetAnsiForegroundCode(color);
         _buffer.Append($"\x1b[{ansiCode}m");
     }
-    
+
     public void SetBackgroundColor(ConsoleColor color)
     {
         var ansiCode = GetAnsiBackgroundCode(color);
         _buffer.Append($"\x1b[{ansiCode}m");
     }
-    
+
     public void ResetColors()
     {
         _buffer.Append("\x1b[0m");
     }
-    
+
     public void SaveCursorPosition()
     {
         _buffer.Append("\x1b[s");
@@ -158,12 +158,12 @@ public class AnsiTerminal : ITerminal, IDisposable
         _savedColumn = pos.Column;
         _savedRow = pos.Row;
     }
-    
+
     public void RestoreCursorPosition()
     {
         _buffer.Append("\x1b[u");
     }
-    
+
     public void EnterAlternateScreen()
     {
         if (!_alternateScreen)
@@ -173,7 +173,7 @@ public class AnsiTerminal : ITerminal, IDisposable
             Flush();
         }
     }
-    
+
     public void ExitAlternateScreen()
     {
         if (_alternateScreen)
@@ -183,7 +183,7 @@ public class AnsiTerminal : ITerminal, IDisposable
             Flush();
         }
     }
-    
+
     public void Flush()
     {
         if (_buffer.Length > 0)
@@ -192,25 +192,25 @@ public class AnsiTerminal : ITerminal, IDisposable
             _output.Flush();
             _buffer.Clear();
         }
-        
+
         // Check for size changes
         UpdateSize();
     }
-    
+
     /// <summary>
     /// Applies a style using ANSI escape sequences.
     /// </summary>
     public void ApplyStyle(Style style)
     {
         var codes = new List<int>();
-        
+
         // Reset first if needed
-        if (style.Bold || style.Italic || style.Underline || style.Strikethrough || 
+        if (style.Bold || style.Italic || style.Underline || style.Strikethrough ||
             style.Dim || style.Inverse || style.Blink)
         {
             codes.Add(0); // Reset
         }
-        
+
         // Text attributes
         if (style.Bold) codes.Add(1);
         if (style.Dim) codes.Add(2);
@@ -219,7 +219,7 @@ public class AnsiTerminal : ITerminal, IDisposable
         if (style.Blink) codes.Add(5);
         if (style.Inverse) codes.Add(7);
         if (style.Strikethrough) codes.Add(9);
-        
+
         // Foreground color
         if (style.Foreground.Type == ColorType.ConsoleColor && style.Foreground.ConsoleColor.HasValue)
         {
@@ -234,7 +234,7 @@ public class AnsiTerminal : ITerminal, IDisposable
         {
             _buffer.Append($"\x1b[38;5;{style.Foreground.ColorIndex.Value}m");
         }
-        
+
         // Background color
         if (style.Background.Type == ColorType.ConsoleColor && style.Background.ConsoleColor.HasValue)
         {
@@ -249,14 +249,14 @@ public class AnsiTerminal : ITerminal, IDisposable
         {
             _buffer.Append($"\x1b[48;5;{style.Background.ColorIndex.Value}m");
         }
-        
+
         // Apply collected codes
         if (codes.Count > 0)
         {
             _buffer.Append($"\x1b[{string.Join(";", codes)}m");
         }
     }
-    
+
     private static int GetAnsiForegroundCode(ConsoleColor color)
     {
         return color switch
@@ -280,7 +280,7 @@ public class AnsiTerminal : ITerminal, IDisposable
             _ => 37
         };
     }
-    
+
     private static int GetAnsiBackgroundCode(ConsoleColor color)
     {
         return color switch
@@ -304,7 +304,7 @@ public class AnsiTerminal : ITerminal, IDisposable
             _ => 40
         };
     }
-    
+
     public void Dispose()
     {
         // Restore cursor visibility on dispose

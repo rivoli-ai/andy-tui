@@ -20,7 +20,7 @@ public class FixedTabNavigationTest : TestBase
     public FixedTabNavigationTest(ITestOutputHelper output) : base(output)
     {
     }
-    
+
     [Fact]
     public void TabNavigation_WithInitialFocus_ShouldWorkCorrectly()
     {
@@ -51,7 +51,7 @@ public class FixedTabNavigationTest : TestBase
             LogStep("Initial state - first field should already have focus");
             LogData("Initial name", name);
             LogData("Initial pass", pass);
-            
+
             // First field already has focus, so type in it directly
             LogStep("Type 'NAME' in first field (already focused)");
             foreach (char c in "NAME")
@@ -60,12 +60,12 @@ public class FixedTabNavigationTest : TestBase
                 Thread.Sleep(30);
             }
             LogData("Name after typing", name);
-            
+
             // Tab to second field
             LogStep("TAB to second field");
             input.EmitKey('\t', ConsoleKey.Tab);
             Thread.Sleep(50);
-            
+
             // Type in second field
             LogStep("Type 'PASS' in second field");
             foreach (char c in "PASS")
@@ -74,10 +74,10 @@ public class FixedTabNavigationTest : TestBase
                 Thread.Sleep(30);
             }
             LogData("Pass after typing", pass);
-            
+
             LogAssertion("Name should be 'NAME'");
             Assert.Equal("NAME", name);
-            
+
             LogAssertion("Pass should be 'PASS'");
             Assert.Equal("PASS", pass);
 
@@ -85,7 +85,7 @@ public class FixedTabNavigationTest : TestBase
             thread.Join(100);
         }
     }
-    
+
     [Fact]
     public void TwoTextFields_DirectInput_AccountingForInitialFocus()
     {
@@ -133,7 +133,7 @@ public class FixedTabNavigationTest : TestBase
 
             LogAssertion("Username should be 'user'");
             Assert.Equal("user", username);
-            
+
             LogAssertion("Email should be 'email'");
             Assert.Equal("email", email);
 
@@ -141,7 +141,7 @@ public class FixedTabNavigationTest : TestBase
             thread.Join(100);
         }
     }
-    
+
     [Fact]
     public void Backspace_WithInitialFocus_ShouldWork()
     {
@@ -154,7 +154,7 @@ public class FixedTabNavigationTest : TestBase
 
             string value = string.Empty;
 
-            ISimpleComponent Root() => new TextField("Type here", 
+            ISimpleComponent Root() => new TextField("Type here",
                 new Andy.TUI.Declarative.State.Binding<string>(() => value, v => value = v));
 
             renderingSystem.Initialize();
@@ -186,7 +186,7 @@ public class FixedTabNavigationTest : TestBase
             thread.Join(100);
         }
     }
-    
+
     [Fact]
     public void TabCycling_ShouldWrapAroundProperly()
     {
@@ -241,10 +241,10 @@ public class FixedTabNavigationTest : TestBase
 
             LogAssertion("Field1 should be '1X'");
             Assert.Equal("1X", field1);
-            
+
             LogAssertion("Field2 should be '2'");
             Assert.Equal("2", field2);
-            
+
             LogAssertion("Field3 should be '3'");
             Assert.Equal("3", field3);
 

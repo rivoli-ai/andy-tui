@@ -77,7 +77,7 @@ public class SliderComponentTests
         var binding = new Binding<float>(() => value, v => value = v);
         var slider = new Slider(binding, 0f, 100f, 10f);
         var instance = manager.GetOrCreateInstance(slider, "slider1") as SliderInstance;
-        
+
         Assert.NotNull(instance);
         instance.OnGotFocus();
 
@@ -106,7 +106,7 @@ public class SliderComponentTests
         var binding = new Binding<float>(() => value, v => value = v);
         var slider = new Slider(binding, 0f, 100f, 5f, orientation: SliderOrientation.Vertical);
         var instance = manager.GetOrCreateInstance(slider, "slider1") as SliderInstance;
-        
+
         Assert.NotNull(instance);
         instance.OnGotFocus();
 
@@ -127,7 +127,7 @@ public class SliderComponentTests
         var binding = new Binding<float>(() => 50f, value => { });
         var slider = new Slider(binding);
         var instance = manager.GetOrCreateInstance(slider, "slider1") as SliderInstance;
-        
+
         Assert.NotNull(instance);
 
         // Assert
@@ -145,7 +145,7 @@ public class SliderComponentTests
     public void Slider_ShowcaseExamples()
     {
         // Test examples from FinalComponentsShowcase
-        
+
         // Volume control
         var volumeBinding = new Binding<float>(() => 50f, v => { });
         var volumeSlider = new Slider(volumeBinding, 0f, 100f, 5f, label: "Volume", thumbColor: Color.Green);

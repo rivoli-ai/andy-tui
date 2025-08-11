@@ -20,12 +20,12 @@ public static class LogManager
     private static readonly List<ILogSink> _globalSinks = new();
     private static bool _initialized = false;
     private static readonly object _initLock = new();
-    
+
     /// <summary>
     /// Gets the global log buffer containing all log entries.
     /// </summary>
     public static LogBuffer GlobalBuffer => _globalBuffer;
-    
+
     /// <summary>
     /// Gets or sets the default minimum log level.
     /// </summary>
@@ -38,7 +38,7 @@ public static class LogManager
             // Update existing loggers if needed
         }
     }
-    
+
     /// <summary>
     /// Initializes the logging system with default or custom configuration.
     /// </summary>
@@ -47,11 +47,11 @@ public static class LogManager
         lock (_initLock)
         {
             if (_initialized) return;
-            
+
             // Use environment-based config by default, but if no env vars are set, use silent
             config ??= HasAnyLoggingEnvironmentVariables() ? LogConfiguration.Default : LogConfiguration.Silent;
             _defaultLevel = config.MinLevel;
-            
+
             // Add configured sinks
             if (config.EnableConsole)
             {
@@ -59,26 +59,26 @@ public static class LogManager
                     useColors: config.ConsoleUseColors,
                     useStderr: config.ConsoleUseStderr));
             }
-            
+
             if (config.EnableFile)
             {
                 var logDir = config.FileDirectory ?? Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Andy.TUI",
                     "Logs");
-                    
+
                 _globalSinks.Add(new FileSink(logDir, config.MaxFileSize));
             }
-            
+
             if (config.EnableDebug && System.Diagnostics.Debugger.IsAttached)
             {
                 _globalSinks.Add(new DebugSink());
             }
-            
+
             _initialized = true;
         }
     }
-    
+
     /// <summary>
     /// Checks if any logging-related environment variables are set.
     /// </summary>
@@ -89,7 +89,7 @@ public static class LogManager
                !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_FILE")) ||
                !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_DEBUG"));
     }
-    
+
     /// <summary>
     /// Gets a logger for the specified category.
     /// </summary>
@@ -99,7 +99,7 @@ public static class LogManager
         {
             Initialize();
         }
-        
+
         return _loggers.GetOrAdd(category, cat =>
         {
             var logger = new EnhancedLogger(cat, _defaultLevel, _globalBuffer);
@@ -110,43 +110,43 @@ public static class LogManager
             return logger;
         });
     }
-    
+
     /// <summary>
     /// Gets a logger for the specified type.
     /// </summary>
     public static ILogger GetLogger<T>() => GetLogger(typeof(T).Name);
-    
+
     /// <summary>
     /// Gets a logger for the specified type.
     /// </summary>
     public static ILogger GetLogger(Type type) => GetLogger(type.Name);
-    
+
     /// <summary>
     /// Exports log entries to a file.
     /// </summary>
     public static void ExportLogs(string filePath, DateTime? since = null, LogLevel? minLevel = null)
     {
         var entries = _globalBuffer.GetEntries(since: since, minLevel: minLevel);
-        
+
         // Ensure directory exists
         var directory = Path.GetDirectoryName(filePath);
         if (!string.IsNullOrEmpty(directory))
         {
             Directory.CreateDirectory(directory);
         }
-        
+
         using var writer = new StreamWriter(filePath, append: false);
         writer.WriteLine($"=== Andy.TUI Log Export ===");
         writer.WriteLine($"Exported: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
         writer.WriteLine($"Total Entries: {entries.Count}");
         writer.WriteLine(new string('=', 80));
-        
+
         foreach (var entry in entries)
         {
             writer.WriteLine(entry.FormattedMessage);
         }
     }
-    
+
     /// <summary>
     /// Exports log entries as JSON.
     /// </summary>
@@ -160,12 +160,12 @@ public static class LogManager
         });
         File.WriteAllText(filePath, json);
     }
-    
+
     /// <summary>
     /// Gets log statistics.
     /// </summary>
     public static LogStatistics GetStatistics() => _globalBuffer.GetStatistics();
-    
+
     /// <summary>
     /// Searches logs for specific text.
     /// </summary>
@@ -183,7 +183,7 @@ public static class LogManager
             searchText: searchText,
             limit: limit);
     }
-    
+
     /// <summary>
     /// Clears all log entries from the buffer.
     /// </summary>
@@ -191,7 +191,7 @@ public static class LogManager
     {
         _globalBuffer.Clear();
     }
-    
+
     /// <summary>
     /// Gets a summary of recent errors.
     /// </summary>
@@ -200,7 +200,7 @@ public static class LogManager
         var errors = _globalBuffer.GetEntries(minLevel: LogLevel.Error, limit: maxErrors);
         var sb = new StringBuilder();
         sb.AppendLine($"=== Recent Errors ({errors.Count}) ===");
-        
+
         foreach (var error in errors)
         {
             sb.AppendLine($"{error.Timestamp:HH:mm:ss} [{error.Category}] {error.Message}");
@@ -209,10 +209,10 @@ public static class LogManager
                 sb.AppendLine($"  Exception: {error.Exception.GetType().Name}: {error.Exception.Message}");
             }
         }
-        
+
         return sb.ToString();
     }
-    
+
     /// <summary>
     /// Shutdown the logging system and flush all sinks.
     /// </summary>

@@ -19,23 +19,23 @@ public class FileSink : ILogSink, IDisposable
     private StreamWriter? _currentWriter;
     private string? _currentFile;
     private long _currentSize;
-    
+
     public FileSink(string directory, long maxFileSize = 10 * 1024 * 1024) // 10MB default
     {
         _directory = directory;
         _maxFileSize = maxFileSize;
         Directory.CreateDirectory(directory);
-        
+
         _channel = Channel.CreateUnbounded<LogEntry>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = false
         });
-        
+
         _cts = new CancellationTokenSource();
         _writerTask = Task.Run(() => ProcessLogsAsync(_cts.Token));
     }
-    
+
     public void Write(LogEntry entry)
     {
         if (!_channel.Writer.TryWrite(entry))
@@ -43,7 +43,7 @@ public class FileSink : ILogSink, IDisposable
             // Channel is closed, ignore
         }
     }
-    
+
     private async Task ProcessLogsAsync(CancellationToken cancellationToken)
     {
         try
@@ -62,7 +62,7 @@ public class FileSink : ILogSink, IDisposable
             _currentWriter?.Dispose();
         }
     }
-    
+
     private async Task WriteToFileAsync(LogEntry entry)
     {
         try
@@ -71,11 +71,11 @@ public class FileSink : ILogSink, IDisposable
             {
                 await RotateFileAsync();
             }
-            
+
             var line = entry.FormattedMessage;
             await _currentWriter!.WriteLineAsync(line);
             _currentSize += System.Text.Encoding.UTF8.GetByteCount(line + Environment.NewLine);
-            
+
             // Flush important messages immediately
             if (entry.Level >= LogLevel.Warning)
             {
@@ -87,7 +87,7 @@ public class FileSink : ILogSink, IDisposable
             // Ignore write failures
         }
     }
-    
+
     private async Task RotateFileAsync()
     {
         if (_currentWriter != null)
@@ -95,22 +95,22 @@ public class FileSink : ILogSink, IDisposable
             await _currentWriter.FlushAsync();
             _currentWriter.Dispose();
         }
-        
+
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
         _currentFile = Path.Combine(_directory, $"andy_tui_{timestamp}.log");
         _currentWriter = new StreamWriter(_currentFile, append: false) { AutoFlush = false };
         _currentSize = 0;
-        
+
         await _currentWriter.WriteLineAsync($"=== Andy.TUI Log File ===");
         await _currentWriter.WriteLineAsync($"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
         await _currentWriter.WriteLineAsync(new string('-', 80));
     }
-    
+
     public void Dispose()
     {
         _channel.Writer.TryComplete();
         _cts.Cancel();
-        
+
         try
         {
             _writerTask.Wait(TimeSpan.FromSeconds(5));
@@ -119,7 +119,7 @@ public class FileSink : ILogSink, IDisposable
         {
             // Ignore
         }
-        
+
         _currentWriter?.Dispose();
         _cts.Dispose();
     }
