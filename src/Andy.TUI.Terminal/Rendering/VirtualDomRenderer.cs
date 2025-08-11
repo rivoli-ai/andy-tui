@@ -17,6 +17,13 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private VirtualNode? _currentTree;
     private RenderedElement? _rootElement;
     private readonly ILogger _logger;
+    
+    // Clipping state
+    private bool _hasClipping = false;
+    private int _clipX = 0;
+    private int _clipY = 0;
+    private int _clipWidth = 0;
+    private int _clipHeight = 0;
 
     /// <summary>
     /// Represents a rendered element with its position and z-order.
@@ -110,17 +117,36 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             Node = node
         };
 
-        // Extract position and size from props (do not apply offsets here; applied in absolute calc)
-        if (node.Props.TryGetValue("x", out var xProp) && xProp is int xVal)
-            element.X = xVal;
-        if (node.Props.TryGetValue("y", out var yProp) && yProp is int yVal)
-            element.Y = yVal;
-        if (node.Props.TryGetValue("width", out var wProp) && wProp is int width)
-            element.Width = width;
-        if (node.Props.TryGetValue("height", out var hProp) && hProp is int height)
-            element.Height = height;
-        if (node.Props.TryGetValue("z-index", out var zProp) && zProp is int zIndex)
-            element.ZIndex = zIndex;
+        // Special handling for fragment nodes - they don't have their own position
+        if (node is FragmentNode)
+        {
+            // Fragment inherits parent position but doesn't render itself
+            element.Width = 0;
+            element.Height = 0;
+        }
+        // Special handling for clipping nodes
+        else if (node is ClippingNode clipNode)
+        {
+            element.X = clipNode.X;
+            element.Y = clipNode.Y;
+            element.Width = clipNode.Width;
+            element.Height = clipNode.Height;
+        }
+        // Regular nodes - extract from props
+        else
+        {
+            // Extract position and size from props (do not apply offsets here; applied in absolute calc)
+            if (node.Props.TryGetValue("x", out var xProp) && xProp is int xVal)
+                element.X = xVal;
+            if (node.Props.TryGetValue("y", out var yProp) && yProp is int yVal)
+                element.Y = yVal;
+            if (node.Props.TryGetValue("width", out var wProp) && wProp is int width)
+                element.Width = width;
+            if (node.Props.TryGetValue("height", out var hProp) && hProp is int height)
+                element.Height = height;
+            if (node.Props.TryGetValue("z-index", out var zProp) && zProp is int zIndex)
+                element.ZIndex = zIndex;
+        }
 
         // For text elements without explicit dimensions, compute based on content
         if (element.Width == 0 && node is ElementNode elementNode && elementNode.TagName.ToLower() == "text")
@@ -206,18 +232,45 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
         // Only recurse into children for fragments and other containers
         // Don't recurse into text element children since we'll render them together
+        // Don't recurse into clipping node children - they're handled by VisitClipping
+        var isClipping = element.Node is ClippingNode;
         if (isFragment || (element.Node is ElementNode elem && elem.TagName.ToLower() != "text"))
         {
-            foreach (var child in element.Children)
+            if (!isClipping)  // Skip children of clipping nodes - handled separately
             {
-                // Pass the computed absolute position as parent position for children
-                CollectElements(child, absX, absY, allElements);
+                foreach (var child in element.Children)
+                {
+                    // Pass the computed absolute position as parent position for children
+                    CollectElements(child, absX, absY, allElements);
+                }
             }
         }
     }
 
     private void RenderElement(RenderedElement element, int x, int y)
     {
+        // Special handling for fragments - render children at parent position
+        if (element.Node is FragmentNode)
+        {
+            // Don't set context for fragment itself, just render children
+            foreach (var child in element.Children)
+            {
+                // Children of fragments use parent's position
+                RenderElement(child, x, y);
+            }
+            return;
+        }
+        
+        // Special handling for clipping nodes - set clipping then render children
+        if (element.Node is ClippingNode)
+        {
+            // Use the visitor to set up clipping state and render children
+            _currentRenderContext = new RenderContext { X = x, Y = y, Element = element };
+            element.Node.Accept(this);
+            _currentRenderContext = null;
+            return;
+        }
+        
         _currentRenderContext = new RenderContext { X = x, Y = y, Element = element };
         // Debug: RenderElement at ({x},{y})
         element.Node.Accept(this);
@@ -262,6 +315,22 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         // Position comes from the parent element's position in the render tree
         if (_currentRenderContext != null)
         {
+            var x = _currentRenderContext.X;
+            var y = _currentRenderContext.Y;
+            
+            // Apply clipping if active
+            if (_hasClipping)
+            {
+                // Check if text position is within clipping bounds
+                if (x < _clipX || y < _clipY || x >= _clipX + _clipWidth || y >= _clipY + _clipHeight)
+                {
+                    _logger.Debug($"Clipping text at ({x},{y}) - outside bounds ({_clipX},{_clipY},{_clipWidth},{_clipHeight})");
+                    return; // Don't render text outside clipping bounds
+                }
+                
+                // TODO: Clip text that partially extends outside bounds
+            }
+            
             // Get style from parent element if it's a text element
             var style = Style.Default;
             if (_currentRenderContext.Element?.Node is ElementNode elementNode &&
@@ -270,17 +339,20 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                 style = GetStyleProp(elementNode, "style", Style.Default);
             }
 
-            _renderingSystem.WriteText(_currentRenderContext.X, _currentRenderContext.Y,
-                node.Content, style);
+            _logger.Debug($"VisitText: Writing '{node.Content}' at ({x},{y})");
+            _renderingSystem.WriteText(x, y, node.Content, style);
+        }
+        else
+        {
+            _logger.Debug($"VisitText: No render context for '{node.Content}'");
         }
     }
 
     public void VisitElement(ElementNode node)
     {
         var tagName = node.TagName.ToLower();
-        // Debug: VisitElement {tagName}
 
-        // Handle different element types
+        // Handle different element types - single dispatch approach
         switch (tagName)
         {
             case "rect":
@@ -311,7 +383,14 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     public void VisitFragment(FragmentNode node)
     {
         // Fragment nodes don't render anything themselves
-        // Their children are already handled by the render tree
+        // But we need to render their children
+        if (_currentRenderContext != null)
+        {
+            foreach (var child in node.Children)
+            {
+                child.Accept(this);
+            }
+        }
     }
 
     public void VisitEmpty(EmptyNode node)
@@ -322,12 +401,50 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     public void VisitClipping(ClippingNode node)
     {
         // Clipping nodes constrain their children to a rectangular area
-        // For terminal rendering, we'll need to handle this at a higher level
-        // since we can't truly clip in a terminal. We'll track the clipping bounds
-        // and prevent rendering outside them.
-
-        // The actual clipping logic is handled in BuildRenderTree and CollectElements
-        // This visitor method is just a placeholder for now
+        // We render children but only within the clipping bounds
+        if (_currentRenderContext != null)
+        {
+            // Save current clipping bounds
+            var oldClipX = _clipX;
+            var oldClipY = _clipY;
+            var oldClipWidth = _clipWidth;
+            var oldClipHeight = _clipHeight;
+            var oldHasClipping = _hasClipping;
+            
+            // Set new clipping bounds
+            _clipX = node.X;
+            _clipY = node.Y;
+            _clipWidth = node.Width;
+            _clipHeight = node.Height;
+            _hasClipping = true;
+            
+            _logger.Debug($"Set clipping bounds to ({_clipX},{_clipY},{_clipWidth},{_clipHeight})");
+            
+            // Render children with clipping - need to render through RenderedElement structure
+            // Find the RenderedElement for this clipping node and render its children
+            if (_currentRenderContext.Element != null)
+            {
+                foreach (var childElement in _currentRenderContext.Element.Children)
+                {
+                    // Get the child's absolute position from its props
+                    var childX = childElement.X;
+                    var childY = childElement.Y;
+                    if (childElement.Node.Props.TryGetValue("x", out var xProp) && xProp is int x)
+                        childX = x;
+                    if (childElement.Node.Props.TryGetValue("y", out var yProp) && yProp is int y)
+                        childY = y;
+                        
+                    RenderElement(childElement, childX, childY);
+                }
+            }
+            
+            // Restore old clipping bounds
+            _clipX = oldClipX;
+            _clipY = oldClipY;
+            _clipWidth = oldClipWidth;
+            _clipHeight = oldClipHeight;
+            _hasClipping = oldHasClipping;
+        }
     }
 
     #endregion
@@ -610,7 +727,6 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         {
             if (child is TextNode textNode)
             {
-                // Debug: Writing text at ({x},{y})
                 _renderingSystem.WriteText(x, y, textNode.Content, style);
             }
         }

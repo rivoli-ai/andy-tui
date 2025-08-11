@@ -130,7 +130,8 @@ public class DeclarativeRenderer
 
         // Render the virtual DOM from instances
         var newTree = rootInstance.Render();
-        _logger.Debug("Virtual DOM rendered");
+        _logger.Debug("Virtual DOM rendered - tree depth: {0}, node count: {1}", 
+            CalculateTreeDepth(newTree), CountNodes(newTree));
 
         // Apply diff-based rendering
         if (_previousTree == null)
@@ -143,6 +144,15 @@ public class DeclarativeRenderer
             _logger.Debug("Performing diff-based render");
             var patches = _diffEngine.Diff(_previousTree, newTree);
             _logger.Debug("Generated {0} patches", patches.Count);
+            
+            // Log patch summary
+            if (patches.Count > 0)
+            {
+                var patchTypes = patches.GroupBy(p => p.Type)
+                    .Select(g => $"{g.Key}={g.Count()}")
+                    .ToArray();
+                _logger.Debug("Patch types: {0}", string.Join(", ", patchTypes));
+            }
 
             // If structure changes occurred, fall back to full render to keep renderer's path map coherent
             if (patches.Any(p => p.Type == PatchType.Insert || p.Type == PatchType.Remove || p.Type == PatchType.Replace || p.Type == PatchType.Reorder))
@@ -219,6 +229,27 @@ public class DeclarativeRenderer
 
         _context.EventRouter.RouteKeyPress(keyInfo);
         // Console.Error.WriteLine($"[DeclarativeRenderer] After routing key, needsRender: {_needsRender}");
+    }
+    
+    private int CalculateTreeDepth(VirtualNode node, int currentDepth = 0)
+    {
+        if (node.Children == null || node.Children.Count == 0)
+            return currentDepth;
+            
+        int maxDepth = currentDepth;
+        foreach (var child in node.Children)
+        {
+            maxDepth = Math.Max(maxDepth, CalculateTreeDepth(child, currentDepth + 1));
+        }
+        return maxDepth;
+    }
+    
+    private int CountNodes(VirtualNode node)
+    {
+        if (node.Children == null || node.Children.Count == 0)
+            return 1;
+            
+        return 1 + node.Children.Sum(CountNodes);
     }
 
 }

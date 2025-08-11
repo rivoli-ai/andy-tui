@@ -81,23 +81,21 @@ public static class ComprehensiveLoggingInitializer
     
     private static LogConfiguration GetDefaultConfiguration(string? customPath)
     {
-        var logDir = customPath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Andy.TUI",
-            "Logs",
-            DateTime.Now.ToString("yyyy-MM-dd"));
-            
-        return new LogConfiguration
+        // Use environment-based config by default, but if no env vars are set, use silent
+        var hasLoggingEnvVars = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_LEVEL")) ||
+                               !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_CONSOLE")) ||
+                               !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_FILE")) ||
+                               !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_DEBUG"));
+                               
+        var config = hasLoggingEnvVars ? LogConfiguration.GetFromEnvironment() : LogConfiguration.Silent;
+        
+        if (customPath != null)
         {
-            MinLevel = LogLevel.Debug,
-            EnableConsole = false, // Don't interfere with TUI output
-            EnableFile = true,
-            EnableDebug = System.Diagnostics.Debugger.IsAttached,
-            FileDirectory = logDir,
-            MaxFileSize = 50 * 1024 * 1024, // 50MB
-            ConsoleUseColors = true,
-            ConsoleUseStderr = true
-        };
+            config.FileDirectory = customPath;
+            config.EnableFile = true; // If custom path provided, enable file logging
+        }
+        
+        return config;
     }
     
     private static LogConfiguration GetTestConfiguration(string? customPath)

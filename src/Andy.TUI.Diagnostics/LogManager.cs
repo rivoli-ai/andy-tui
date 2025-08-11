@@ -16,7 +16,7 @@ public static class LogManager
 {
     private static readonly ConcurrentDictionary<string, ILogger> _loggers = new();
     private static readonly LogBuffer _globalBuffer = new(maxEntries: 100000);
-    private static LogLevel _defaultLevel = LogLevel.Debug;
+    private static LogLevel _defaultLevel = LogLevel.None; // Silent by default
     private static readonly List<ILogSink> _globalSinks = new();
     private static bool _initialized = false;
     private static readonly object _initLock = new();
@@ -48,7 +48,8 @@ public static class LogManager
         {
             if (_initialized) return;
             
-            config ??= LogConfiguration.Default;
+            // Use environment-based config by default, but if no env vars are set, use silent
+            config ??= HasAnyLoggingEnvironmentVariables() ? LogConfiguration.Default : LogConfiguration.Silent;
             _defaultLevel = config.MinLevel;
             
             // Add configured sinks
@@ -76,6 +77,17 @@ public static class LogManager
             
             _initialized = true;
         }
+    }
+    
+    /// <summary>
+    /// Checks if any logging-related environment variables are set.
+    /// </summary>
+    private static bool HasAnyLoggingEnvironmentVariables()
+    {
+        return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_LEVEL")) ||
+               !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_CONSOLE")) ||
+               !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_FILE")) ||
+               !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDY_TUI_LOG_DEBUG"));
     }
     
     /// <summary>
@@ -220,38 +232,4 @@ public static class LogManager
             _initialized = false;
         }
     }
-}
-
-/// <summary>
-/// Configuration for the logging system.
-/// </summary>
-public class LogConfiguration
-{
-    public LogLevel MinLevel { get; set; } = LogLevel.Debug;
-    public bool EnableConsole { get; set; } = true;
-    public bool EnableFile { get; set; } = true;
-    public bool EnableDebug { get; set; } = true;
-    public bool ConsoleUseColors { get; set; } = true;
-    public bool ConsoleUseStderr { get; set; } = true;
-    public string? FileDirectory { get; set; }
-    public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
-    
-    public static LogConfiguration Default => new();
-    
-    public static LogConfiguration Testing => new()
-    {
-        MinLevel = LogLevel.Debug,
-        EnableConsole = false, // No console output during tests
-        EnableFile = true,
-        EnableDebug = true,
-        FileDirectory = Path.Combine(Directory.GetCurrentDirectory(), "TestLogs")
-    };
-    
-    public static LogConfiguration Production => new()
-    {
-        MinLevel = LogLevel.Info,
-        EnableConsole = false,
-        EnableFile = true,
-        EnableDebug = false
-    };
 }

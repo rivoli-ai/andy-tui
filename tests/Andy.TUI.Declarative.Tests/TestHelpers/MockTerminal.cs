@@ -87,25 +87,94 @@ public class MockTerminal : ITerminal
     
     public void Write(string text)
     {
-        foreach (char c in text)
+        int i = 0;
+        while (i < text.Length)
         {
-            if (c == '\n')
+            // Check for ANSI escape sequences
+            if (i < text.Length - 1 && text[i] == '\x1b' && text[i + 1] == '[')
             {
-                _cursorY++;
-                _cursorX = 0;
-            }
-            else if (_cursorX < Width && _cursorY < Height)
-            {
-                _buffer[_cursorY, _cursorX] = c;
-                _foregroundColors[_cursorY, _cursorX] = _currentForeground;
-                _backgroundColors[_cursorY, _cursorX] = _currentBackground;
-                _cursorX++;
+                // Parse ANSI escape sequence
+                i += 2; // Skip ESC[
+                string code = "";
+                while (i < text.Length && !char.IsLetter(text[i]))
+                {
+                    code += text[i];
+                    i++;
+                }
                 
-                if (_cursorX >= Width)
+                if (i < text.Length)
+                {
+                    char command = text[i];
+                    i++;
+                    
+                    // Handle common ANSI commands
+                    switch (command)
+                    {
+                        case 'H': // Cursor position
+                        case 'f':
+                            var parts = code.Split(';');
+                            int row = parts.Length > 0 && int.TryParse(parts[0], out var r) ? r - 1 : 0;
+                            int col = parts.Length > 1 && int.TryParse(parts[1], out var c) ? c - 1 : 0;
+                            _cursorY = Math.Max(0, Math.Min(row, Height - 1));
+                            _cursorX = Math.Max(0, Math.Min(col, Width - 1));
+                            break;
+                        case 'J': // Clear screen
+                            if (code == "2" || code == "")
+                            {
+                                Clear();
+                            }
+                            break;
+                        case 'K': // Clear line
+                            ClearLine();
+                            break;
+                        case 'm': // Set graphics mode (colors, bold, etc.)
+                            // For now, ignore styling
+                            break;
+                        case 'A': // Cursor up
+                            int up = int.TryParse(code, out var u) ? u : 1;
+                            _cursorY = Math.Max(0, _cursorY - up);
+                            break;
+                        case 'B': // Cursor down
+                            int down = int.TryParse(code, out var d) ? d : 1;
+                            _cursorY = Math.Min(Height - 1, _cursorY + down);
+                            break;
+                        case 'C': // Cursor forward
+                            int right = int.TryParse(code, out var rt) ? rt : 1;
+                            _cursorX = Math.Min(Width - 1, _cursorX + right);
+                            break;
+                        case 'D': // Cursor back
+                            int left = int.TryParse(code, out var lt) ? lt : 1;
+                            _cursorX = Math.Max(0, _cursorX - left);
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                char c = text[i];
+                if (c == '\n')
+                {
+                    _cursorY++;
+                    _cursorX = 0;
+                }
+                else if (c == '\r')
                 {
                     _cursorX = 0;
-                    _cursorY++;
                 }
+                else if (_cursorX < Width && _cursorY < Height)
+                {
+                    _buffer[_cursorY, _cursorX] = c;
+                    _foregroundColors[_cursorY, _cursorX] = _currentForeground;
+                    _backgroundColors[_cursorY, _cursorX] = _currentBackground;
+                    _cursorX++;
+                    
+                    if (_cursorX >= Width)
+                    {
+                        _cursorX = 0;
+                        _cursorY++;
+                    }
+                }
+                i++;
             }
         }
     }
