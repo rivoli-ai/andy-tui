@@ -57,8 +57,12 @@ public abstract class ViewInstance
 
                 _context = value;
 
-                // Don't automatically register focusable components here
-                // Registration will be done explicitly after tree is built
+                // Automatically register focusable components so standalone instance
+                // scenarios (without a full renderer) still have working focus
+                if (_context != null && this is IFocusable newFocusable && newFocusable.CanFocus)
+                {
+                    _context.FocusManager.RegisterFocusable(newFocusable);
+                }
             }
         }
     }

@@ -86,9 +86,10 @@ public class ButtonInstance : ViewInstance, IFocusable
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         // Visual styling based on focus
-        var bgColor = _isFocused ? Color.Cyan : _backgroundColor;
+        // High-contrast theme for buttons
+        var bgColor = _isFocused ? Color.Blue : (_backgroundColor.ConsoleColor.HasValue ? _backgroundColor : Color.DarkGray);
         var style = Style.Default
-            .WithForegroundColor(_textColor)
+            .WithForegroundColor(Color.White)
             .WithBackgroundColor(bgColor);
 
         // Visual indication of focus

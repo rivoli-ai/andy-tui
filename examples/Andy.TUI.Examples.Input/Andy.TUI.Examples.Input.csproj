@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\src\Andy.TUI.Core\Andy.TUI.Core.csproj" />
     <ProjectReference Include="..\..\src\Andy.TUI.Terminal\Andy.TUI.Terminal.csproj" />
     <ProjectReference Include="..\..\src\Andy.TUI.Declarative\Andy.TUI.Declarative.csproj" />
+    <ProjectReference Include="..\..\src\Andy.TUI.Theming\Andy.TUI.Theming.csproj" />
   </ItemGroup>
 
   <ItemGroup>

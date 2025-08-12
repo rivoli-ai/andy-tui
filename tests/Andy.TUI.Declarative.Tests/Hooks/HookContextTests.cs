@@ -26,7 +26,7 @@ public class HookContextTests
         // Act
         context.BeginRender();
         Assert.False(context.IsInitialized);
-        
+
         context.EndRender();
 
         // Assert
@@ -53,7 +53,7 @@ public class HookContextTests
     {
         // Arrange
         var context = new HookContext("TestComponent");
-        
+
         // First render
         context.BeginRender();
         var hook1 = context.UseHook(() => new TestHook());
@@ -73,7 +73,7 @@ public class HookContextTests
     {
         // Arrange
         var context = new HookContext("TestComponent");
-        
+
         // First render - create TestHook
         context.BeginRender();
         context.UseHook(() => new TestHook());
@@ -93,7 +93,7 @@ public class HookContextTests
     {
         // Arrange
         var context = new HookContext("TestComponent");
-        
+
         // First render - create 2 hooks
         context.BeginRender();
         context.UseHook(() => new TestHook());
@@ -115,7 +115,7 @@ public class HookContextTests
     {
         // Arrange
         var context = new HookContext("TestComponent");
-        
+
         // First render - no hooks
         context.BeginRender();
         context.EndRender();

@@ -23,7 +23,7 @@ public class UseEffectHookTests
 
         // Act
         hook.SetEffect(() => effectRan = true);
-        
+
         // Effects run after render completes
         Assert.False(effectRan);
         context.EndRender();
@@ -74,13 +74,13 @@ public class UseEffectHookTests
         hook.SetEffect(() => runCount++);
         context.EndRender();
         Assert.Equal(1, runCount);
-        
+
         // Second render
         context.BeginRender();
         hook.SetEffect(() => runCount++);
         context.EndRender();
         Assert.Equal(2, runCount);
-        
+
         // Third render
         context.BeginRender();
         hook.SetEffect(() => runCount++);

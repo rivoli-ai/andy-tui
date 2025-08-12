@@ -14,7 +14,7 @@ public abstract class HookableComponent : ISimpleComponent
 {
     private HookContext? _hookContext;
     private bool _isRendering = false;
-    
+
     /// <summary>
     /// Gets the unique ID for this component instance.
     /// </summary>
@@ -108,7 +108,7 @@ public abstract class HookableComponent : ISimpleComponent
     /// <param name="dependencies">Optional dependencies that trigger re-execution.</param>
     protected void UseEffect(Action effect, object[]? dependencies = null)
     {
-        var hook = HookContext.UseHook(() => 
+        var hook = HookContext.UseHook(() =>
         {
             var h = new UseEffectHook();
             h.SetContext(HookContext);
@@ -124,7 +124,7 @@ public abstract class HookableComponent : ISimpleComponent
     /// <param name="dependencies">Optional dependencies that trigger re-execution.</param>
     protected void UseEffect(Func<Action?> effect, object[]? dependencies = null)
     {
-        var hook = HookContext.UseHook(() => 
+        var hook = HookContext.UseHook(() =>
         {
             var h = new UseEffectHook();
             h.SetContext(HookContext);

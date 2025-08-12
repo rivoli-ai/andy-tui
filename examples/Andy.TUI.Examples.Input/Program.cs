@@ -27,7 +27,7 @@ class Program
         Console.WriteLine("Andy.TUI Declarative Examples");
         Console.WriteLine("==============================\n");
         Console.WriteLine("Choose an example to run:\n");
-        Console.WriteLine("1. Input Demo (TextField, Button, Dropdown)");
+        Console.WriteLine("1. Themed Input Demo (Dynamic theming with Light/Dark/HighContrast)");
         Console.WriteLine("2. Grid Test (CSS Grid-like layout)");
         Console.WriteLine("3. Spacer Test (Flexible space distribution)");
         Console.WriteLine("4. ZStack Test (Layered layouts)");
@@ -45,8 +45,9 @@ class Program
         Console.WriteLine("16. MultiSelectInput Test (Multiple selection lists)");
         Console.WriteLine("17. UI Components Showcase (Checkbox, RadioGroup, List, ProgressBar, Spinner)");
         Console.WriteLine("18. Code Assistant (Simulated agentic CLI)");
+        Console.WriteLine("19. Original Input Demo (Simple form without theming)");
         Console.WriteLine("\n0. Exit");
-        Console.Write("\nEnter your choice (0-17): ");
+        Console.Write("\nEnter your choice (0-19): ");
 
         var choice = Console.ReadLine();
         Console.Clear();
@@ -54,7 +55,7 @@ class Program
         switch (choice)
         {
             case "1":
-                new InputDemoApp().Run();
+                new ThemedInputDemoApp().Run();
                 break;
             case "2":
                 new GridTestApp().Run();
@@ -106,6 +107,9 @@ class Program
                 break;
             case "18":
                 new CodeAssistantExample("").Run();
+                break;
+            case "19":
+                new InputDemoApp().Run();
                 break;
             case "0":
                 return;

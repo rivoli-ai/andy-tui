@@ -11,7 +11,7 @@ public class UseStateHookTests
     {
         // Arrange
         var context = new HookContext("TestComponent");
-        
+
         // Act
         var hook = new UseStateHook<int>(context, 42);
 
@@ -89,10 +89,10 @@ public class UseStateHookTests
 
         // Act & Assert
         Assert.Equal("test", accessor.Value);
-        
+
         accessor.SetValue("new value");
         Assert.Equal("new value", accessor.Value);
-        
+
         accessor.UpdateValue(v => v.ToUpper());
         Assert.Equal("NEW VALUE", accessor.Value);
     }
