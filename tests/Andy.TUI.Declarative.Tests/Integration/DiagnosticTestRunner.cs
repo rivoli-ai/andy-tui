@@ -35,7 +35,7 @@ public class DiagnosticTestRunner : TestBase
             var terminal = new MockTerminal(80, 24);
             using var renderingSystem = new RenderingSystem(terminal);
             var input = new TestInputHandler();
-            var renderer = new DeclarativeRenderer(renderingSystem, input);
+            var renderer = new DeclarativeRenderer(renderingSystem, input, autoFocus: false);
 
             string fieldValue = string.Empty;
 
@@ -100,7 +100,7 @@ public class DiagnosticTestRunner : TestBase
             var terminal = new MockTerminal(80, 24);
             using var renderingSystem = new RenderingSystem(terminal);
             var input = new TestInputHandler();
-            var renderer = new DeclarativeRenderer(renderingSystem, input);
+            var renderer = new DeclarativeRenderer(renderingSystem, input, autoFocus: false);
 
             string field1 = string.Empty;
             string field2 = string.Empty;
@@ -177,7 +177,7 @@ public class DiagnosticTestRunner : TestBase
             var terminal = new MockTerminal(80, 24);
             using var renderingSystem = new RenderingSystem(terminal);
             var input = new TestInputHandler();
-            var renderer = new DeclarativeRenderer(renderingSystem, input);
+            var renderer = new DeclarativeRenderer(renderingSystem, input, autoFocus: false);
 
             string value = string.Empty;
 

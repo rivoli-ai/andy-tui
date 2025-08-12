@@ -25,7 +25,7 @@ public class TabNavigationDiagnosticTest
         var terminal = new MockTerminal(80, 24);
         using var renderingSystem = new RenderingSystem(terminal);
         var input = new TestInputHandler();
-        var renderer = new DeclarativeRenderer(renderingSystem, input);
+        var renderer = new DeclarativeRenderer(renderingSystem, input, autoFocus: false);
 
         string name = string.Empty;
         string pass = string.Empty;

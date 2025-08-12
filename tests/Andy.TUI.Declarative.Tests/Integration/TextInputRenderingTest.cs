@@ -29,7 +29,7 @@ public class TextInputRenderingTest
         var terminal = new MockTerminal(80, 24);
         using var renderingSystem = new RenderingSystem(terminal);
         var input = new TestInputHandler();
-        var renderer = new DeclarativeRenderer(renderingSystem, input);
+        var renderer = new DeclarativeRenderer(renderingSystem, input, autoFocus: false);
 
         string fieldValue = string.Empty;
 
@@ -79,7 +79,7 @@ public class TextInputRenderingTest
         var terminal = new MockTerminal(80, 24);
         using var renderingSystem = new RenderingSystem(terminal);
         var input = new TestInputHandler();
-        var renderer = new DeclarativeRenderer(renderingSystem, input);
+        var renderer = new DeclarativeRenderer(renderingSystem, input, autoFocus: false);
 
         string fieldValue = string.Empty;
 
@@ -140,7 +140,7 @@ public class TextInputRenderingTest
         var terminal = new MockTerminal(80, 24);
         using var renderingSystem = new RenderingSystem(terminal);
         var input = new TestInputHandler();
-        var renderer = new DeclarativeRenderer(renderingSystem, input);
+        var renderer = new DeclarativeRenderer(renderingSystem, input, autoFocus: false);
 
         string password = string.Empty;
 
@@ -192,7 +192,7 @@ public class TextInputRenderingTest
         var terminal = new MockTerminal(80, 24);
         using var renderingSystem = new RenderingSystem(terminal);
         var input = new TestInputHandler();
-        var renderer = new DeclarativeRenderer(renderingSystem, input);
+        var renderer = new DeclarativeRenderer(renderingSystem, input, autoFocus: false);
 
         string username = string.Empty;
         string email = string.Empty;
