@@ -9,6 +9,7 @@ using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.Tests.TestHelpers;
 using Andy.TUI.Declarative;
+using Andy.TUI.Declarative.Focus;
 
 namespace Andy.TUI.Declarative.Tests.Integration;
 
@@ -42,9 +43,20 @@ public class FocusRegistrationTest
 
         // Create instances from declarations
         var instances = context.ViewInstanceManager.GetOrCreateInstance(vstack, "root");
+        
+        // Register focusable components in document order (this is what DeclarativeRenderer does)
+        context.ViewInstanceManager.RegisterFocusableComponents(instances);
 
-        // Set context on root (should propagate to children)
-        instances.Context = context;
+        // Debug: Check if VStack has children
+        if (instances is VStackInstance vstackInstance)
+        {
+            var children = vstackInstance.GetChildInstances();
+            _output.WriteLine($"VStack has {children.Count} children");
+            foreach (var child in children)
+            {
+                _output.WriteLine($"  Child: {child.GetType().Name}, IsFocusable: {child is IFocusable}");
+            }
+        }
 
         // Count focusable components registered
         var focusableCount = 0;
