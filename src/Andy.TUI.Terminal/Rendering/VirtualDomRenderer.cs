@@ -318,17 +318,40 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             var x = _currentRenderContext.X;
             var y = _currentRenderContext.Y;
 
-            // Apply clipping if active
+            // Apply clipping if active (horizontal truncation)
+            var content = node.Content ?? string.Empty;
+            var drawX = x;
             if (_hasClipping)
             {
-                // Check if text position is within clipping bounds
-                if (x < _clipX || y < _clipY || x >= _clipX + _clipWidth || y >= _clipY + _clipHeight)
+                // Skip lines outside vertical clip
+                if (y < _clipY || y >= _clipY + _clipHeight)
                 {
-                    _logger.Debug($"Clipping text at ({x},{y}) - outside bounds ({_clipX},{_clipY},{_clipWidth},{_clipHeight})");
-                    return; // Don't render text outside clipping bounds
+                    _logger.Debug($"Clipping text at ({x},{y}) - outside vertical bounds");
+                    return;
                 }
 
-                // TODO: Clip text that partially extends outside bounds
+                // Trim left
+                var leftCut = Math.Max(0, _clipX - drawX);
+                if (leftCut >= content.Length)
+                {
+                    return;
+                }
+                if (leftCut > 0)
+                {
+                    content = content.Substring(leftCut);
+                    drawX += leftCut;
+                }
+
+                // Trim right
+                var remainingWidth = _clipX + _clipWidth - drawX;
+                if (remainingWidth <= 0)
+                {
+                    return;
+                }
+                if (content.Length > remainingWidth)
+                {
+                    content = content.Substring(0, remainingWidth);
+                }
             }
 
             // Get style from parent element if it's a text element
@@ -339,8 +362,11 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                 style = GetStyleProp(elementNode, "style", Style.Default);
             }
 
-            _logger.Debug($"VisitText: Writing '{node.Content}' at ({x},{y})");
-            _renderingSystem.WriteText(x, y, node.Content, style);
+            if (!string.IsNullOrEmpty(content))
+            {
+                _logger.Debug($"VisitText: Writing '{content}' at ({drawX},{y})");
+                _renderingSystem.WriteText(drawX, y, content, style);
+            }
         }
         else
         {
@@ -546,6 +572,8 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             // Debug logging (uncomment to debug missing elements)
             // Console.Error.WriteLine($"[VirtualDomRenderer] Element NOT FOUND at path [{string.Join(",", patch.Path)}]");
         }
+
+        // Avoid over-clearing; rely on precise dirty rectangles computed above
     }
 
     public void VisitUpdateText(UpdateTextPatch patch)
@@ -614,6 +642,8 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                 }
             }
         }
+
+        // Avoid global redraws; rely on computed clear widths and element bounds
     }
 
     public void VisitInsert(InsertPatch patch)
@@ -719,17 +749,25 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         var x = GetIntProp(node, "x", _currentRenderContext?.X ?? 0);
         var y = GetIntProp(node, "y", _currentRenderContext?.Y ?? 0);
 
-        // Render text element and its children
+        // Render text element and its children, honoring clipping and nested content
         var style = GetStyleProp(node, "style", Style.Default);
 
-        // Render all text content from child nodes
+        // Set a temporary render context so VisitText uses (x,y) and the current element
+        var previousContext = _currentRenderContext;
+        _currentRenderContext = new RenderContext { X = x, Y = y, Element = _currentRenderContext?.Element };
+        // Ensure element context points to this node for style resolution
+        _currentRenderContext.Element = previousContext?.Element ?? previousContext?.Element;
+        if (_currentRenderContext.Element == null)
+        {
+            _currentRenderContext.Element = new RenderedElement { X = x, Y = y, Node = node };
+        }
+
         foreach (var child in node.Children)
         {
-            if (child is TextNode textNode)
-            {
-                _renderingSystem.WriteText(x, y, textNode.Content, style);
-            }
+            child.Accept(this);
         }
+
+        _currentRenderContext = previousContext;
     }
 
     private void RenderBox(ElementNode node)

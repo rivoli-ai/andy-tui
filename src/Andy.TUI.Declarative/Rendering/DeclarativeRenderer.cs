@@ -178,8 +178,8 @@ public class DeclarativeRenderer
             // Debug logging (uncomment to debug buffer state)
             // Console.Error.WriteLine($"[DeclarativeRenderer] Buffer dirty before flush: {rs.Buffer.IsDirty}");
 
-            // Now force a render to flush the buffer to screen
-            rs.Render();
+            // Now force a render to flush the buffer to screen, synchronously to reduce flicker
+            rs.Scheduler.ForceRenderSync();
             _logger.Debug("Forced render flush");
             // Console.Error.WriteLine("[DeclarativeRenderer] Called rs.Render() to flush");
 

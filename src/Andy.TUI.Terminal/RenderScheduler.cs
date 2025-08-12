@@ -14,6 +14,7 @@ public class RenderScheduler : IDisposable
     private readonly object _renderLock = new();
     private readonly Queue<Action> _renderQueue = new();
     private readonly ManualResetEventSlim _renderEvent = new(false);
+    private readonly ManualResetEventSlim _frameRendered = new(false);
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private readonly ILogger _logger;
 
@@ -124,6 +125,17 @@ public class RenderScheduler : IDisposable
     {
         _forceRender = true;
         _renderEvent.Set();
+    }
+
+    /// <summary>
+    /// Forces a render and blocks until the frame is flushed.
+    /// </summary>
+    public void ForceRenderSync(int timeoutMs = 100)
+    {
+        _frameRendered.Reset();
+        _forceRender = true;
+        _renderEvent.Set();
+        _frameRendered.Wait(timeoutMs);
     }
 
     /// <summary>
@@ -304,6 +316,9 @@ public class RenderScheduler : IDisposable
 
         // Raise after render event
         AfterRender?.Invoke(this, frameArgs);
+
+        // Signal synchronous waiters that a frame has been rendered
+        _frameRendered.Set();
     }
 
     /// <summary>

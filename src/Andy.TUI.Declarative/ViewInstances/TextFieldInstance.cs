@@ -213,10 +213,10 @@ public class TextFieldInstance : ViewInstance, IFocusable
                 fieldContent = displayText.PadRight(fieldWidth);
         }
 
-        // Style based on focus
+        // Style based on focus (high-contrast theme)
         var style = _isFocused
-            ? Style.Default.WithForegroundColor(Color.Red).WithBackgroundColor(Color.DarkBlue)
-            : Style.Default.WithForegroundColor(Color.Gray);
+            ? Style.Default.WithForegroundColor(Color.White).WithBackgroundColor(Color.Blue)
+            : Style.Default.WithForegroundColor(Color.White);
 
         return Element("text")
             .WithProp("x", layout.AbsoluteX)

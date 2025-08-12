@@ -29,6 +29,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
     private int _highlightedIndex = -1;
     private int _lastMenuHeight = 0;
     private int _lastMenuWidth = 0;
+    private int _lastTriggerWidth = 0;
     private int _renderVersion = 0;
     private IDisposable? _bindingSubscription;
 
@@ -96,6 +97,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 {
                     _isOpen = false;
                     _highlightedIndex = -1;
+                    _renderVersion++;
                     InvalidateView();
                     return true;
                 }
@@ -208,10 +210,27 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
 
         // Main dropdown element
         var dropdownStyle = _isFocused
-            ? Style.Default.WithForegroundColor(Color.White).WithBackgroundColor(Color.DarkBlue)
+            ? Style.Default.WithForegroundColor(Color.White).WithBackgroundColor(Color.Blue)
             : Style.Default.WithForegroundColor(hasValue ? _textColor : _placeholderColor);
 
         var dropdownText = _isOpen ? $"▼ {displayText}" : $"▶ {displayText}";
+
+        // Clear previous trigger area to avoid stale characters when text shrinks
+        var triggerClearWidth = Math.Max(_lastTriggerWidth, dropdownText.Length);
+        if (triggerClearWidth > 0)
+        {
+            elements.Add(
+                Element("rect")
+                    .WithProp("x", layout.AbsoluteX)
+                    .WithProp("y", layout.AbsoluteY)
+                    .WithProp("width", triggerClearWidth)
+                    .WithProp("height", 1)
+                    .WithProp("z-index", 8)
+                    .WithProp("version", _renderVersion)
+                    .WithProp("fill", Color.Black)
+                    .Build()
+            );
+        }
 
         elements.Add(
             Element("text")
@@ -225,6 +244,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 .WithChild(new TextNode(dropdownText))
                 .Build()
         );
+        _lastTriggerWidth = dropdownText.Length;
 
         // Dropdown items (when open)
         if (_isOpen && _items.Count > 0)
@@ -264,10 +284,10 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 var isSelected = currentValue != null && EqualityComparer<T>.Default.Equals(item, currentValue);
 
                 var itemStyle = isHighlighted
-                    ? Style.Default.WithForegroundColor(Color.Black).WithBackgroundColor(Color.White)
+                    ? Style.Default.WithForegroundColor(Color.White).WithBackgroundColor(Color.Blue)
                     : isSelected
-                        ? Style.Default.WithForegroundColor(Color.Green)
-                        : Style.Default.WithForegroundColor(Color.Gray);
+                        ? Style.Default.WithForegroundColor(Color.Cyan)
+                        : Style.Default.WithForegroundColor(Color.White);
 
                 elements.Add(
                     Element("text")
@@ -294,13 +314,15 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                         .WithProp("y", layout.AbsoluteY + 1)
                         .WithProp("width", clearWidth)
                         .WithProp("height", _lastMenuHeight)
-                        .WithProp("z-index", 0)
+                        .WithProp("z-index", -100) // very low, ensure it renders first
+                        .WithProp("version", _renderVersion)
                         .WithProp("fill", Color.Black)
                         .Build()
                 );
                 // Reset after emitting clear rect
                 _lastMenuHeight = 0;
                 _lastMenuWidth = 0;
+                _renderVersion++;
             }
         }
 
