@@ -54,6 +54,9 @@ public class ButtonInstance : ViewInstance, IFocusable
             case ConsoleKey.Enter:
             case ConsoleKey.Spacebar:
                 _action?.Invoke();
+                // Ensure UI updates that depend on actions are reflected immediately
+                Context?.RequestRender();
+                InvalidateView();
                 return true;
         }
 

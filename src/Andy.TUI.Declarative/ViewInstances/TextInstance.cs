@@ -143,6 +143,7 @@ public class TextInstance : ViewInstance
             var line = _wrappedLines[i];
             if (line.Length > layout.Width)
             {
+                // Use truncation helper to preserve consistency with existing behavior
                 line = ApplyTruncation(line, (int)layout.Width);
             }
 

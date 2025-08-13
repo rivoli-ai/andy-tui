@@ -8,16 +8,21 @@ using Andy.TUI.Terminal;
 
 namespace Andy.TUI.Examples.Chat;
 
-public class ChatAppDeclarative
+/// <summary>
+/// Simpler version that shows how to manually trigger UI updates.
+/// The key is that the DeclarativeRenderer needs to be accessible
+/// so we can call RequestRender() when state changes.
+/// </summary>
+public class ChatAppDeclarativeSimple
 {
-    // State - Using observable types for automatic UI updates
-    private readonly ObservableList<ChatMessage> _messages = new();
-    private readonly ObservableProperty<string> _input = new("");
-    private readonly ObservableProperty<string> _status = new("Ready");
+    // State - regular fields with Binding for input
+    private readonly List<ChatMessage> _messages = new();
+    private string _input = string.Empty;
+    private string _status = "Ready";
     private int _scroll = 0;
-    private DeclarativeRenderer? _renderer;
-
+    
     private CerebrasHttpChatClient? _client;
+    private DeclarativeRenderer? _renderer;
 
     public void Run()
     {
@@ -26,32 +31,28 @@ public class ChatAppDeclarative
         _renderer = new DeclarativeRenderer(renderingSystem);
         renderingSystem.Initialize();
 
-        // Subscribe to observable changes to trigger UI updates
-        _messages.CollectionChanged += (_, __) => _renderer?.RequestRender();
-        _input.PropertyChanged += (_, __) => _renderer?.RequestRender();
-        _status.PropertyChanged += (_, __) => _renderer?.RequestRender();
-
         var cfg = ChatConfiguration.Load();
         if (string.IsNullOrWhiteSpace(cfg.ApiKey))
         {
-            _status.Value = "Missing CEREBRAS_API_KEY environment variable";
+            _status = "Missing CEREBRAS_API_KEY environment variable";
         }
         else
         {
             _client = new CerebrasHttpChatClient(cfg);
         }
+        
         _renderer.Run(BuildUI);
     }
 
     private ISimpleComponent BuildUI()
     {
-        var width = 100; // fixed logical width; renderer will clip if needed
+        var width = 100;
         var conversationLines = RenderLines(width - 4);
 
         return new VStack(spacing: 1)
         {
             new Text($"Andy.TUI Chat — Model: {(_client?.Model ?? "<not configured>")}").Title().Color(Color.Cyan),
-            new Text(_status.Value).Color(Color.Gray),
+            new Text(_status).Color(Color.Gray),
 
             new Box
             {
@@ -61,18 +62,62 @@ public class ChatAppDeclarative
             new HStack(spacing: 1)
             {
                 new Text("> ").Bold().Color(Color.Green),
-                new TextField("Type a message…", new Binding<string>(
-                    () => _input.Value,
-                    v => _input.Value = v,
-                    "Input"))
+                // The Binding here DOES trigger updates when typing
+                // because TextField subscribes to PropertyChanged
+                new TextField("Type a message…", this.Bind(() => _input))
             },
 
             new HStack(spacing: 2)
             {
                 new Button("Send", async () => await SendAsync()).Primary(),
-                new Button("New Chat", () => { _messages.Clear(); _input.Value = ""; _status.Value = "New conversation"; }).Secondary()
+                new Button("New Chat", () => ClearChat()).Secondary()
             }
         };
+    }
+
+    private void ClearChat()
+    {
+        _messages.Clear();
+        _input = string.Empty;
+        _status = "New conversation";
+        
+        // IMPORTANT: Manually request UI update after changing state
+        _renderer?.RequestRender();
+    }
+
+    private async Task SendAsync()
+    {
+        var content = (_input ?? string.Empty).Trim();
+        if (content.Length == 0) return;
+        if (_client == null)
+        {
+            _status = "Set CEREBRAS_API_KEY and restart";
+            _renderer?.RequestRender();
+            return;
+        }
+        
+        // Add user message
+        _messages.Add(new ChatMessage("user", content));
+        _input = string.Empty;
+        _status = "Sending…";
+        
+        // IMPORTANT: Request UI update after adding message
+        _renderer?.RequestRender();
+
+        try
+        {
+            var reply = await _client.CreateCompletionAsync(_messages);
+            _messages.Add(new ChatMessage("assistant", reply));
+            _status = "Ready";
+        }
+        catch (Exception ex)
+        {
+            _messages.Add(new ChatMessage("assistant", $"[error] {ex.Message}"));
+            _status = "Error";
+        }
+        
+        // IMPORTANT: Request UI update after receiving response
+        _renderer?.RequestRender();
     }
 
     private VStack BuildConversation(List<(string Text, bool IsUser)> lines, int width, int height)
@@ -130,31 +175,5 @@ public class ChatAppDeclarative
             }
         }
         if (current.Length > 0) yield return current;
-    }
-
-    private async Task SendAsync()
-    {
-        var content = _input.Value.Trim();
-        if (content.Length == 0) return;
-        if (_client == null)
-        {
-            _status.Value = "Set CEREBRAS_API_KEY and restart";
-            return;
-        }
-        _messages.Add(new ChatMessage("user", content));
-        _input.Value = "";
-        _status.Value = "Sending…";
-
-        try
-        {
-            var reply = await _client.CreateCompletionAsync(_messages.ToList());
-            _messages.Add(new ChatMessage("assistant", reply));
-            _status.Value = "Ready";
-        }
-        catch (Exception ex)
-        {
-            _messages.Add(new ChatMessage("assistant", $"[error] {ex.Message}"));
-            _status.Value = "Error";
-        }
     }
 }

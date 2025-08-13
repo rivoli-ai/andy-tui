@@ -131,7 +131,16 @@ public class ModalInstance : ViewInstance, IFocusable
             _isOpenBinding = newBinding;
             if (_isOpenBinding != null)
             {
-                _bindingSubscription = new BindingSubscription(_isOpenBinding, () => InvalidateView());
+                _bindingSubscription = new BindingSubscription(_isOpenBinding, () =>
+                {
+                    // When open state changes, invalidate and focus modal when it opens
+                    var nowOpen = _isOpenBinding.Value;
+                    if (nowOpen && Context != null)
+                    {
+                        Context.FocusManager.SetFocus(this);
+                    }
+                    InvalidateView();
+                });
             }
         }
     }
@@ -257,6 +266,8 @@ public class ModalInstance : ViewInstance, IFocusable
             {
                 elements.Add(contentNode);
             }
+            // Ensure underlying content can update immediately after actions
+            Context?.RequestRender();
         }
 
         // Help text at bottom

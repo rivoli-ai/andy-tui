@@ -32,6 +32,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
     private int _lastMenuWidth = 0;
     private int _lastTriggerWidth = 0;
     private int _renderVersion = 0;
+    private int _scrollOffset = 0;
     private IDisposable? _bindingSubscription;
 
     public DropdownInstance(string id) : base(id)
@@ -91,6 +92,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                     }
                     _isOpen = false;
                     _highlightedIndex = -1;
+                    _scrollOffset = 0;
                     _renderVersion++;
                 }
                 InvalidateView();
@@ -101,6 +103,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 {
                     _isOpen = false;
                     _highlightedIndex = -1;
+                    _scrollOffset = 0;
                     _renderVersion++;
                     InvalidateView();
                     return true;
@@ -111,6 +114,11 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 if (_isOpen && _items.Count > 0)
                 {
                     _highlightedIndex = Math.Min(_highlightedIndex + 1, _items.Count - 1);
+                    const int maxVisible = 8;
+                    if (_highlightedIndex >= _scrollOffset + maxVisible)
+                    {
+                        _scrollOffset = Math.Max(0, _highlightedIndex - maxVisible + 1);
+                    }
                     _renderVersion++;
                     InvalidateView();
                     return true;
@@ -119,6 +127,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 {
                     _isOpen = true;
                     _highlightedIndex = 0;
+                    _scrollOffset = 0;
                     _renderVersion++;
                     InvalidateView();
                     return true;
@@ -129,6 +138,10 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 if (_isOpen && _items.Count > 0)
                 {
                     _highlightedIndex = Math.Max(_highlightedIndex - 1, 0);
+                    if (_highlightedIndex < _scrollOffset)
+                    {
+                        _scrollOffset = _highlightedIndex;
+                    }
                     _renderVersion++;
                     InvalidateView();
                     return true;
@@ -220,36 +233,9 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
 
         var dropdownText = _isOpen ? $"▼ {displayText}" : $"▶ {displayText}";
 
-        // Clear previous trigger area to avoid stale characters when text shrinks
-        var triggerClearWidth = Math.Max(_lastTriggerWidth, dropdownText.Length);
-        if (triggerClearWidth > 0)
-        {
-            elements.Add(
-                Element("rect")
-                    .WithProp("x", layout.AbsoluteX)
-                    .WithProp("y", layout.AbsoluteY)
-                    .WithProp("width", triggerClearWidth)
-                    .WithProp("height", 1)
-                    .WithProp("z-index", 5) // ensure it renders before the trigger text
-                    .WithProp("version", _renderVersion)
-                    .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
-                    .Build()
-            );
-        }
+        // Avoid explicit clears here; rely on renderer's dirty region clearing and re-render
 
-        elements.Add(
-            Element("text")
-                .WithProp("x", layout.AbsoluteX)
-                .WithProp("y", layout.AbsoluteY)
-                // Ensure the trigger renders above surrounding text
-                .WithProp("z-index", _isOpen ? 90 : 10)
-                // attach a version so diff sees a change and repaints the whole trigger node when navigating
-                .WithProp("version", _renderVersion)
-                .WithProp("style", dropdownStyle)
-                .WithChild(new TextNode(dropdownText))
-                .Build()
-        );
-        _lastTriggerWidth = dropdownText.Length;
+        // Defer trigger draw until after menu logic to ensure it's drawn last
 
         // Dropdown items (when open)
         if (_isOpen && _items.Count > 0)
@@ -264,29 +250,20 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                     maxItemTextLen = itemTextForMeasure.Length;
             }
             var menuWidth = (int)Math.Max(Math.Round(layout.Width), maxItemTextLen + 4); // two-space left padding + some slack
-            _lastMenuHeight = _items.Count;
+            const int maxVisible = 8;
+            var visibleStart = Math.Max(0, Math.Min(_scrollOffset, Math.Max(0, _items.Count - maxVisible)));
+            var visibleCount = Math.Min(maxVisible, _items.Count - visibleStart);
+            _lastMenuHeight = visibleCount;
             _lastMenuWidth = menuWidth;
 
-            // Clear the entire dropdown menu area before drawing items (overlay area independent of layout height)
-            // Clear area for menu behind items
-            elements.Add(
-                Element("rect")
-                    .WithProp("x", layout.AbsoluteX)
-                    .WithProp("y", layout.AbsoluteY + 1)
-                    .WithProp("width", menuWidth)
-                    .WithProp("height", _items.Count)
-                    .WithProp("z-index", 90)
-                    .WithProp("version", _renderVersion)
-                    .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
-                    .Build()
-            );
+            // No explicit background clear; items will overwrite prior content
 
             int y = 1;
-            for (int i = 0; i < _items.Count; i++)
+            for (int i = 0; i < visibleCount; i++)
             {
-                var item = _items[i];
+                var item = _items[visibleStart + i];
                 var itemText = _displayText?.Invoke(item) ?? item?.ToString() ?? "";
-                var isHighlighted = i == _highlightedIndex;
+                var isHighlighted = (visibleStart + i) == _highlightedIndex;
                 var isSelected = currentValue != null && EqualityComparer<T>.Default.Equals(item, currentValue);
 
                 var itemStyle = isHighlighted
@@ -308,48 +285,14 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 y++;
             }
         }
-        else
-        {
-            // If we just closed the menu, clear the area where it was rendered last time
-            if (_lastMenuHeight > 0)
-            {
-                var clearWidth = Math.Max(_lastMenuWidth, layout.Width);
-                elements.Add(
-                    Element("rect")
-                        .WithProp("x", layout.AbsoluteX)
-                        .WithProp("y", layout.AbsoluteY + 1)
-                        .WithProp("width", clearWidth)
-                        .WithProp("height", _lastMenuHeight)
-                        .WithProp("z-index", -100) // very low, ensure it renders first
-                        .WithProp("version", _renderVersion)
-                        .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
-                        .Build()
-                );
-                // Clear a generous action row area beneath the menu to erase overwritten UI
-                elements.Add(
-                    Element("rect")
-                        .WithProp("x", layout.AbsoluteX - 20)
-                        .WithProp("y", layout.AbsoluteY + _lastMenuHeight + 1)
-                        .WithProp("width", clearWidth + 40)
-                        .WithProp("height", 1)
-                        .WithProp("z-index", -100)
-                        .WithProp("version", _renderVersion)
-                        .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
-                        .Build()
-                );
-                // Reset after emitting clear rect
-                _lastMenuHeight = 0;
-                _lastMenuWidth = 0;
-                _renderVersion++;
-            }
-        }
+        // When closed, don't emit clears; let next render overwrite stale content where needed
 
         // Re-emit trigger last to guarantee it paints above any clears
         elements.Add(
             Element("text")
                 .WithProp("x", layout.AbsoluteX)
                 .WithProp("y", layout.AbsoluteY)
-                .WithProp("z-index", _isOpen ? 96 : 10)
+                .WithProp("z-index", _isOpen ? 96 : 50)
                 .WithProp("version", _renderVersion)
                 .WithProp("style", dropdownStyle)
                 .WithChild(new TextNode(dropdownText))
