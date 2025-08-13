@@ -52,67 +52,27 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     public void Render(VirtualNode tree)
     {
         var startTime = DateTime.UtcNow;
-        _logger.Debug($"Starting render. Tree nodes: {CountNodes(tree)}");
-        
-        // For selective rendering, we need to track what areas need clearing
-        var oldElements = _renderedElements.Values.ToList();
-        
+        _logger.Debug($"Starting full render. Tree nodes: {CountNodes(tree)}");
         _currentTree = tree;
         _renderedElements.Clear();
         _dirtyRegionTracker.Clear();
 
-        // Build the new render tree
+        // Clear the entire render area to ensure clean slate
+        for (int y = 0; y < _renderingSystem.Height; y++)
+        {
+            _renderingSystem.FillRect(0, y, _renderingSystem.Width, 1, ' ', Style.Default);
+        }
+
+        // First pass: build the render tree with positions and z-indices
+        // Store root at [0] to align with tests, and map empty path to root as well
         _rootElement = BuildRenderTree(tree, 0, 0, new[] { 0 });
         _renderedElements[Array.Empty<int>()] = _rootElement;
 
-        // Calculate what needs to be cleared and rendered
-        var clearRegions = new HashSet<Rectangle>(new RectangleComparer());
-        var renderRegions = new HashSet<Rectangle>(new RectangleComparer());
-        
-        // Add regions from old elements that need clearing
-        foreach (var oldElem in oldElements)
-        {
-            if (oldElem.Width > 0 && oldElem.Height > 0)
-            {
-                clearRegions.Add(new Rectangle(oldElem.X, oldElem.Y, oldElem.Width, oldElem.Height));
-            }
-        }
-        
-        // Add regions from new elements that need rendering
-        var allNewElements = new List<(RenderedElement, int, int)>();
-        CollectElements(_rootElement, 0, 0, allNewElements, 0);
-        foreach (var (elem, x, y) in allNewElements)
-        {
-            if (elem.Width > 0 && elem.Height > 0)
-            {
-                renderRegions.Add(new Rectangle(x, y, elem.Width, elem.Height));
-            }
-        }
-        
-        // Clear only regions that changed
-        foreach (var region in clearRegions)
-        {
-            _renderingSystem.FillRect(region.X, region.Y, region.Width, region.Height, ' ', Style.Default);
-        }
-        
-        // Render all elements (they'll overwrite the cleared areas)
+        // Second pass: render elements in z-order
         RenderInZOrder(_rootElement);
 
         var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
-        _logger.Debug($"Render complete. Cleared {clearRegions.Count} regions, rendered {_renderedElements.Count} elements in {elapsed:F2}ms");
-    }
-    
-    private class RectangleComparer : IEqualityComparer<Rectangle>
-    {
-        public bool Equals(Rectangle x, Rectangle y)
-        {
-            return x.X == y.X && x.Y == y.Y && x.Width == y.Width && x.Height == y.Height;
-        }
-        
-        public int GetHashCode(Rectangle obj)
-        {
-            return HashCode.Combine(obj.X, obj.Y, obj.Width, obj.Height);
-        }
+        _logger.Debug($"Render complete. Rendered elements: {_renderedElements.Count}, Time: {elapsed:F2}ms");
     }
 
     private int CountNodes(VirtualNode node)
