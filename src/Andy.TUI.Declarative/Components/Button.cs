@@ -11,8 +11,10 @@ public class Button : ISimpleComponent
 {
     private readonly string _title;
     private readonly Action _action;
-    private Color _backgroundColor = Color.Gray;
-    private Color _textColor = Color.White;
+    private Color _backgroundColor = Color.None;
+    private Color _textColor = Color.None;
+    private bool _isPrimary;
+    private bool _isSecondary;
 
     public Button(string title, Action action)
     {
@@ -24,8 +26,8 @@ public class Button : ISimpleComponent
     {
         return new Button(_title, _action)
         {
-            _backgroundColor = Color.Blue,
-            _textColor = Color.White
+            _isPrimary = true,
+            _isSecondary = false
         };
     }
 
@@ -33,8 +35,19 @@ public class Button : ISimpleComponent
     {
         return new Button(_title, _action)
         {
-            _backgroundColor = Color.Gray,
-            _textColor = Color.White
+            _isPrimary = false,
+            _isSecondary = true
+        };
+    }
+
+    public Button WithColors(Color textColor, Color backgroundColor)
+    {
+        return new Button(_title, _action)
+        {
+            _textColor = textColor,
+            _backgroundColor = backgroundColor,
+            _isPrimary = _isPrimary,
+            _isSecondary = _isSecondary
         };
     }
 
@@ -43,6 +56,8 @@ public class Button : ISimpleComponent
     internal Action GetAction() => _action;
     internal Color GetBackgroundColor() => _backgroundColor;
     internal Color GetTextColor() => _textColor;
+    internal bool GetIsPrimary() => _isPrimary;
+    internal bool GetIsSecondary() => _isSecondary;
 
     public VirtualNode Render()
     {
