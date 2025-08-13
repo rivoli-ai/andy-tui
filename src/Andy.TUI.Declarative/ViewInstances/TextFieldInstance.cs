@@ -5,6 +5,7 @@ using Andy.TUI.Layout;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Terminal;
 using Andy.TUI.Diagnostics;
+using Andy.TUI.Theming;
 using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative;
@@ -213,10 +214,11 @@ public class TextFieldInstance : ViewInstance, IFocusable
                 fieldContent = displayText.PadRight(fieldWidth);
         }
 
-        // Style based on focus (high-contrast theme)
+        // Style based on focus using theme colors
+        var theme = ThemeManager.Instance.CurrentTheme;
         var style = _isFocused
-            ? Style.Default.WithForegroundColor(Color.White).WithBackgroundColor(Color.Blue)
-            : Style.Default.WithForegroundColor(Color.White);
+            ? Style.Default.WithForegroundColor(theme.Primary.Foreground).WithBackgroundColor(theme.Primary.Background)
+            : Style.Default.WithForegroundColor(theme.Default.Foreground).WithBackgroundColor(theme.Default.Background);
 
         return Element("text")
             .WithProp("x", layout.AbsoluteX)

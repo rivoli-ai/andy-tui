@@ -182,8 +182,10 @@ public class ScenarioRunner
             "Clipping_Bounds",
             (Func<ISimpleComponent>)(() =>
             {
-                var box = new Box{ Width = 10, Height = 2, Overflow = Overflow.Hidden };
+                // Use a 1-line tall clipping box so the second line is clipped out
+                var box = new Box{ Width = 10, Height = 1, Overflow = Overflow.Hidden };
                 box.Add(new Text("Inside"));
+                // This second line should be vertically clipped
                 box.Add(new Text("Outside"));
                 return new VStack(spacing: 0) {
                     box,
@@ -528,7 +530,9 @@ public class ScenarioRunner
                 Thread.Sleep(10);
                 input.EmitKey('\r', ConsoleKey.Enter); // open modal
                 Thread.Sleep(20);
-                input.EmitKey('\t', ConsoleKey.Tab); // move to Yes
+                input.EmitKey('\t', ConsoleKey.Tab); // move to Cancel first
+                Thread.Sleep(10);
+                input.EmitKey('\t', ConsoleKey.Tab); // then move to Yes
                 Thread.Sleep(10);
                 input.EmitKey('\r', ConsoleKey.Enter);
                 Thread.Sleep(30);

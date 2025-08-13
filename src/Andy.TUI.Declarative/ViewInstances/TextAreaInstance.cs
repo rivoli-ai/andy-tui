@@ -7,6 +7,7 @@ using Andy.TUI.Declarative.Components;
 using Andy.TUI.Layout;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Terminal;
+using Andy.TUI.Theming;
 using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative;
@@ -388,8 +389,10 @@ public class TextAreaInstance : ViewInstance, IFocusable
         var layout = new LayoutBox();
 
         // TextArea has fixed dimensions based on rows/cols
-        layout.Width = constraints.ConstrainWidth(_cols + 2); // +2 for borders
-        layout.Height = constraints.ConstrainHeight(_rows + 2); // +2 for borders
+        var cols = Math.Max(1, _cols);
+        var rows = Math.Max(1, _rows);
+        layout.Width = constraints.ConstrainWidth(cols + 2); // +2 for borders
+        layout.Height = constraints.ConstrainHeight(rows + 2); // +2 for borders
 
         return layout;
     }
@@ -399,10 +402,23 @@ public class TextAreaInstance : ViewInstance, IFocusable
         _logger.Debug("TextArea rendering with {0} lines, cursor at ({1},{2})", _lines.Count, _cursorRow, _cursorCol);
         var elements = new List<VirtualNode>();
 
-        // Draw border
+        // Draw border - always draw full rectangle corners/sides first
+        var theme = ThemeManager.Instance.CurrentTheme;
         var borderStyle = _isFocused
-            ? Style.Default.WithForegroundColor(Color.White)
-            : Style.Default.WithForegroundColor(Color.DarkGray);
+            ? Style.Default.WithForegroundColor(new Color(theme.FocusedBorder.Color.R, theme.FocusedBorder.Color.G, theme.FocusedBorder.Color.B))
+            : Style.Default.WithForegroundColor(new Color(theme.DefaultBorder.Color.R, theme.DefaultBorder.Color.G, theme.DefaultBorder.Color.B));
+
+        // Clear interior area to avoid artifacts from prior frames
+        elements.Add(
+            Element("rect")
+                .WithProp("x", layout.AbsoluteX + 1)
+                .WithProp("y", layout.AbsoluteY + 1)
+                .WithProp("width", Math.Max(0, Math.Max(1, _cols)))
+                .WithProp("height", Math.Max(0, Math.Max(1, _rows)))
+                .WithProp("z-index", 0)
+                .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
+                .Build()
+        );
 
         // Top border
         elements.Add(
@@ -459,8 +475,8 @@ public class TextAreaInstance : ViewInstance, IFocusable
 
             // Line style
             var lineStyle = (_lines.Count == 0 || (_lines.Count == 1 && string.IsNullOrEmpty(_lines[0]))) && i == 0
-                ? Style.Default.WithForegroundColor(Color.DarkGray) // Placeholder style
-                : Style.Default;
+                ? Style.Default.WithForegroundColor(new Color(theme.Disabled.Foreground.R, theme.Disabled.Foreground.G, theme.Disabled.Foreground.B)) // Placeholder style
+                : Style.Default.WithForegroundColor(new Color(theme.Default.Foreground.R, theme.Default.Foreground.G, theme.Default.Foreground.B)).WithBackgroundColor(new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B));
 
             // Left border + content + right border
             elements.Add(
@@ -512,7 +528,7 @@ public class TextAreaInstance : ViewInstance, IFocusable
                     Element("text")
                         .WithProp("x", layout.AbsoluteX + _cols + 2)
                         .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", Style.Default.WithForegroundColor(Color.DarkGray))
+                        .WithProp("style", Style.Default.WithForegroundColor(new Color(theme.Disabled.Foreground.R, theme.Disabled.Foreground.G, theme.Disabled.Foreground.B)))
                         .WithChild(new TextNode(scrollChar))
                         .Build()
                 );

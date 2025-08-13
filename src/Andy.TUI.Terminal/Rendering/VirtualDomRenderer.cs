@@ -145,7 +145,9 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             if (node.Props.TryGetValue("height", out var hProp) && hProp is int height)
                 element.Height = height;
             if (node.Props.TryGetValue("z-index", out var zProp) && zProp is int zIndex)
+            {
                 element.ZIndex = zIndex;
+            }
         }
 
         // For text elements without explicit dimensions, compute based on content
@@ -188,7 +190,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     {
         // Collect all elements with their absolute positions
         var allElements = new List<(RenderedElement Element, int AbsoluteX, int AbsoluteY)>();
-        CollectElements(root, 0, 0, allElements);
+        CollectElements(root, 0, 0, allElements, 0);
 
         // Sort by z-index (lower z-index renders first)
         var sortedElements = allElements.OrderBy(e => e.Element.ZIndex).ToList();
@@ -201,7 +203,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     }
 
     private void CollectElements(RenderedElement element, int parentX, int parentY,
-        List<(RenderedElement, int, int)> allElements)
+        List<(RenderedElement, int, int)> allElements, int parentZ)
     {
         // Check if this node has explicit position props (absolute positioning)
         bool hasExplicitX = element.Node.Props.ContainsKey("x");
@@ -224,6 +226,12 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
         // Debug logging removed for clarity
 
+        // Inherit z-index from parent when child's z-index is lower
+        if (element.ZIndex < parentZ)
+        {
+            element.ZIndex = parentZ;
+        }
+
         // Don't add fragment nodes to the render list
         if (!isFragment && !(element.Node is TextNode))
         {
@@ -241,7 +249,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
                 foreach (var child in element.Children)
                 {
                     // Pass the computed absolute position as parent position for children
-                    CollectElements(child, absX, absY, allElements);
+                    CollectElements(child, absX, absY, allElements, element.ZIndex);
                 }
             }
         }
@@ -754,13 +762,12 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
         // Set a temporary render context so VisitText uses (x,y) and the current element
         var previousContext = _currentRenderContext;
-        _currentRenderContext = new RenderContext { X = x, Y = y, Element = _currentRenderContext?.Element };
-        // Ensure element context points to this node for style resolution
-        _currentRenderContext.Element = previousContext?.Element ?? previousContext?.Element;
-        if (_currentRenderContext.Element == null)
+        _currentRenderContext = new RenderContext
         {
-            _currentRenderContext.Element = new RenderedElement { X = x, Y = y, Node = node };
-        }
+            X = x,
+            Y = y,
+            Element = new RenderedElement { X = x, Y = y, Node = node }
+        };
 
         foreach (var child in node.Children)
         {

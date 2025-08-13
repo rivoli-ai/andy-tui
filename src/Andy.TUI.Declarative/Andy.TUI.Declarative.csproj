@@ -13,6 +13,7 @@
     <ProjectReference Include="../Andy.TUI.Core/Andy.TUI.Core.csproj" />
     <ProjectReference Include="../Andy.TUI.Terminal/Andy.TUI.Terminal.csproj" />
     <ProjectReference Include="../Andy.TUI.Layout/Andy.TUI.Layout.csproj" />
+    <ProjectReference Include="../Andy.TUI.Theming/Andy.TUI.Theming.csproj" />
   </ItemGroup>
 
   <ItemGroup>
