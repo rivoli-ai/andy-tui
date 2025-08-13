@@ -40,7 +40,50 @@ public class ChatAppDeclarative
         {
             _client = new CerebrasHttpChatClient(cfg);
         }
+        // Attach key handler for Enter/Alt+Enter behavior while TextArea focused
+        var inputHandler = new ConsoleInputHandler();
+        inputHandler.KeyPressed += OnKey;
+        _renderer = new DeclarativeRenderer(renderingSystem, inputHandler);
         _renderer.Run(BuildUI);
+    }
+
+    private void OnKey(object? sender, KeyEventArgs e)
+    {
+        // Enter to send; Alt+Enter to insert newline
+        if (e.Key == ConsoleKey.Enter)
+        {
+            if (e.Modifiers.HasFlag(System.ConsoleModifiers.Alt))
+            {
+                _input.Value += "\n";
+            }
+            else
+            {
+                // Only send if the TextArea is focused to avoid double-handling
+                var focused = _renderer?.Context?.FocusManager.FocusedComponent;
+                if (focused is TextAreaInstance)
+                {
+                    // Fire-and-forget send and prevent TextArea from also inserting a newline
+                    _ = SendAsync();
+                }
+            }
+        }
+
+        // Alt+Up/Alt+Down to scroll conversation
+        if (e.Modifiers.HasFlag(System.ConsoleModifiers.Alt))
+        {
+            if (e.Key == ConsoleKey.UpArrow)
+            {
+                // Increase scroll up to max lines - viewport
+                var maxScroll = Math.Max(0, RenderLines(100 - 4).Count - 16);
+                _scroll = Math.Min(_scroll + 1, maxScroll);
+                _renderer?.RequestRender();
+            }
+            else if (e.Key == ConsoleKey.DownArrow)
+            {
+                _scroll = Math.Max(0, _scroll - 1);
+                _renderer?.RequestRender();
+            }
+        }
     }
 
     private ISimpleComponent BuildUI()
@@ -55,38 +98,43 @@ public class ChatAppDeclarative
 
             new Box
             {
+                // Clear background to prevent flicker/dirty artifacts before text updates
+                new Box { new Text(new string(' ', width - 2)) }
+                    .WithWidth(width - 2)
+                    .WithHeight(16)
+                    .WithPadding(new Andy.TUI.Layout.Spacing(0,0,0,0)),
                 BuildConversation(conversationLines, width - 2, height: 16)
             }.WithWidth(width).WithHeight(16).WithPadding(new Andy.TUI.Layout.Spacing(1,1,1,1)),
 
-            new HStack(spacing: 1)
+            new VStack(spacing: 1)
             {
                 new Text("> ").Bold().Color(Color.Green),
-                new TextField("Type a message…", new Binding<string>(
+                // Larger TextArea for composing; Enter to send, Alt+Enter for newline
+                new TextArea("Type a message…", new Binding<string>(
                     () => _input.Value,
                     v => _input.Value = v,
-                    "Input"))
-            },
-
-            new HStack(spacing: 2)
-            {
-                new Button("Send", async () => await SendAsync()).Primary(),
-                new Button("New Chat", () => { _messages.Clear(); _input.Value = ""; _status.Value = "New conversation"; }).Secondary()
+                    "Input"), rows: 4, cols: width - 4),
+                new HStack(spacing: 2)
+                {
+                    // Remove Send button; keep New Chat to clear
+                    new Button("New Chat", () => { _messages.Clear(); _input.Value = ""; _status.Value = "New conversation"; }).Secondary()
+                }
             }
         };
     }
 
     private VStack BuildConversation(List<(string Text, bool IsUser)> lines, int width, int height)
     {
+        // Make scrollable and ellipsize consistently
         var v = new VStack(spacing: 0);
         var start = Math.Max(0, lines.Count - height - _scroll);
         var end = Math.Min(lines.Count, start + height);
         for (int i = start; i < end; i++)
         {
             var (text, isUser) = lines[i];
-            var padded = text.Length > width ? text.Substring(0, width) : text.PadRight(width);
-            v.Add(new Text(padded).Color(isUser ? Color.Cyan : Color.White));
+            var content = text.Length > width ? text.Substring(0, width) : text.PadRight(width);
+            v.Add(new Text(content).Color(isUser ? Color.Cyan : Color.White));
         }
-        // Pad to fixed height
         int current = CountChildren(v);
         for (int i = current; i < height; i++) v.Add(" ");
         return v;

@@ -181,6 +181,24 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
     {
         var layout = new LayoutBox();
 
+        // If not focused, only need single line height
+        if (!_isFocused)
+        {
+            // Simple single-line layout
+            var displayTextLength = _placeholder.Length;
+            if (_selectedBinding?.Value.TryGetValue(out var selected) == true)
+            {
+                displayTextLength = _itemRenderer(selected).Length;
+            }
+            
+            // Add space for brackets and padding: "[ text ]"
+            var singleLineWidth = displayTextLength + 4;
+            layout.Width = constraints.ConstrainWidth(singleLineWidth);
+            layout.Height = constraints.ConstrainHeight(1);
+            return layout;
+        }
+
+        // When focused, calculate full dropdown size
         // Calculate width based on longest item (virtualized sampling to avoid O(N) on large lists)
         var maxItemWidth = _placeholder.Length;
         if (_items.Count > 0)
@@ -234,6 +252,35 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
         var hasSelection = _selectedBinding?.Value.TryGetValue(out selectedItem) == true;
         var displayText = hasSelection ? _itemRenderer(selectedItem!) : _placeholder;
 
+        // If not focused, only render a simple single-line element
+        if (!_isFocused)
+        {
+            // Render as a simple bordered text field showing current selection or placeholder
+            var text = displayText;
+            var maxWidth = (int)layout.Width - 4; // Leave room for brackets and spacing
+            if (text.Length > maxWidth)
+            {
+                text = text.Substring(0, maxWidth - 3) + "...";
+            }
+            
+            var style = hasSelection
+                ? Style.Default.WithForegroundColor(Color.White)
+                : Style.Default.WithForegroundColor(Color.DarkGray);
+            
+            // Simple single-line rendering with brackets
+            elements.Add(
+                Element("text")
+                    .WithProp("x", layout.AbsoluteX)
+                    .WithProp("y", layout.AbsoluteY)
+                    .WithProp("style", style)
+                    .WithChild(new TextNode($"[ {text} ]"))
+                    .Build()
+            );
+            
+            return Fragment(elements.ToArray());
+        }
+
+        // When focused, render the full dropdown
         // Calculate inner width
         var innerWidth = (int)layout.Width - 2; // -2 for borders
 

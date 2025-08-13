@@ -42,6 +42,11 @@ public class DeclarativeRenderer
         }
     }
 
+    /// <summary>
+    /// Exposes the underlying declarative context for advanced scenarios.
+    /// </summary>
+    public DeclarativeContext Context => _context;
+
     public DeclarativeRenderer(IRenderingSystem renderingSystem, IInputHandler inputHandler, object? owner = null, bool autoFocus = true)
         : this(renderingSystem, owner, autoFocus)
     {
