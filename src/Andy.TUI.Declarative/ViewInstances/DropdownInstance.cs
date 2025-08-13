@@ -37,8 +37,8 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
     public DropdownInstance(string id) : base(id)
     {
         var theme = ThemeManager.Instance.CurrentTheme;
-        _textColor = theme.Default.Foreground;
-        _placeholderColor = theme.Disabled.Foreground;
+        _textColor = new Color(theme.Default.Foreground.R, theme.Default.Foreground.G, theme.Default.Foreground.B);
+        _placeholderColor = new Color(theme.Disabled.Foreground.R, theme.Disabled.Foreground.G, theme.Disabled.Foreground.B);
     }
 
     // IFocusable implementation
@@ -215,8 +215,8 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
         // Main dropdown element
         var theme = ThemeManager.Instance.CurrentTheme;
         var dropdownStyle = _isFocused
-            ? Style.Default.WithForegroundColor(theme.Primary.Foreground).WithBackgroundColor(theme.Primary.Background)
-            : Style.Default.WithForegroundColor(hasValue ? _textColor : _placeholderColor).WithBackgroundColor(theme.Default.Background);
+            ? Style.Default.WithForegroundColor(new Color(theme.Primary.Foreground.R, theme.Primary.Foreground.G, theme.Primary.Foreground.B)).WithBackgroundColor(new Color(theme.Primary.Background.R, theme.Primary.Background.G, theme.Primary.Background.B))
+            : Style.Default.WithForegroundColor(hasValue ? _textColor : _placeholderColor).WithBackgroundColor(new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B));
 
         var dropdownText = _isOpen ? $"▼ {displayText}" : $"▶ {displayText}";
 
@@ -232,7 +232,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                     .WithProp("height", 1)
                     .WithProp("z-index", 5) // ensure it renders before the trigger text
                     .WithProp("version", _renderVersion)
-                    .WithProp("fill", theme.Default.Background)
+                    .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
                     .Build()
             );
         }
@@ -277,7 +277,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                     .WithProp("height", _items.Count)
                     .WithProp("z-index", 90)
                     .WithProp("version", _renderVersion)
-                    .WithProp("fill", theme.Default.Background)
+                    .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
                     .Build()
             );
 
@@ -290,10 +290,10 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                 var isSelected = currentValue != null && EqualityComparer<T>.Default.Equals(item, currentValue);
 
                 var itemStyle = isHighlighted
-                    ? Style.Default.WithForegroundColor(theme.Primary.Foreground).WithBackgroundColor(theme.Primary.Background)
+                    ? Style.Default.WithForegroundColor(new Color(theme.Primary.Foreground.R, theme.Primary.Foreground.G, theme.Primary.Foreground.B)).WithBackgroundColor(new Color(theme.Primary.Background.R, theme.Primary.Background.G, theme.Primary.Background.B))
                     : isSelected
-                        ? Style.Default.WithForegroundColor(theme.Primary.AccentColor ?? theme.Primary.Foreground)
-                        : Style.Default.WithForegroundColor(theme.Default.Foreground).WithBackgroundColor(theme.Default.Background);
+                        ? Style.Default.WithForegroundColor(new Color((theme.Primary.AccentColor ?? theme.Primary.Foreground).R, (theme.Primary.AccentColor ?? theme.Primary.Foreground).G, (theme.Primary.AccentColor ?? theme.Primary.Foreground).B))
+                        : Style.Default.WithForegroundColor(new Color(theme.Default.Foreground.R, theme.Default.Foreground.G, theme.Default.Foreground.B)).WithBackgroundColor(new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B));
 
                 elements.Add(
                     Element("text")
@@ -322,7 +322,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                         .WithProp("height", _lastMenuHeight)
                         .WithProp("z-index", -100) // very low, ensure it renders first
                         .WithProp("version", _renderVersion)
-                        .WithProp("fill", theme.Default.Background)
+                        .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
                         .Build()
                 );
                 // Clear a generous action row area beneath the menu to erase overwritten UI
@@ -334,7 +334,7 @@ public class DropdownInstance<T> : ViewInstance, IFocusable where T : class
                         .WithProp("height", 1)
                         .WithProp("z-index", -100)
                         .WithProp("version", _renderVersion)
-                        .WithProp("fill", theme.Default.Background)
+                        .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
                         .Build()
                 );
                 // Reset after emitting clear rect

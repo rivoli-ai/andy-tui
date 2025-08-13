@@ -217,8 +217,8 @@ public class TextFieldInstance : ViewInstance, IFocusable
         // Style based on focus using theme colors
         var theme = ThemeManager.Instance.CurrentTheme;
         var style = _isFocused
-            ? Style.Default.WithForegroundColor(theme.Primary.Foreground).WithBackgroundColor(theme.Primary.Background)
-            : Style.Default.WithForegroundColor(theme.Default.Foreground).WithBackgroundColor(theme.Default.Background);
+            ? Style.Default.WithForegroundColor(new Color(theme.Primary.Foreground.R, theme.Primary.Foreground.G, theme.Primary.Foreground.B)).WithBackgroundColor(new Color(theme.Primary.Background.R, theme.Primary.Background.G, theme.Primary.Background.B))
+            : Style.Default.WithForegroundColor(new Color(theme.Default.Foreground.R, theme.Default.Foreground.G, theme.Default.Foreground.B)).WithBackgroundColor(new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B));
 
         return Element("text")
             .WithProp("x", layout.AbsoluteX)
