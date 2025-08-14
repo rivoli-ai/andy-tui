@@ -62,7 +62,7 @@ public class ScreenRecorder
     }
 
     /// <summary>
-    /// Captures the current screen content with character-level detail.
+    /// Captures the current screen content with character-level detail including colors.
     /// </summary>
     private ScreenContent CaptureScreen(MockTerminal terminal)
     {
@@ -73,16 +73,17 @@ public class ScreenRecorder
             var line = terminal.GetLine(y);
             var chars = new List<CharInfo>();
             
-            for (int x = 0; x < Math.Min(line.Length, _width); x++)
+            // Capture full width to get color info even for spaces
+            for (int x = 0; x < _width; x++)
             {
+                var (character, foreground, background) = terminal.GetCharAt(x, y);
                 chars.Add(new CharInfo
                 {
-                    Char = line[x],
+                    Char = character,
                     X = x,
                     Y = y,
-                    // MockTerminal doesn't track styles per character, but we can extend it
-                    ForegroundColor = "White",
-                    BackgroundColor = "Black"
+                    ForegroundColor = foreground.ToString(),
+                    BackgroundColor = background.ToString()
                 });
             }
             
@@ -90,7 +91,9 @@ public class ScreenRecorder
             {
                 Y = y,
                 Text = line.TrimEnd(),
-                Characters = chars
+                Characters = chars,
+                // Track if this line has any colored backgrounds (highlights)
+                HasHighlight = chars.Any(c => c.BackgroundColor != "Black" && c.BackgroundColor != "DarkGray")
             });
         }
 
@@ -196,6 +199,9 @@ public class ScreenRecorder
             
             // Check for overlapping elements
             CheckForOverlaps(curr, issues);
+            
+            // Check for color rendering issues
+            CheckForColorIssues(curr, issues);
         }
         
         return new AnalysisReport
@@ -236,6 +242,140 @@ public class ScreenRecorder
                 }
             }
         }
+    }
+
+    private void CheckForColorIssues(ScreenFrame frame, List<RenderingIssue> issues)
+    {
+        // Check for multiple highlighted lines (should only be one)
+        var highlightedLines = frame.Content.Lines.Where(l => l.HasHighlight).ToList();
+        if (highlightedLines.Count > 1)
+        {
+            issues.Add(new RenderingIssue
+            {
+                Type = "MultipleHighlightedLines",
+                FrameNumber = frame.FrameNumber,
+                Description = $"Multiple lines have highlight backgrounds: {highlightedLines.Count} lines",
+                Severity = "High",
+                Details = highlightedLines.Select(l => $"Line {l.Y}: {l.Text}").ToList()
+            });
+        }
+
+        // Check for partial highlights (background not covering full line)
+        foreach (var line in frame.Content.Lines)
+        {
+            if (line.HasHighlight && line.Characters.Count > 0)
+            {
+                // Check if the highlight is consistent across the line
+                var highlightedChars = line.Characters.Where(c => 
+                    c.BackgroundColor != "Black" && c.BackgroundColor != "DarkGray").ToList();
+                
+                if (highlightedChars.Count > 0)
+                {
+                    // Find gaps in highlighting
+                    var firstHighlight = highlightedChars.First().X;
+                    var lastHighlight = highlightedChars.Last().X;
+                    var expectedCount = lastHighlight - firstHighlight + 1;
+                    
+                    if (highlightedChars.Count < expectedCount)
+                    {
+                        issues.Add(new RenderingIssue
+                        {
+                            Type = "PartialHighlight",
+                            FrameNumber = frame.FrameNumber,
+                            Description = $"Line {line.Y} has partial background highlighting",
+                            Severity = "High",
+                            Details = new List<string> 
+                            { 
+                                $"Highlighted chars: {highlightedChars.Count}, Expected: {expectedCount}",
+                                $"Line text: [{line.Text}]"
+                            }
+                        });
+                    }
+                    
+                    // Check for mixed background colors on the same line
+                    var bgColors = highlightedChars.Select(c => c.BackgroundColor).Distinct().ToList();
+                    if (bgColors.Count > 1)
+                    {
+                        issues.Add(new RenderingIssue
+                        {
+                            Type = "MixedBackgroundColors",
+                            FrameNumber = frame.FrameNumber,
+                            Description = $"Line {line.Y} has mixed background colors",
+                            Severity = "High",
+                            Details = new List<string> 
+                            { 
+                                $"Colors found: {string.Join(", ", bgColors)}",
+                                $"Line text: [{line.Text}]"
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        // Check for incorrect color combinations (e.g., black on black)
+        foreach (var line in frame.Content.Lines)
+        {
+            foreach (var ch in line.Characters)
+            {
+                if (ch.Char != ' ' && ch.Char != '\0')
+                {
+                    // Check for invisible text (same foreground and background)
+                    if (ch.ForegroundColor == ch.BackgroundColor)
+                    {
+                        issues.Add(new RenderingIssue
+                        {
+                            Type = "InvisibleText",
+                            FrameNumber = frame.FrameNumber,
+                            Description = $"Character at ({ch.X},{ch.Y}) has same foreground and background color",
+                            Severity = "High",
+                            Details = new List<string> 
+                            { 
+                                $"Character: '{ch.Char}'",
+                                $"Color: {ch.ForegroundColor}"
+                            }
+                        });
+                        break; // Only report once per line
+                    }
+                    
+                    // Check for poor contrast
+                    if (IsPoorContrast(ch.ForegroundColor, ch.BackgroundColor))
+                    {
+                        issues.Add(new RenderingIssue
+                        {
+                            Type = "PoorContrast",
+                            FrameNumber = frame.FrameNumber,
+                            Description = $"Poor color contrast at line {line.Y}",
+                            Severity = "Medium",
+                            Details = new List<string> 
+                            { 
+                                $"Foreground: {ch.ForegroundColor}, Background: {ch.BackgroundColor}",
+                                $"Character: '{ch.Char}' at position {ch.X}"
+                            }
+                        });
+                        break; // Only report once per line
+                    }
+                }
+            }
+        }
+    }
+
+    private bool IsPoorContrast(string foreground, string background)
+    {
+        // Simple check for known bad combinations
+        var badCombos = new[]
+        {
+            ("DarkGray", "Black"),
+            ("Gray", "DarkGray"),
+            ("Yellow", "White"),
+            ("Cyan", "White"),
+            ("DarkBlue", "Black"),
+            ("DarkGreen", "Black")
+        };
+        
+        return badCombos.Any(combo => 
+            (combo.Item1 == foreground && combo.Item2 == background) ||
+            (combo.Item2 == foreground && combo.Item1 == background));
     }
 
     /// <summary>
@@ -297,22 +437,61 @@ public class ScreenRecorder
         foreach (var frame in report.Frames)
         {
             sb.AppendLine($"Frame {frame.FrameNumber}: {frame.Action}");
+            sb.AppendLine($"  Dimensions: {frame.Width}x{frame.Height}");
             
-            // Show first few non-empty lines
+            // Show ALL non-empty lines for complete capture
             var nonEmptyLines = frame.Content.Lines
                 .Where(l => !string.IsNullOrWhiteSpace(l.Text))
-                .Take(5)
                 .ToList();
             
+            sb.AppendLine($"  Content ({nonEmptyLines.Count} lines):");
             foreach (var line in nonEmptyLines)
             {
-                sb.AppendLine($"  [{line.Y:D2}]: {line.Text}");
+                // Show color info for each character segment with different colors
+                var lineDesc = $"  [{line.Y:D2}]: {line.Text}";
+                
+                if (line.HasHighlight)
+                {
+                    lineDesc += " [HIGHLIGHTED]";
+                    
+                    // Analyze which characters have what colors
+                    var colorSegments = new List<string>();
+                    var chars = line.Characters.Where(c => c.X < line.Text.Length).ToList();
+                    
+                    if (chars.Any())
+                    {
+                        var bgGroups = chars.GroupBy(c => c.BackgroundColor);
+                        foreach (var group in bgGroups.Where(g => g.Key != "Black"))
+                        {
+                            var positions = string.Join(",", group.Select(c => c.X));
+                            colorSegments.Add($"bg:{group.Key}@[{positions}]");
+                        }
+                        
+                        if (colorSegments.Any())
+                        {
+                            lineDesc += $" Colors: {string.Join("; ", colorSegments)}";
+                        }
+                    }
+                }
+                
+                sb.AppendLine(lineDesc);
             }
             
-            if (frame.Content.Lines.Count(l => !string.IsNullOrWhiteSpace(l.Text)) > 5)
+            // Highlight color issues in this frame
+            var frameColorIssues = report.Issues
+                .Where(i => i.FrameNumber == frame.FrameNumber && 
+                       (i.Type.Contains("Highlight") || i.Type.Contains("Color") || i.Type.Contains("Contrast")))
+                .ToList();
+                
+            if (frameColorIssues.Any())
             {
-                sb.AppendLine($"  ... and {frame.Content.Lines.Count(l => !string.IsNullOrWhiteSpace(l.Text)) - 5} more lines");
+                sb.AppendLine("  ⚠️ Color Issues in this frame:");
+                foreach (var issue in frameColorIssues)
+                {
+                    sb.AppendLine($"    - {issue.Type}: {issue.Description}");
+                }
             }
+            
             sb.AppendLine();
         }
         
@@ -343,6 +522,7 @@ public class ScreenLine
     public int Y { get; set; }
     public string Text { get; set; } = "";
     public List<CharInfo> Characters { get; set; } = new();
+    public bool HasHighlight { get; set; }
 }
 
 public class CharInfo

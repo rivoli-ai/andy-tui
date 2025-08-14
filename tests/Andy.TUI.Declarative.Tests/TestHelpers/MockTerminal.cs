@@ -258,4 +258,22 @@ public class MockTerminal : ITerminal
         }
         return lines;
     }
+
+    public (char character, ConsoleColor foreground, ConsoleColor background) GetCharAt(int x, int y)
+    {
+        if (x >= 0 && x < Width && y >= 0 && y < Height)
+        {
+            return (_buffer[y, x], _foregroundColors[y, x], _backgroundColors[y, x]);
+        }
+        return ('\0', ConsoleColor.Black, ConsoleColor.Black);
+    }
+
+    public (ConsoleColor foreground, ConsoleColor background) GetColorAt(int x, int y)
+    {
+        if (x >= 0 && x < Width && y >= 0 && y < Height)
+        {
+            return (_foregroundColors[y, x], _backgroundColors[y, x]);
+        }
+        return (ConsoleColor.Black, ConsoleColor.Black);
+    }
 }
