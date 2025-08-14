@@ -320,12 +320,14 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
         {
             var itemIndex = _scrollOffset + i;
             var lineContent = "";
-            var lineStyle = Style.Default;
+            var isHighlighted = false;
+            var isSelected = false;
+            T? currentItem = default;
 
             if (itemIndex < _items.Count)
             {
-                var item = _items[itemIndex];
-                var itemText = _itemRenderer(item);
+                currentItem = _items[itemIndex];
+                var itemText = _itemRenderer(currentItem);
 
                 // Add selection indicator
                 if (_showIndicator)
@@ -334,54 +336,77 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
                     itemText = indicator + itemText;
                 }
 
-                // Highlight current item
-                if (_isFocused && itemIndex == _highlightedIndex)
-                {
-                    lineStyle = Style.Default
-                        .WithForegroundColor(Color.Black)
-                        .WithBackgroundColor(Color.White);
-                }
-                else if (hasSelection && EqualityComparer<T>.Default.Equals(item, selectedItem))
-                {
-                    lineStyle = Style.Default.WithForegroundColor(Color.Green);
-                }
-
+                isHighlighted = _isFocused && itemIndex == _highlightedIndex;
+                isSelected = hasSelection && EqualityComparer<T>.Default.Equals(currentItem, selectedItem);
                 lineContent = itemText;
             }
 
-            // Truncate or pad to fit
+            // Truncate to fit (leave room for borders)
             if (lineContent.Length > innerWidth)
             {
                 lineContent = lineContent.Substring(0, innerWidth - 3) + "...";
             }
+            
+            // Pad content to exactly innerWidth for consistent rendering
+            lineContent = lineContent.PadRight(innerWidth);
+
+            // Render entire line as a single element to ensure consistent background
+            // This prevents partial background rendering issues
+            var fullLine = "│" + lineContent + "│";
+            
+            // Determine the style for this line
+            if (isHighlighted)
+            {
+                // Render with highlight background - entire line including borders
+                elements.Add(
+                    Element("text")
+                        .WithProp("x", layout.AbsoluteX)
+                        .WithProp("y", layout.AbsoluteY + i + 1)
+                        .WithProp("style", Style.Default
+                            .WithForegroundColor(Color.Black)
+                            .WithBackgroundColor(Color.White))
+                        .WithChild(new TextNode(fullLine))
+                        .Build()
+                );
+            }
+            else if (isSelected)
+            {
+                // Selected but not highlighted - show content in green, borders normal
+                elements.Add(
+                    Fragment(
+                        Element("text")
+                            .WithProp("x", layout.AbsoluteX)
+                            .WithProp("y", layout.AbsoluteY + i + 1)
+                            .WithProp("style", borderStyle)
+                            .WithChild(new TextNode("│"))
+                            .Build(),
+                        Element("text")
+                            .WithProp("x", layout.AbsoluteX + 1)
+                            .WithProp("y", layout.AbsoluteY + i + 1)
+                            .WithProp("style", Style.Default.WithForegroundColor(Color.Green))
+                            .WithChild(new TextNode(lineContent))
+                            .Build(),
+                        Element("text")
+                            .WithProp("x", layout.AbsoluteX + innerWidth + 1)
+                            .WithProp("y", layout.AbsoluteY + i + 1)
+                            .WithProp("style", borderStyle)
+                            .WithChild(new TextNode("│"))
+                            .Build()
+                    )
+                );
+            }
             else
             {
-                lineContent = lineContent.PadRight(innerWidth);
-            }
-
-            // Render line with borders
-            elements.Add(
-                Fragment(
+                // Normal line - render as single element for efficiency
+                elements.Add(
                     Element("text")
                         .WithProp("x", layout.AbsoluteX)
                         .WithProp("y", layout.AbsoluteY + i + 1)
                         .WithProp("style", borderStyle)
-                        .WithChild(new TextNode("│"))
-                        .Build(),
-                    Element("text")
-                        .WithProp("x", layout.AbsoluteX + 1)
-                        .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", lineStyle)
-                        .WithChild(new TextNode(lineContent))
-                        .Build(),
-                    Element("text")
-                        .WithProp("x", layout.AbsoluteX + innerWidth + 1)
-                        .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", borderStyle)
-                        .WithChild(new TextNode("│"))
+                        .WithChild(new TextNode(fullLine))
                         .Build()
-                )
-            );
+                );
+            }
         }
 
         // Bottom border
