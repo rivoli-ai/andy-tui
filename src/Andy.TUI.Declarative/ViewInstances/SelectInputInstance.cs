@@ -284,34 +284,32 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
         // Calculate inner width
         var innerWidth = (int)layout.Width - 2; // -2 for borders
 
-        // Top border with current selection
-        var topBorder = "┌" + new string('─', innerWidth) + "┐";
+        // Top border with current selection embedded
+        var selectionText = displayText;
+        var maxSelectionLength = Math.Max(0, innerWidth - 4); // Leave room for "─ " and " ─"
+        if (selectionText.Length > maxSelectionLength && maxSelectionLength > 3)
+        {
+            selectionText = selectionText.Substring(0, maxSelectionLength - 3) + "...";
+        }
+        else if (selectionText.Length > maxSelectionLength)
+        {
+            selectionText = selectionText.Substring(0, maxSelectionLength);
+        }
+
+        // Build the top border with embedded selection text
+        var remainingWidth = innerWidth - selectionText.Length - 2; // -2 for the spaces around text
+        var leftPadding = remainingWidth / 2;
+        var rightPadding = remainingWidth - leftPadding;
+        
+        // Render the complete top border as a single line
+        var topBorderLine = "┌" + new string('─', leftPadding) + " " + selectionText + " " + new string('─', rightPadding) + "┐";
+        
         elements.Add(
             Element("text")
                 .WithProp("x", layout.AbsoluteX)
                 .WithProp("y", layout.AbsoluteY)
                 .WithProp("style", borderStyle)
-                .WithChild(new TextNode(topBorder))
-                .Build()
-        );
-
-        // Show current selection on top border
-        var selectionText = displayText;
-        if (selectionText.Length > innerWidth - 4)
-        {
-            selectionText = selectionText.Substring(0, innerWidth - 7) + "...";
-        }
-
-        var selectionStyle = hasSelection
-            ? Style.Default.WithForegroundColor(Color.White)
-            : Style.Default.WithForegroundColor(Color.DarkGray);
-
-        elements.Add(
-            Element("text")
-                .WithProp("x", layout.AbsoluteX + 2)
-                .WithProp("y", layout.AbsoluteY)
-                .WithProp("style", selectionStyle)
-                .WithChild(new TextNode($" {selectionText} "))
+                .WithChild(new TextNode(topBorderLine))
                 .Build()
         );
 

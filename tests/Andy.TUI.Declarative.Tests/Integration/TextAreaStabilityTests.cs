@@ -86,6 +86,7 @@ public class TextAreaStabilityTests : TestBase
             using var renderingSystem = new RenderingSystem(terminal);
             var input = new TestInputHandler();
             var renderer = new DeclarativeRenderer(renderingSystem, input, autoFocus: true);
+            var recorder = new ScreenRecorder("ChatLike_TextArea", 120, 30);
 
             var messages = new List<(string role, string content)>();
             string draft = string.Empty;
@@ -129,6 +130,7 @@ public class TextAreaStabilityTests : TestBase
             renderThread.Start();
 
             Thread.Sleep(150);
+            recorder.RecordFrame(terminal, "Initial");
 
             // Ensure focus is on the TextArea by probing typed char visibility in its content region
             Assert.True(FocusTextAreaByTypingProbe(terminal, input, maxTabs: 8, scanLines: 30, rows: 3, cols: 40), "Failed to focus TextArea");
@@ -140,7 +142,7 @@ public class TextAreaStabilityTests : TestBase
             {
                 input.EmitKey(ch, ConsoleKey.T);
                 typed += ch;
-                Thread.Sleep(30);
+                Thread.Sleep(50);
                 var buf = GetTopBuffer(terminal, 30);
                 _output.WriteLine($"After '{ch}' buffer:\n" + buf);
 
@@ -148,6 +150,8 @@ public class TextAreaStabilityTests : TestBase
                 var area = TryGetTextAreaContent(terminal, scanLines: 30, rows: 3, cols: 40);
                 _output.WriteLine("TextArea content:\n" + area);
                 Assert.Contains(typed[0].ToString(), area);
+
+                recorder.RecordFrame(terminal, $"Type '{ch}'");
             }
 
             // Try to focus the Send button by cycling TAB and pressing Enter until messages are added
@@ -158,6 +162,7 @@ public class TextAreaStabilityTests : TestBase
                 Thread.Sleep(60);
                 input.EmitKey('\r', ConsoleKey.Enter);
                 Thread.Sleep(120);
+                recorder.RecordFrame(terminal, "Attempt Send");
             }
 
             var finalBuf = GetTopBuffer(terminal, 20);
@@ -169,6 +174,10 @@ public class TextAreaStabilityTests : TestBase
             // Ensure the TextArea region is cleared (draft removed)
             var finalArea = TryGetTextAreaContent(terminal, scanLines: 30, rows: 3, cols: 40);
             Assert.DoesNotContain("This is stable", finalArea);
+
+            // Save recording for debugging
+            var path = recorder.SaveToFile();
+            _output.WriteLine($"Recording saved: {path}");
 
             input.Stop();
         }

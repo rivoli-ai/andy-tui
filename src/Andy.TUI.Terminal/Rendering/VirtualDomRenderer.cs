@@ -57,7 +57,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         _renderedElements.Clear();
         _dirtyRegionTracker.Clear();
 
-        // Clear the entire render area to ensure clean slate
+        // Clear the entire render area to ensure consistent baseline before full redraw
         for (int y = 0; y < _renderingSystem.Height; y++)
         {
             _renderingSystem.FillRect(0, y, _renderingSystem.Width, 1, ' ', Style.Default);
@@ -202,9 +202,12 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         CollectElements(root, 0, 0, allElements, 0);
 
         // Sort by z-index (lower z-index renders first)
-        var sortedElements = allElements.OrderBy(e => e.Element.ZIndex).ToList();
+        var sortedElements = allElements
+            .OrderBy(e => (e.Element.Node is ElementNode en && en.TagName.ToLower() == "rect") ? 0 : 1)
+            .ThenBy(e => e.Element.ZIndex)
+            .ToList();
 
-        // Render each element
+        // Render each element. Ensure rectangles (clears) render before text at same z-index
         foreach (var (element, absX, absY) in sortedElements)
         {
             RenderElement(element, absX, absY);
@@ -305,17 +308,36 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             return;
         }
 
-        // Clear dirty regions
-        foreach (var region in dirtyRegions)
-        {
-            _renderingSystem.FillRect(region.X, region.Y, Math.Max(1, region.Width), Math.Max(1, region.Height), ' ', Style.Default);
-        }
+        // If we have many dirty regions or they cover a large area, do a full re-render
+        var totalDirtyArea = dirtyRegions.Sum(r => r.Width * r.Height);
+        var screenArea = _renderingSystem.Width * _renderingSystem.Height;
+        var shouldFullRender = dirtyRegions.Count > 10 || totalDirtyArea > screenArea / 2;
 
-        // For patches, we'll do a full re-render to ensure consistency
-        // This is simpler and more reliable than selective rendering
-        if (_rootElement != null)
+        if (shouldFullRender)
         {
-            RenderInZOrder(_rootElement);
+            // Clear entire screen and do full render
+            _logger.Debug("Performing full re-render due to large dirty area");
+            for (int y = 0; y < _renderingSystem.Height; y++)
+            {
+                _renderingSystem.FillRect(0, y, _renderingSystem.Width, 1, ' ', Style.Default);
+            }
+            if (_rootElement != null)
+            {
+                RenderInZOrder(_rootElement);
+            }
+        }
+        else
+        {
+            // Clear only dirty regions, but re-render the entire tree to avoid partial frame artifacts
+            foreach (var region in dirtyRegions)
+            {
+                _renderingSystem.FillRect(region.X, region.Y, Math.Max(1, region.Width), Math.Max(1, region.Height), ' ', Style.Default);
+            }
+
+            if (_rootElement != null)
+            {
+                RenderInZOrder(_rootElement);
+            }
         }
 
         _dirtyRegionTracker.Clear();
@@ -382,6 +404,11 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             if (!string.IsNullOrEmpty(content))
             {
                 _logger.Debug($"VisitText: Writing '{content}' at ({drawX},{y})");
+                // Write background first across the span to avoid gaps/whiteouts during updates
+                if (style.Background.Type != ColorType.None)
+                {
+                    _renderingSystem.FillRect(drawX, y, content.Length, 1, ' ', Style.Default.WithBackgroundColor(style.Background));
+                }
                 _renderingSystem.WriteText(drawX, y, content, style);
             }
         }

@@ -236,6 +236,8 @@ public class DeclarativeRenderer
 
         _context.EventRouter.RouteKeyPress(keyInfo);
         // Console.Error.WriteLine($"[DeclarativeRenderer] After routing key, needsRender: {_needsRender}");
+
+        // Do not force an extra render here; components request renders as needed
     }
 
     private int CalculateTreeDepth(VirtualNode node, int currentDepth = 0)

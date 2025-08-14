@@ -44,7 +44,7 @@ public class EventRouter
         if (focused?.HandleKeyPress(keyInfo) == true)
         {
             _logger.Debug("Key handled by {0}", focused.GetType().Name);
-            _context.RequestRender();
+            // Avoid double render requests; components call InvalidateView/RequestRender themselves
             return true;
         }
 

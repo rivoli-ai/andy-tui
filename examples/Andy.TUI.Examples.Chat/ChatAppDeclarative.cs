@@ -23,13 +23,6 @@ public class ChatAppDeclarative
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        _renderer = new DeclarativeRenderer(renderingSystem);
-        renderingSystem.Initialize();
-
-        // Subscribe to observable changes to trigger UI updates
-        _messages.CollectionChanged += (_, __) => _renderer?.RequestRender();
-        _input.PropertyChanged += (_, __) => _renderer?.RequestRender();
-        _status.PropertyChanged += (_, __) => _renderer?.RequestRender();
 
         var cfg = ChatConfiguration.Load();
         if (string.IsNullOrWhiteSpace(cfg.ApiKey))
@@ -40,10 +33,22 @@ public class ChatAppDeclarative
         {
             _client = new CerebrasHttpChatClient(cfg);
         }
+
         // Attach key handler for Enter/Alt+Enter behavior while TextArea focused
         var inputHandler = new ConsoleInputHandler();
         inputHandler.KeyPressed += OnKey;
+
+        // Create a single renderer instance wired to the input handler
         _renderer = new DeclarativeRenderer(renderingSystem, inputHandler);
+
+        // Initialize rendering after renderer is created
+        renderingSystem.Initialize();
+
+        // Subscribe to observable changes to trigger UI updates on the active renderer
+        _messages.CollectionChanged += (_, __) => _renderer?.RequestRender();
+        _input.PropertyChanged += (_, __) => _renderer?.RequestRender();
+        _status.PropertyChanged += (_, __) => _renderer?.RequestRender();
+
         _renderer.Run(BuildUI);
     }
 
@@ -96,13 +101,9 @@ public class ChatAppDeclarative
             new Text($"Andy.TUI Chat — Model: {(_client?.Model ?? "<not configured>")}").Title().Color(Color.Cyan),
             new Text(_status.Value).Color(Color.Gray),
 
+            // Conversation area: render lines directly without extra nested clears
             new Box
             {
-                // Clear background to prevent flicker/dirty artifacts before text updates
-                new Box { new Text(new string(' ', width - 2)) }
-                    .WithWidth(width - 2)
-                    .WithHeight(16)
-                    .WithPadding(new Andy.TUI.Layout.Spacing(0,0,0,0)),
                 BuildConversation(conversationLines, width - 2, height: 16)
             }.WithWidth(width).WithHeight(16).WithPadding(new Andy.TUI.Layout.Spacing(1,1,1,1)),
 
@@ -133,7 +134,27 @@ public class ChatAppDeclarative
         {
             var (text, isUser) = lines[i];
             var content = text.Length > width ? text.Substring(0, width) : text.PadRight(width);
-            v.Add(new Text(content).Color(isUser ? Color.Cyan : Color.White));
+            if (content.StartsWith("You: "))
+            {
+                v.Add(new HStack(spacing: 1)
+                {
+                    new Text("You:").Bold().Color(Color.Cyan),
+                    new Text(content.Substring(5)).Color(Color.White)
+                });
+            }
+            else if (content.StartsWith("Assistant: ") || content.StartsWith("Model: "))
+            {
+                var body = content.StartsWith("Assistant: ") ? content.Substring(11) : content.Substring(7);
+                v.Add(new HStack(spacing: 1)
+                {
+                    new Text("Model:").Bold().Color(Color.Yellow),
+                    new Text(body).Color(Color.White)
+                });
+            }
+            else
+            {
+                v.Add(new Text(content).Color(isUser ? Color.Cyan : Color.White));
+            }
         }
         int current = CountChildren(v);
         for (int i = current; i < height; i++) v.Add(" ");
@@ -190,7 +211,8 @@ public class ChatAppDeclarative
             return;
         }
         _messages.Add(new ChatMessage("user", content));
-        _input.Value = "";
+        // Clear editor and reset caret to top-left
+        _input.Value = string.Empty;
         _status.Value = "Sending…";
 
         try

@@ -43,6 +43,10 @@ public class TextAreaInstance : ViewInstance, IFocusable
     {
         _isFocused = true;
         UpdateLinesFromText();
+        // Ensure cursor is within bounds and visible at start of focus to prevent empty-looking frames
+        if (_cursorRow >= _lines.Count) _cursorRow = Math.Max(0, _lines.Count - 1);
+        _cursorCol = Math.Min(_cursorCol, _lines[_cursorRow].Length);
+        UpdateScroll();
         InvalidateView();
     }
 
@@ -408,17 +412,7 @@ public class TextAreaInstance : ViewInstance, IFocusable
             ? Style.Default.WithForegroundColor(new Color(theme.FocusedBorder.Color.R, theme.FocusedBorder.Color.G, theme.FocusedBorder.Color.B))
             : Style.Default.WithForegroundColor(new Color(theme.DefaultBorder.Color.R, theme.DefaultBorder.Color.G, theme.DefaultBorder.Color.B));
 
-        // Clear interior area to avoid artifacts from prior frames
-        elements.Add(
-            Element("rect")
-                .WithProp("x", layout.AbsoluteX + 1)
-                .WithProp("y", layout.AbsoluteY + 1)
-                .WithProp("width", Math.Max(0, Math.Max(1, _cols)))
-                .WithProp("height", Math.Max(0, Math.Max(1, _rows)))
-                .WithProp("z-index", 0)
-                .WithProp("fill", new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B))
-                .Build()
-        );
+        // Avoid explicit interior clear to reduce flicker; each content line fully repaints its background
 
         // Top border
         elements.Add(
@@ -443,6 +437,20 @@ public class TextAreaInstance : ViewInstance, IFocusable
                 if (i == 0)
                 {
                     lineContent = _placeholder;
+
+                    // When focused and empty, still show caret at current column
+                    if (_isFocused)
+                    {
+                        var col = Math.Max(0, Math.Min(_cursorCol, lineContent.Length));
+                        if (col < lineContent.Length)
+                        {
+                            lineContent = lineContent.Insert(col, "│");
+                        }
+                        else
+                        {
+                            lineContent += "│";
+                        }
+                    }
                 }
             }
             else if (lineIndex < _lines.Count)
@@ -475,9 +483,12 @@ public class TextAreaInstance : ViewInstance, IFocusable
             }
 
             // Line style
+            var baseFg = new Color(theme.Default.Foreground.R, theme.Default.Foreground.G, theme.Default.Foreground.B);
+            var baseBg = new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B);
+            var placeholderFg = new Color(theme.Disabled.Foreground.R, theme.Disabled.Foreground.G, theme.Disabled.Foreground.B);
             var lineStyle = (_lines.Count == 0 || (_lines.Count == 1 && string.IsNullOrEmpty(_lines[0]))) && i == 0
-                ? Style.Default.WithForegroundColor(new Color(theme.Disabled.Foreground.R, theme.Disabled.Foreground.G, theme.Disabled.Foreground.B)) // Placeholder style
-                : Style.Default.WithForegroundColor(new Color(theme.Default.Foreground.R, theme.Default.Foreground.G, theme.Default.Foreground.B)).WithBackgroundColor(new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B));
+                ? Style.Default.WithForegroundColor(placeholderFg).WithBackgroundColor(baseBg)
+                : Style.Default.WithForegroundColor(baseFg).WithBackgroundColor(baseBg);
 
             // Left border + content + right border
             elements.Add(
