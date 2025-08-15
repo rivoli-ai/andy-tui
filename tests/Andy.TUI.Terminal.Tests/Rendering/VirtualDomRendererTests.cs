@@ -174,7 +174,7 @@ public class VirtualDomRendererTests
         _renderer.ApplyPatches(patches);
 
         // Assert - Should clear the dirty region and re-render
-        _mockRenderingSystem.Verify(r => r.FillRect(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), 1, ' ', Style.Default), Times.AtLeastOnce);
+        _mockRenderingSystem.Verify(r => r.FillRect(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), 1, ' ', Style.Default.WithBackgroundColor(Color.Black)), Times.AtLeastOnce);
         _mockRenderingSystem.Verify(r => r.WriteText(10, 5, "New Text", It.IsAny<Style>()), Times.Once);
     }
 
@@ -238,7 +238,7 @@ public class VirtualDomRendererTests
         _renderer.ApplyPatches(patches);
 
         // Assert - Should mark dirty and re-render with new style
-        _mockRenderingSystem.Verify(r => r.FillRect(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), ' ', Style.Default), Times.AtLeastOnce);
+        _mockRenderingSystem.Verify(r => r.FillRect(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), ' ', Style.Default.WithBackgroundColor(Color.Black)), Times.AtLeastOnce);
         _mockRenderingSystem.Verify(r => r.WriteText(10, 5, "Button", It.Is<Style>(s => s.Foreground == Color.Yellow)), Times.Once);
     }
 
@@ -299,7 +299,7 @@ public class VirtualDomRendererTests
 
         // Assert - Should successfully mark dirty and re-render
         // even though the text element has no explicit width/height
-        _mockRenderingSystem.Verify(r => r.FillRect(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), ' ', Style.Default), Times.AtLeastOnce);
+        _mockRenderingSystem.Verify(r => r.FillRect(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), ' ', Style.Default.WithBackgroundColor(Color.Black)), Times.AtLeastOnce);
         _mockRenderingSystem.Verify(r => r.WriteText(10, 5, "Updated Text", It.IsAny<Style>()), Times.Once);
     }
 }

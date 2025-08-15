@@ -25,7 +25,30 @@ public class DiffEngine
             // Path is guaranteed non-null by Patch ctor; still be defensive for analyzers
             var path = p.Path ?? Array.Empty<int>();
             Guard(path.All(i => i >= 0), $"Patch contains negative index at [{string.Join(",", path)}]");
-            var key = $"{p.Type}:{string.Join(",", path)}";
+
+            // Build a uniqueness key that distinguishes operations of the same type at the same path
+            // by including their operation-specific identifiers (e.g., indices).
+            string key;
+            switch (p)
+            {
+                case InsertPatch ins:
+                    key = $"Insert:{string.Join(",", path)}:{ins.Index}";
+                    break;
+                case RemovePatch rem:
+                    key = $"Remove:{string.Join(",", path)}:{rem.Index}";
+                    break;
+                case MovePatch mv:
+                    key = $"Move:{string.Join(",", path)}:{mv.FromIndex}->{mv.ToIndex}";
+                    break;
+                case ReorderPatch ro:
+                    var movesSig = string.Join("|", ro.Moves.Select(m => $"{m.from}->{m.to}"));
+                    key = $"Reorder:{string.Join(",", path)}:{movesSig}";
+                    break;
+                default:
+                    key = $"{p.Type}:{string.Join(",", path)}";
+                    break;
+            }
+
             Guard(pathSets.Add(key), $"Duplicate patch for same path and type: {key}");
         }
         return patches;

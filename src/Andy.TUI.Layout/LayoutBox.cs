@@ -137,12 +137,14 @@ public class LayoutBox
             
             int contentX = ContentX;
             int contentY = ContentY;
-            int contentRight = contentX + ContentWidth;
-            int contentBottom = contentY + ContentHeight;
+            // Use ceiling for extents to avoid false negatives when widths/heights are fractional.
+            int contentRight = contentX + (int)Math.Ceiling(Width);
+            int contentBottom = contentY + (int)Math.Ceiling(Height);
+            int childRight = child.AbsoluteX + (int)Math.Ceiling(child.Width);
+            int childBottom = child.AbsoluteY + (int)Math.Ceiling(child.Height);
 
             if (child.AbsoluteX < contentX || child.AbsoluteY < contentY ||
-                child.AbsoluteX + child.ContentWidth > contentRight ||
-                child.AbsoluteY + child.ContentHeight > contentBottom)
+                childRight > contentRight || childBottom > contentBottom)
             {
                 throw new InvalidOperationException($"Child layout not contained in parent content: parent={this}, child={child}");
             }

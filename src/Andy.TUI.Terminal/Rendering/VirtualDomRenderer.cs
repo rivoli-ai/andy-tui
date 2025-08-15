@@ -18,6 +18,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private RenderedElement? _rootElement;
     private readonly ILogger _logger;
     private List<DisplayItem> _displayList = new();
+    private bool _usingDisplayList = false;
 
     // Clipping state
     private bool _hasClipping = false;
@@ -322,8 +323,8 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             return;
         }
 
-        // Use default style for clearing to satisfy tests
-        var clearStyle = Style.Default;
+        // Use black background for clearing to prevent background gaps
+        var clearStyle = Style.Default.WithBackgroundColor(Color.Black);
         
         // If we have many dirty regions or they cover a large area, do a full re-render
         var totalDirtyArea = dirtyRegions.Sum(r => r.Width * r.Height);

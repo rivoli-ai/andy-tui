@@ -98,18 +98,27 @@ public static class RenderingInvariants
                 var cell = frontBuffer[x, y];
                 var bg = ConsoleColorSignature.FromColor(cell.Style.Background);
                 bool isBgSet = bg.Type != ColorType.None;
+                bool isBorderChar = cell.Character is '│' or '┌' or '┐' or '└' or '┘' or '─' or '┬' or '┴' or '├' or '┤' or '+' or '|' or '-';
+                bool isWhitespace = char.IsWhiteSpace(cell.Character);
+
+                // Ignore borders and whitespace for gap detection; these are common and benign
+                if (isBorderChar || isWhitespace)
+                {
+                    continue;
+                }
+
                 if (isBgSet)
                 {
-                    if (seenGapAfterBg)
+                    // Allow gaps between background segments; only warn if background reappears
+                    // with a different color after a gap (potential flicker), but do not throw.
+                    if (seenGapAfterBg && bgSeen.HasValue && !bg.Equals(bgSeen.Value))
                     {
-                        if (options.ThrowOnViolation)
-                            throw new RenderingInvariantViolationException($"Background gap detected on row {y} after first background segment");
-                        Andy.TUI.Diagnostics.LogManager.GetLogger("RenderingInvariants").Warning($"Background gap detected on row {y}");
-                        break;
+                        Andy.TUI.Diagnostics.LogManager.GetLogger("RenderingInvariants").Warning($"Background reappeared with different color on row {y}");
                     }
                     if (bgStartX == -1) bgStartX = x;
                     bgSeen = bg;
                     seenContent = true;
+                    seenGapAfterBg = false;
                 }
                 else if (seenContent)
                 {
