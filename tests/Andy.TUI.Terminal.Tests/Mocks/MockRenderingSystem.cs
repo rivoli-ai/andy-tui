@@ -89,6 +89,16 @@ public class MockRenderingSystem : IRenderingSystem
         });
     }
 
+    public void SetClipRegion(int x, int y, int width, int height)
+    {
+        // No-op for tests; clipping behavior is validated indirectly via item ordering
+    }
+
+    public void ResetClipRegion()
+    {
+        // No-op for tests
+    }
+
     public void Dispose()
     {
         // No-op for testing

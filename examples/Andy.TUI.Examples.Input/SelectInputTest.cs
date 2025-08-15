@@ -37,6 +37,7 @@ class SelectInputTestApp
 
     public void Run()
     {
+        Console.Clear(); // Clear the console to ensure clean slate for rendering
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
         var renderer = new DeclarativeRenderer(renderingSystem);

@@ -242,6 +242,7 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         var elements = new List<VirtualNode>();
+        
 
         // Determine style based on focus
         var borderStyle = _isFocused
@@ -353,58 +354,54 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
             var fullLine = "│" + lineContent + "│";
             
             // Determine the style for this line
+            Style lineStyle;
             if (isHighlighted)
             {
-                // Render with highlight background - entire line including borders
-                elements.Add(
-                    Element("text")
-                        .WithProp("x", layout.AbsoluteX)
-                        .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", Style.Default
-                            .WithForegroundColor(Color.Black)
-                            .WithBackgroundColor(Color.White))
-                        .WithChild(new TextNode(fullLine))
-                        .Build()
-                );
+                // Highlighted - entire line with inverted colors
+                lineStyle = Style.Default
+                    .WithForegroundColor(Color.Black)
+                    .WithBackgroundColor(Color.White);
             }
             else if (isSelected)
             {
-                // Selected but not highlighted - show content in green, borders normal
-                elements.Add(
-                    Fragment(
-                        Element("text")
-                            .WithProp("x", layout.AbsoluteX)
-                            .WithProp("y", layout.AbsoluteY + i + 1)
-                            .WithProp("style", borderStyle)
-                            .WithChild(new TextNode("│"))
-                            .Build(),
-                        Element("text")
-                            .WithProp("x", layout.AbsoluteX + 1)
-                            .WithProp("y", layout.AbsoluteY + i + 1)
-                            .WithProp("style", Style.Default.WithForegroundColor(Color.Green))
-                            .WithChild(new TextNode(lineContent))
-                            .Build(),
-                        Element("text")
-                            .WithProp("x", layout.AbsoluteX + innerWidth + 1)
-                            .WithProp("y", layout.AbsoluteY + i + 1)
-                            .WithProp("style", borderStyle)
-                            .WithChild(new TextNode("│"))
-                            .Build()
-                    )
-                );
+                // Selected but not highlighted - green text
+                lineStyle = Style.Default.WithForegroundColor(Color.Green);
             }
             else
             {
-                // Normal line - render as single element for efficiency
-                elements.Add(
-                    Element("text")
-                        .WithProp("x", layout.AbsoluteX)
-                        .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", borderStyle)
-                        .WithChild(new TextNode(fullLine))
-                        .Build()
-                );
+                // Normal line
+                lineStyle = borderStyle;
             }
+            
+            // Check if we have a scroll indicator
+            var hasScrollIndicator = _items.Count > _visibleItems;
+            
+            // For highlighted lines, ensure the background extends to cover any gaps
+            if (isHighlighted && hasScrollIndicator)
+            {
+                // The scroll indicator is at position layout.AbsoluteX + innerWidth + 2
+                // We need to make sure our line covers from layout.AbsoluteX to just before the scroll indicator
+                // There should be no gap between the line and the scroll indicator
+                
+                // We need the line to extend to position scrollIndicatorX (exclusive)
+                // So the line needs to be scrollIndicatorX characters long
+                var scrollIndicatorX = innerWidth + 2;
+                var targetWidth = scrollIndicatorX;
+                if (fullLine.Length < targetWidth)
+                {
+                    fullLine = fullLine.PadRight(targetWidth);
+                }
+            }
+            
+            // Render the line
+            elements.Add(
+                Element("text")
+                    .WithProp("x", layout.AbsoluteX)
+                    .WithProp("y", layout.AbsoluteY + i + 1)
+                    .WithProp("style", lineStyle)
+                    .WithChild(new TextNode(fullLine))
+                    .Build()
+            );
         }
 
         // Bottom border
@@ -419,6 +416,8 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
         );
 
         // Show scroll indicator if needed
+        // Note: We render the scroll indicator AFTER the lines to ensure it appears on top
+        // of any background colors from highlighted lines
         if (_items.Count > _visibleItems)
         {
             var scrollBarHeight = Math.Max(1, (_visibleItems * _visibleItems) / _items.Count);
@@ -428,12 +427,21 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
             {
                 var isScrollBar = i >= scrollBarPos && i < scrollBarPos + scrollBarHeight;
                 var scrollChar = isScrollBar ? "█" : "░";
+                
+                // Check if this row has a highlighted item
+                var rowIndex = _scrollOffset + i;
+                var isHighlightedRow = rowIndex < _items.Count && rowIndex == _highlightedIndex && _isFocused;
+                
+                // Use appropriate style for scroll indicator based on whether row is highlighted
+                var scrollStyle = isHighlightedRow
+                    ? Style.Default.WithForegroundColor(Color.DarkGray).WithBackgroundColor(Color.White)
+                    : Style.Default.WithForegroundColor(Color.DarkGray);
 
                 elements.Add(
                     Element("text")
                         .WithProp("x", layout.AbsoluteX + innerWidth + 2)
                         .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", Style.Default.WithForegroundColor(Color.DarkGray))
+                        .WithProp("style", scrollStyle)
                         .WithChild(new TextNode(scrollChar))
                         .Build()
                 );

@@ -256,7 +256,17 @@ public class RenderScheduler : IDisposable
             }
             catch (Exception ex)
             {
-                // Log error but continue rendering
+                // If the error is an invariant violation, crash the process to surface the bug immediately
+                var typeName = ex.GetType().Name;
+                if (typeName.Contains("InvariantViolationException", StringComparison.Ordinal))
+                {
+                    try { _logger.Error(ex, "Invariant violation detected in render loop. Failing fast."); }
+                    catch { /* ignore logging failures */ }
+                    // Crash the process to avoid running in a corrupted state
+                    Environment.FailFast($"Invariant violation: {ex.Message}", ex);
+                }
+
+                // Otherwise, log error but continue rendering
                 _logger.Error(ex, "Render loop error");
             }
         }

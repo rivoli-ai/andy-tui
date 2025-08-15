@@ -36,6 +36,8 @@ public class DiffEngineOverlapTests
         }
 
         public void DrawBox(int x, int y, int width, int height, Style style, BoxStyle boxStyle) { }
+        public void SetClipRegion(int x, int y, int width, int height) { }
+        public void ResetClipRegion() { }
         public void Initialize() { }
         public void SetCursorPosition(int x, int y) { }
         public void ShowCursor() { }

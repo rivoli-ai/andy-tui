@@ -18,10 +18,39 @@ public class FocusManager
     /// </summary>
     public IFocusable? FocusedComponent => _focusedComponent;
 
+    /// <summary>
+    /// Gets the number of registered focusable components.
+    /// </summary>
+    public int FocusableCount => _focusableComponents.Count;
+
+    /// <summary>
+    /// Exposes the current list of focusables (read-only) for diagnostics.
+    /// </summary>
+    public IReadOnlyList<IFocusable> Focusables => _focusableComponents.AsReadOnly();
+
     public FocusManager()
     {
         _logger = LogManager.GetLogger<FocusManager>();
         _logger.Info("FocusManager initialized");
+    }
+
+    private static void Guard(bool condition, string message)
+    {
+        if (!condition) throw new FocusInvariantViolationException(message);
+    }
+
+    private void ValidateInvariants(string where)
+    {
+        // Unique focusable entries
+        Guard(_focusableComponents.Distinct().Count() == _focusableComponents.Count,
+            $"Duplicate focusable registration detected ({where})");
+
+        // Focused component must be either null or present in list
+        if (_focusedComponent != null)
+        {
+            Guard(_focusableComponents.Contains(_focusedComponent),
+                $"Focused component not in registry ({where})");
+        }
     }
 
     /// <summary>
@@ -33,6 +62,7 @@ public class FocusManager
         {
             _focusableComponents.Add(component);
             _logger.Debug($"Registered focusable: {component.GetType().Name} (Total: {_focusableComponents.Count})");
+            ValidateInvariants("RegisterFocusable");
         }
     }
 
@@ -45,6 +75,7 @@ public class FocusManager
         var originalIndex = _focusableComponents.IndexOf(component);
         _focusableComponents.Remove(component);
         _logger.Debug($"Unregistered focusable: {component.GetType().Name} (Remaining: {_focusableComponents.Count})");
+        ValidateInvariants("UnregisterFocusable:post-remove");
 
         if (_focusedComponent == component)
         {
@@ -89,6 +120,7 @@ public class FocusManager
         _focusedComponent?.OnLostFocus();
         _focusedComponent = component;
         _focusedComponent?.OnGotFocus();
+        ValidateInvariants("SetFocus");
     }
 
     /// <summary>
@@ -174,7 +206,13 @@ public class FocusManager
         }
 
         _logger.Debug($"Set focusable order with {_focusableComponents.Count} components");
+        ValidateInvariants("SetFocusableOrder");
     }
+}
+
+public sealed class FocusInvariantViolationException : System.Exception
+{
+    public FocusInvariantViolationException(string message) : base(message) { }
 }
 
 /// <summary>

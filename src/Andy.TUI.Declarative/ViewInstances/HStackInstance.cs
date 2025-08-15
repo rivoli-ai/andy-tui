@@ -280,6 +280,16 @@ public class HStackInstance : ViewInstance
             child.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(child.Layout.X);
             child.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(child.Layout.Y);
 
+            // Layout invariant: child contained in parent content area
+            try
+            {
+                layout.AssertContainsChild(child.Layout);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"HStack child containment failed for child {child.GetType().Name}", ex);
+            }
+
             // Render child with its layout
             var childNode = child.Render();
             childElements.Add(childNode);

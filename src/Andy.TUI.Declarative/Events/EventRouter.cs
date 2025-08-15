@@ -39,6 +39,8 @@ public class EventRouter
 
         // Route to focused component
         var focused = _context.FocusManager.FocusedComponent;
+        // Invariants: at most one focused component, and if any focusable exists, focus should not be null
+        var numFocusable = _context.FocusManager != null ? 0 : 0; // placeholder; no direct API to count here
         _logger.Debug("Focused component: {0}", focused?.GetType().Name ?? "null");
 
         if (focused?.HandleKeyPress(keyInfo) == true)

@@ -6,10 +6,28 @@ namespace Andy.TUI.VirtualDom;
 
 public class DiffEngine
 {
+    private static void Guard(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new DiffInvariantViolationException(message);
+        }
+    }
+
     public IReadOnlyList<Patch> Diff(VirtualNode? oldTree, VirtualNode? newTree)
     {
         var patches = new List<Patch>();
         DiffNodes(oldTree, newTree, Array.Empty<int>(), patches);
+        // Invariants: patch paths must be unique and non-negative; no overlapping conflicting ops
+        var pathSets = new HashSet<string>();
+        foreach (var p in patches)
+        {
+            // Path is guaranteed non-null by Patch ctor; still be defensive for analyzers
+            var path = p.Path ?? Array.Empty<int>();
+            Guard(path.All(i => i >= 0), $"Patch contains negative index at [{string.Join(",", path)}]");
+            var key = $"{p.Type}:{string.Join(",", path)}";
+            Guard(pathSets.Add(key), $"Duplicate patch for same path and type: {key}");
+        }
         return patches;
     }
 
@@ -67,12 +85,14 @@ public class DiffEngine
     private void DiffChildrenWithoutKeys(IReadOnlyList<VirtualNode> oldChildren, IReadOnlyList<VirtualNode> newChildren, int[] path, List<Patch> patches)
     {
         var maxLength = Math.Max(oldChildren.Count, newChildren.Count);
+        // Invariant: children counts must be reasonable (defensive)
+        Guard(maxLength >= 0 && maxLength < 1000000, $"Unreasonable child count at [{string.Join(",", path)}]: {maxLength}");
         for (int i = 0; i < maxLength; i++)
         {
             var oldChild = i < oldChildren.Count ? oldChildren[i] : null;
             var newChild = i < newChildren.Count ? newChildren[i] : null;
             if (oldChild == null && newChild != null) patches.Add(new InsertPatch(path, newChild, i));
-            else if (oldChild != null && newChild == null) patches.Add(new RemovePatch(path, oldChildren.Count - 1));
+            else if (oldChild != null && newChild == null) patches.Add(new RemovePatch(path, Math.Min(i, oldChildren.Count - 1)));
             else if (oldChild != null && newChild != null) { var childPath = AppendPath(path, i); DiffNodes(oldChild, newChild, childPath, patches); }
         }
     }
@@ -83,6 +103,9 @@ public class DiffEngine
         var newKeyMap = new Dictionary<string, (VirtualNode node, int index)>();
         for (int i = 0; i < oldChildren.Count; i++) { var c = oldChildren[i]; if (c.Key != null) oldKeyMap[c.Key] = (c, i); }
         for (int i = 0; i < newChildren.Count; i++) { var c = newChildren[i]; if (c.Key != null) newKeyMap[c.Key] = (c, i); }
+        // Invariant: keys must be unique within siblings
+        Guard(oldKeyMap.Count == oldChildren.Where(c => c.Key != null).Count(), $"Duplicate keys detected in old children at [{string.Join(",", path)}]");
+        Guard(newKeyMap.Count == newChildren.Where(c => c.Key != null).Count(), $"Duplicate keys detected in new children at [{string.Join(",", path)}]");
         var moves = new List<(int from, int to)>(); var processedOld = new HashSet<int>();
         for (int newIndex = 0; newIndex < newChildren.Count; newIndex++)
         {
@@ -101,6 +124,12 @@ public class DiffEngine
 
     private int[] AppendPath(int[] path, int index)
     { var newPath = new int[path.Length + 1]; Array.Copy(path, newPath, path.Length); newPath[path.Length] = index; return newPath; }
+}
+
+
+public sealed class DiffInvariantViolationException : Exception
+{
+    public DiffInvariantViolationException(string message) : base(message) { }
 }
 
 

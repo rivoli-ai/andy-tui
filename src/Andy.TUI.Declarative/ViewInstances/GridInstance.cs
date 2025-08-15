@@ -723,6 +723,16 @@ public class GridInstance : ViewInstance
             instance.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(instance.Layout.X);
             instance.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(instance.Layout.Y);
 
+            // Layout invariant: child contained in parent content area
+            try
+            {
+                layout.AssertContainsChild(instance.Layout);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Grid child containment failed for child {instance.GetType().Name}", ex);
+            }
+
             // Render child
             var childNode = instance.Render();
             elements.Add(childNode);

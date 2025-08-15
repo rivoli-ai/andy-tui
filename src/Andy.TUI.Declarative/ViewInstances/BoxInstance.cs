@@ -606,6 +606,16 @@ public class BoxInstance : ViewInstance
             child.Layout.AbsoluteX = absoluteX;
             child.Layout.AbsoluteY = absoluteY;
 
+            // Layout invariant: child contained in parent content area
+            try
+            {
+                layout.AssertContainsChild(child.Layout);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Box child containment failed for child {child.GetType().Name}", ex);
+            }
+
             // Now render child with correct absolute position
             var childNode = child.Render();
 

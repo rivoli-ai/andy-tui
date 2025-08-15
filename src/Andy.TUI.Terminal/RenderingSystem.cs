@@ -10,6 +10,7 @@ public class RenderingSystem : IRenderingSystem, IDisposable
     private readonly IRenderer _renderer;
     private readonly RenderScheduler _scheduler;
     private bool _isInitialized;
+    private bool _invariantsAttached;
 
     /// <summary>
     /// Gets the terminal buffer for drawing operations.
@@ -75,6 +76,9 @@ public class RenderingSystem : IRenderingSystem, IDisposable
         // Start the render scheduler
         _scheduler.Start();
 
+        // Optionally attach rendering invariants for diagnostics
+        TryAttachRenderingInvariants();
+
         _isInitialized = true;
     }
 
@@ -96,6 +100,40 @@ public class RenderingSystem : IRenderingSystem, IDisposable
         _terminal.ExitAlternateScreen();
 
         _isInitialized = false;
+    }
+
+    /// <summary>
+    /// Attaches rendering invariants to the render scheduler if enabled via environment.
+    /// </summary>
+    private void TryAttachRenderingInvariants()
+    {
+        if (_invariantsAttached)
+            return;
+
+        var options = Diagnostics.RenderingInvariantOptions.FromEnvironment();
+        if (!options.Enabled)
+            return;
+
+        _scheduler.AfterRender += (sender, args) =>
+        {
+            try
+            {
+                var front = _buffer.GetFrontBuffer();
+                Diagnostics.RenderingInvariants.ValidateUniformLineBackgrounds(front, options);
+                Diagnostics.RenderingInvariants.ValidateNoBgGaps(front, options);
+            }
+            catch (Exception ex)
+            {
+                // Log and optionally throw based on options
+                Andy.TUI.Diagnostics.LogManager.GetLogger("RenderingInvariants").Error(ex, "Rendering invariant violation");
+                if (options.ThrowOnViolation)
+                {
+                    throw;
+                }
+            }
+        };
+
+        _invariantsAttached = true;
     }
 
     /// <summary>
@@ -159,6 +197,22 @@ public class RenderingSystem : IRenderingSystem, IDisposable
         _scheduler.QueueRender(() =>
         {
             _buffer.FillRect(x, y, width, height, new Cell(character, style));
+        });
+    }
+
+    public void SetClipRegion(int x, int y, int width, int height)
+    {
+        _scheduler.QueueRender(() =>
+        {
+            _renderer.SetClipRegion(x, y, width, height);
+        });
+    }
+
+    public void ResetClipRegion()
+    {
+        _scheduler.QueueRender(() =>
+        {
+            _renderer.ResetClipRegion();
         });
     }
 

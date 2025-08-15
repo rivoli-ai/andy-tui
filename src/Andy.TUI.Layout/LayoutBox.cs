@@ -121,4 +121,22 @@ public class LayoutBox
                $"AbsX:{AbsoluteX}, AbsY:{AbsoluteY}, " +
                $"Padding:{Padding}, Margin:{Margin})";
     }
+
+        /// <summary>
+        /// Validates containment of a child layout within this layout's content area.
+        /// </summary>
+        public void AssertContainsChild(LayoutBox child)
+        {
+            int contentX = ContentX;
+            int contentY = ContentY;
+            int contentRight = contentX + ContentWidth;
+            int contentBottom = contentY + ContentHeight;
+
+            if (child.AbsoluteX < contentX || child.AbsoluteY < contentY ||
+                child.AbsoluteX + child.ContentWidth > contentRight ||
+                child.AbsoluteY + child.ContentHeight > contentBottom)
+            {
+                throw new InvalidOperationException($"Child layout not contained in parent content: parent={this}, child={child}");
+            }
+        }
 }

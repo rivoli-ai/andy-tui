@@ -20,10 +20,17 @@ public class Enhanced3DRTree<T> : I3DSpatialIndex<T> where T : class
 
     public int Count => _elementCount;
 
+    public sealed class SpatialInvariantViolationException : Exception
+    {
+        public SpatialInvariantViolationException(string message) : base(message) { }
+    }
+
     public void Insert(Rectangle bounds, int zIndex, T element)
     {
         if (element == null)
             throw new ArgumentNullException(nameof(element));
+
+        Guard(bounds.Width >= 0 && bounds.Height >= 0, $"Cannot insert element with negative size: {bounds}");
 
         var entry = new RTreeEntry<T>(bounds, zIndex, element);
 
@@ -52,6 +59,8 @@ public class Enhanced3DRTree<T> : I3DSpatialIndex<T> where T : class
         }
 
         _elementCount++;
+
+        ValidateTreeStructure();
     }
 
     public bool Remove(Rectangle bounds, int zIndex, T element)
@@ -72,6 +81,7 @@ public class Enhanced3DRTree<T> : I3DSpatialIndex<T> where T : class
                 _root = null;
                 _nodeCount = 0;
             }
+            ValidateTreeStructure();
         }
 
         return removed;
@@ -107,6 +117,7 @@ public class Enhanced3DRTree<T> : I3DSpatialIndex<T> where T : class
 
         // Update mapping
         _elementToEntry[element] = newEntry;
+        ValidateTreeStructure();
     }
 
     public IEnumerable<T> Query(Rectangle bounds)
@@ -412,6 +423,39 @@ public class Enhanced3DRTree<T> : I3DSpatialIndex<T> where T : class
         _elementToEntry.Clear();
         _elementCount = 0;
         _nodeCount = 0;
+    }
+
+    private static void Guard(bool condition, string message)
+    {
+        if (!condition) throw new SpatialInvariantViolationException(message);
+    }
+
+    private void ValidateTreeStructure()
+    {
+        if (_root == null) return;
+        ValidateNode(_root);
+    }
+
+    private void ValidateNode(RTreeNode<T> node)
+    {
+        Guard(node.MBR.Width >= 0 && node.MBR.Height >= 0, $"Node MBR has negative size at level {node.Level}: {node.MBR}");
+        if (node.IsLeaf)
+        {
+            foreach (var e in node.Entries)
+            {
+                Guard(e.Bounds.Width >= 0 && e.Bounds.Height >= 0, $"Entry has negative size: {e.Bounds}");
+                Guard(node.MBR.Contains(e.Bounds), $"Leaf MBR does not contain entry bounds: NodeMBR={node.MBR}, Entry={e.Bounds}");
+            }
+        }
+        else
+        {
+            foreach (var c in node.Children)
+            {
+                Guard(c.Parent == node, "Child parent link inconsistent");
+                Guard(node.MBR.Contains(c.MBR), $"Parent MBR does not contain child MBR: Parent={node.MBR}, Child={c.MBR}");
+                ValidateNode(c);
+            }
+        }
     }
 
     private int CalculateTreeDepth(RTreeNode<T>? node)

@@ -130,6 +130,16 @@ public class ZStackInstance : ViewInstance
             child.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(child.Layout.X);
             child.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(child.Layout.Y);
 
+            // Layout invariant: child contained in parent content area
+            try
+            {
+                layout.AssertContainsChild(child.Layout);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"ZStack child containment failed for child {child.GetType().Name}", ex);
+            }
+
             // Render child with z-index based on order
             var childNode = child.Render();
 

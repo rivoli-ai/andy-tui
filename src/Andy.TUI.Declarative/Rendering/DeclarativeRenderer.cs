@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Andy.TUI.VirtualDom;
 using Andy.TUI.Diagnostics;
@@ -120,6 +121,10 @@ public class DeclarativeRenderer
         _logger.Debug("Layout constraints: {0}x{1}", terminalWidth, terminalHeight);
 
         rootInstance.CalculateLayout(constraints);
+        // Layout invariants: sizes non-negative
+        Guard(rootInstance.Layout.Width >= 0 && rootInstance.Layout.Height >= 0, "Root layout produced negative size");
+        // Layout invariants: content size non-negative; absolute position set next
+        Guard(rootInstance.Layout.ContentWidth >= 0 && rootInstance.Layout.ContentHeight >= 0, "Root content size negative");
         _logger.Debug("Layout calculated");
 
         // Set the root's absolute position BEFORE rendering
@@ -135,8 +140,34 @@ public class DeclarativeRenderer
         _context.ViewInstanceManager.RegisterFocusableComponents(rootInstance);
         _logger.Debug("Registered focusable components in document order");
 
+        // Set initial focus if needed and auto-focus is enabled
+        if (!_hasSetInitialFocus && _autoFocus && _context.FocusManager.FocusableCount > 0 && _context.FocusManager.FocusedComponent == null)
+        {
+            _logger.Debug("Setting initial focus during first render");
+            _context.FocusManager.MoveFocus(Focus.FocusDirection.Next);
+            _hasSetInitialFocus = true;
+            _logger.Debug("Initial focus set to: {0}",
+                _context.FocusManager.FocusedComponent?.GetType().Name ?? "null");
+        }
+
+        // Focus invariants: exactly one focused component when focusables exist
+        var focusables = _context.FocusManager.FocusableCount;
+        var hasFocus = _context.FocusManager.FocusedComponent != null;
+        if (focusables > 0)
+        {
+            Guard(hasFocus, "No focused component while focusables exist");
+        }
+
+        // First, fill the entire terminal with a background color to prevent gaps
+        // This happens before any virtual DOM rendering
+        _renderingSystem.FillRect(0, 0, terminalWidth, terminalHeight, ' ', 
+            Style.Default.WithBackgroundColor(Color.Black));
+        
         // Render the virtual DOM from instances
         var newTree = rootInstance.Render();
+        
+        // VDOM invariants: ready to render
+        VirtualDomInvariants.AssertTreeIsRenderable(newTree);
         _logger.Debug("Virtual DOM rendered - tree depth: {0}, node count: {1}",
             CalculateTreeDepth(newTree), CountNodes(newTree));
 
@@ -170,6 +201,9 @@ public class DeclarativeRenderer
             else
             {
                 _virtualDomRenderer.ApplyPatches(patches);
+                // Diff invariants: applying only Update* patches should not change structure; verify by re-diffing structure
+                var structurePatches = patches.Where(p => p.Type != PatchType.UpdateProps && p.Type != PatchType.UpdateText).ToList();
+                Guard(structurePatches.Count == 0, $"Unexpected structural patches during incremental update: {string.Join(",", structurePatches.Select(p => p.Type))}");
             }
         }
 
@@ -200,22 +234,15 @@ public class DeclarativeRenderer
 
         _previousTree = newTree;
         _logger.Debug("Render complete");
-
-        // Set initial focus if not already done and auto-focus is enabled
-        if (!_hasSetInitialFocus && _autoFocus)
-        {
-            _logger.Debug("Setting initial focus");
-            _context.FocusManager.MoveFocus(Focus.FocusDirection.Next);
-            _hasSetInitialFocus = true;
-            _logger.Debug("Initial focus set to: {0}",
-                _context.FocusManager.FocusedComponent?.GetType().Name ?? "null");
-            // Request another render so focus styles are visible immediately
-            _needsRender = true;
-        }
     }
 
-    private void OnKeyPressed(object? sender, KeyEventArgs e)
-    {
+        private static void Guard(bool condition, string message)
+        {
+            if (!condition) throw new LayoutInvariantViolationException(message);
+        }
+
+        private void OnKeyPressed(object? sender, KeyEventArgs e)
+        {
         _logger.Debug("Key pressed: {0} (Modifiers: {1})", e.Key, e.Modifiers);
         // Debug logging (uncomment to debug key handling)
         // Console.Error.WriteLine($"[DeclarativeRenderer] Key pressed: {e.Key} Char: '{e.KeyChar}'");
@@ -238,7 +265,7 @@ public class DeclarativeRenderer
         // Console.Error.WriteLine($"[DeclarativeRenderer] After routing key, needsRender: {_needsRender}");
 
         // Do not force an extra render here; components request renders as needed
-    }
+        }
 
     private int CalculateTreeDepth(VirtualNode node, int currentDepth = 0)
     {
@@ -261,4 +288,9 @@ public class DeclarativeRenderer
         return 1 + node.Children.Sum(CountNodes);
     }
 
+}
+
+public sealed class LayoutInvariantViolationException : Exception
+{
+    public LayoutInvariantViolationException(string message) : base(message) { }
 }
