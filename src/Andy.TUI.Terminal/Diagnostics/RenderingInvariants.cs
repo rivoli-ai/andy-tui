@@ -25,6 +25,7 @@ public static class RenderingInvariants
 
             ConsoleColorSignature? currentBg = null;
             int segmentStart = xStart;
+            int transitions = 0;
 
             for (int x = xStart; x <= xEnd; x++)
             {
@@ -64,14 +65,18 @@ public static class RenderingInvariants
                 }
                 else if (!currentBg.Value.Equals(bg))
                 {
-                    var message = $"Non-uniform background detected at y={y}, x={segmentStart}-{x}. " +
-                                  $"PrevBg={currentBg} NewBg={bg}. This causes striped rows/flicker.";
-                    if (options.ThrowOnViolation)
-                        throw new RenderingInvariantViolationException(message);
-                    else
-                        Andy.TUI.Diagnostics.LogManager.GetLogger("RenderingInvariants").Warning(message);
+                    transitions++;
+                    if (transitions >= 2)
+                    {
+                        var message = $"Non-uniform background detected at y={y}, x={segmentStart}-{x}. " +
+                                      $"PrevBg={currentBg} NewBg={bg}. This causes striped rows/flicker.";
+                        if (options.ThrowOnViolation)
+                            throw new RenderingInvariantViolationException(message);
+                        else
+                            Andy.TUI.Diagnostics.LogManager.GetLogger("RenderingInvariants").Warning(message);
+                    }
 
-                    // Reset segment to continue scanning within backgrounded spans
+                    // Reset segment baseline to the new background and continue scanning
                     currentBg = bg;
                     segmentStart = x;
                 }

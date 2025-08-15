@@ -596,6 +596,20 @@ public class BoxInstance : ViewInstance
 
         var elements = new List<VirtualNode>();
 
+        // Optional background fill for this box's content area
+        if (_box.BackgroundColor.Type != Andy.TUI.Terminal.ColorType.None && layout.Width > 0 && layout.Height > 0)
+        {
+            elements.Add(
+                Element("rect")
+                    .WithProp("x", layout.AbsoluteX)
+                    .WithProp("y", layout.AbsoluteY)
+                    .WithProp("width", (int)Math.Max(0, layout.Width))
+                    .WithProp("height", (int)Math.Max(0, layout.Height))
+                    .WithProp("fill", _box.BackgroundColor)
+                    .Build()
+            );
+        }
+
         // Render children with their calculated positions
         foreach (var child in _childInstances)
         {

@@ -7,6 +7,8 @@ using Andy.TUI.Terminal;
 using Andy.TUI.Terminal.Rendering;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Layout;
+using System.ComponentModel;
+using System.Reflection;
 
 namespace Andy.TUI.Declarative.Rendering;
 
@@ -36,10 +38,56 @@ public class DeclarativeRenderer
 
         _logger.Info($"DeclarativeRenderer initialized (autoFocus={autoFocus})");
 
+        // Auto-subscribe to owner (and its immediate state fields) change notifications to trigger re-renders
+        if (owner != null)
+        {
+            TrySubscribeOwnerChangeNotifications(owner);
+        }
+
         // Re-render on terminal resize when possible
         if (_renderingSystem is RenderingSystem rs)
         {
             rs.Terminal.SizeChanged += (_, __) => { _needsRender = true; };
+        }
+    }
+
+    private void TrySubscribeOwnerChangeNotifications(object owner)
+    {
+        void SubscribeObject(object target)
+        {
+            if (target == null) return;
+
+            // Subscribe INotifyPropertyChanged
+            if (target is INotifyPropertyChanged inpc)
+            {
+                inpc.PropertyChanged += (_, __) => { _needsRender = true; };
+            }
+
+            // Subscribe to an Action OnPropertyChanged event if present
+            var evt = target.GetType().GetEvent("OnPropertyChanged", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (evt != null && evt.EventHandlerType == typeof(Action))
+            {
+                var handler = (Action)(() => { _needsRender = true; });
+                evt.AddEventHandler(target, handler);
+            }
+        }
+
+        // Subscribe owner itself
+        SubscribeObject(owner);
+
+        // Subscribe immediate fields of owner (e.g., private state container)
+        var fields = owner.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        foreach (var field in fields)
+        {
+            try
+            {
+                var value = field.GetValue(owner);
+                SubscribeObject(value!);
+            }
+            catch
+            {
+                // Ignore reflection failures
+            }
         }
     }
 

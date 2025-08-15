@@ -29,8 +29,10 @@ class DeclarativeShowcaseApp
         renderingSystem.Initialize();
         terminal.Clear();
 
-        // Main UI composition
-        var ui = new VStack(spacing: 2) {
+        // Run the declarative renderer.
+        // Important: rebuild the root UI on each render so state changes recompute content.
+        var renderer = new DeclarativeRenderer(renderingSystem, this);
+        renderer.Run(() => new VStack(spacing: 2) {
             // Header
             CreateHeader(),
             
@@ -42,11 +44,7 @@ class DeclarativeShowcaseApp
             
             // Footer
             CreateFooter()
-        };
-
-        // Run the declarative renderer
-        var renderer = new DeclarativeRenderer(renderingSystem, this);
-        renderer.Run(() => ui);
+        });
     }
 
     private ISimpleComponent CreateHeader()
@@ -273,6 +271,7 @@ class DeclarativeShowcaseApp
                 new Box { new Text(" ") }
                     .WithWidth(Length.Percentage(_state.Progress))
                     .WithHeight(1)
+                    .Background(Color.Green)
             }
             .WithWidth(50)
             .WithHeight(1)

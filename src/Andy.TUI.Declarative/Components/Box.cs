@@ -44,6 +44,7 @@ public class Box : ISimpleComponent, IEnumerable<ISimpleComponent>
     // Display properties
     public bool Display { get; set; } = true;
     public Overflow Overflow { get; set; } = Overflow.Visible;
+    public Andy.TUI.Terminal.Color BackgroundColor { get; set; } = default;
 
     /// <summary>
     /// Creates a new Box component.
@@ -106,6 +107,7 @@ public class Box : ISimpleComponent, IEnumerable<ISimpleComponent>
     public Box Hide() { Display = false; return this; }
     public Box Show() { Display = true; return this; }
     public Box WithOverflow(Overflow overflow) { Overflow = overflow; return this; }
+    public Box Background(Andy.TUI.Terminal.Color color) { BackgroundColor = color; return this; }
 
     // ISimpleComponent implementation
     public VirtualNode Render()
