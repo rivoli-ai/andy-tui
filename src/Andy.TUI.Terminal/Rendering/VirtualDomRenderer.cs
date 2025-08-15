@@ -18,7 +18,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
     private RenderedElement? _rootElement;
     private readonly ILogger _logger;
     private List<DisplayItem> _displayList = new();
-    private bool _usingDisplayList = false;
+    // Removed unused marker flag
 
     // Clipping state
     private bool _hasClipping = false;
@@ -72,9 +72,10 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         _rootElement = BuildRenderTree(tree, 0, 0, new[] { 0 });
         _renderedElements[Array.Empty<int>()] = _rootElement;
 
-        // Second pass: render elements in z-order (keep legacy raster path for stability)
+        // Second pass: generate and rasterize display list (new pipeline)
         _displayList = new List<DisplayItem>();
-        RenderInZOrder(_rootElement);
+        GenerateDisplayList(_rootElement);
+        RasterizeDisplayList();
 
         var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
         _logger.Debug($"Render complete. Rendered elements: {_renderedElements.Count}, Time: {elapsed:F2}ms");
@@ -349,7 +350,9 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
         if (_rootElement != null)
         {
-            RenderInZOrder(_rootElement);
+            _displayList = new List<DisplayItem>();
+            GenerateDisplayList(_rootElement);
+            RasterizeDisplayList();
         }
 
         _dirtyRegionTracker.Clear();

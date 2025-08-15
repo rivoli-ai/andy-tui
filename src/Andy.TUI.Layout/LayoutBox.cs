@@ -137,11 +137,13 @@ public class LayoutBox
             
             int contentX = ContentX;
             int contentY = ContentY;
-            // Use ceiling for extents to avoid false negatives when widths/heights are fractional.
+            // Use conservative extents to prevent false containment failures when children have
+            // fractional sizes due to flex distribution. Treat child's sub-cell size as not
+            // extending into the next whole cell (floor), while keeping parent extent inclusive (ceil).
             int contentRight = contentX + (int)Math.Ceiling(Width);
             int contentBottom = contentY + (int)Math.Ceiling(Height);
-            int childRight = child.AbsoluteX + (int)Math.Ceiling(child.Width);
-            int childBottom = child.AbsoluteY + (int)Math.Ceiling(child.Height);
+            int childRight = child.AbsoluteX + Math.Max(0, (int)Math.Floor(child.Width));
+            int childBottom = child.AbsoluteY + Math.Max(0, (int)Math.Floor(child.Height));
 
             if (child.AbsoluteX < contentX || child.AbsoluteY < contentY ||
                 childRight > contentRight || childBottom > contentBottom)

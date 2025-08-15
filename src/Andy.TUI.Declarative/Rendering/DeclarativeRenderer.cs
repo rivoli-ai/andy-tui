@@ -117,11 +117,34 @@ public class DeclarativeRenderer
         // Calculate layout with terminal constraints
         var terminalWidth = _renderingSystem.Width;
         var terminalHeight = _renderingSystem.Height;
-        var constraints = LayoutConstraints.Loose(terminalWidth, terminalHeight);
+        // Prevent negative or degenerate constraints (can happen during terminal resize)
+        var safeWidth = Math.Max(0, terminalWidth);
+        var safeHeight = Math.Max(0, terminalHeight);
+        var constraints = LayoutConstraints.Loose(safeWidth, safeHeight);
         _logger.Debug("Layout constraints: {0}x{1}", terminalWidth, terminalHeight);
 
         rootInstance.CalculateLayout(constraints);
-        // Layout invariants: sizes non-negative
+        // Clamp invalid results (NaN, Infinity, negatives) defensively
+        if (float.IsNaN(rootInstance.Layout.Width) || float.IsNegativeInfinity(rootInstance.Layout.Width) || rootInstance.Layout.Width < 0)
+        {
+            _logger.Warning("Root layout produced invalid width (W={0}). Clamping to 0.", rootInstance.Layout.Width);
+            rootInstance.Layout.Width = 0;
+        }
+        else if (float.IsPositiveInfinity(rootInstance.Layout.Width))
+        {
+            rootInstance.Layout.Width = safeWidth;
+        }
+
+        if (float.IsNaN(rootInstance.Layout.Height) || float.IsNegativeInfinity(rootInstance.Layout.Height) || rootInstance.Layout.Height < 0)
+        {
+            _logger.Warning("Root layout produced invalid height (H={0}). Clamping to 0.", rootInstance.Layout.Height);
+            rootInstance.Layout.Height = 0;
+        }
+        else if (float.IsPositiveInfinity(rootInstance.Layout.Height))
+        {
+            rootInstance.Layout.Height = safeHeight;
+        }
+        // Layout invariants: sizes non-negative after clamping
         Guard(rootInstance.Layout.Width >= 0 && rootInstance.Layout.Height >= 0, "Root layout produced negative size");
         // Layout invariants: content size non-negative; absolute position set next
         Guard(rootInstance.Layout.ContentWidth >= 0 && rootInstance.Layout.ContentHeight >= 0, "Root content size negative");
