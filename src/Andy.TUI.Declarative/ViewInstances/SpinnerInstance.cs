@@ -21,7 +21,7 @@ public class SpinnerInstance : ViewInstance
     private int _frameDelay = 80;
     private int _currentFrame = 0;
     private DateTime _lastFrameTime = DateTime.UtcNow;
-    private Timer? _animationTimer;
+    private System.Threading.Timer? _animationTimer;
 
     public SpinnerInstance(string id) : base(id)
     {
@@ -51,7 +51,7 @@ public class SpinnerInstance : ViewInstance
         // Start animation if not already running
         if (_animationTimer == null && _frames.Length > 0)
         {
-            _animationTimer = new Timer(OnAnimationTick, null, _frameDelay, _frameDelay);
+            _animationTimer = new System.Threading.Timer(OnAnimationTick, null, _frameDelay, _frameDelay);
         }
     }
 

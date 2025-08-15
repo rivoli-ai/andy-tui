@@ -50,6 +50,8 @@ public class ModalInstance : ViewInstance, IFocusable
         {
             focusable.OnGotFocus();
         }
+        // After focusing content, request immediate redraw so modal becomes visible deterministically
+        Context?.RequestRender();
         InvalidateView();
     }
 
@@ -129,7 +131,16 @@ public class ModalInstance : ViewInstance, IFocusable
             _isOpenBinding = newBinding;
             if (_isOpenBinding != null)
             {
-                _bindingSubscription = new BindingSubscription(_isOpenBinding, () => InvalidateView());
+                _bindingSubscription = new BindingSubscription(_isOpenBinding, () =>
+                {
+                    // When open state changes, invalidate and focus modal when it opens
+                    var nowOpen = _isOpenBinding.Value;
+                    if (nowOpen && Context != null)
+                    {
+                        Context.FocusManager.SetFocus(this);
+                    }
+                    InvalidateView();
+                });
             }
         }
     }
@@ -191,7 +202,7 @@ public class ModalInstance : ViewInstance, IFocusable
         var modalX = (int)layout.AbsoluteX + ((int)layout.Width - modalWidth) / 2;
         var modalY = (int)layout.AbsoluteY + ((int)layout.Height - modalHeight) / 2;
 
-        // Render backdrop
+        // Render backdrop behind everything (low z-index)
         RenderBackdrop(elements, layout);
 
         // Render modal border
@@ -255,6 +266,8 @@ public class ModalInstance : ViewInstance, IFocusable
             {
                 elements.Add(contentNode);
             }
+            // Ensure underlying content can update immediately after actions
+            Context?.RequestRender();
         }
 
         // Help text at bottom

@@ -43,7 +43,7 @@ public class FocusRegistrationTest
 
         // Create instances from declarations
         var instances = context.ViewInstanceManager.GetOrCreateInstance(vstack, "root");
-        
+
         // Register focusable components in document order (this is what DeclarativeRenderer does)
         context.ViewInstanceManager.RegisterFocusableComponents(instances);
 

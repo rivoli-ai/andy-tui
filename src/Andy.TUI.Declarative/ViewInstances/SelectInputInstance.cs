@@ -181,6 +181,24 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
     {
         var layout = new LayoutBox();
 
+        // If not focused, only need single line height
+        if (!_isFocused)
+        {
+            // Simple single-line layout
+            var displayTextLength = _placeholder.Length;
+            if (_selectedBinding?.Value.TryGetValue(out var selected) == true)
+            {
+                displayTextLength = _itemRenderer(selected).Length;
+            }
+            
+            // Add space for brackets and padding: "[ text ]"
+            var singleLineWidth = displayTextLength + 4;
+            layout.Width = constraints.ConstrainWidth(singleLineWidth);
+            layout.Height = constraints.ConstrainHeight(1);
+            return layout;
+        }
+
+        // When focused, calculate full dropdown size
         // Calculate width based on longest item (virtualized sampling to avoid O(N) on large lists)
         var maxItemWidth = _placeholder.Length;
         if (_items.Count > 0)
@@ -224,6 +242,7 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
     protected override VirtualNode RenderWithLayout(LayoutBox layout)
     {
         var elements = new List<VirtualNode>();
+        
 
         // Determine style based on focus
         var borderStyle = _isFocused
@@ -234,37 +253,64 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
         var hasSelection = _selectedBinding?.Value.TryGetValue(out selectedItem) == true;
         var displayText = hasSelection ? _itemRenderer(selectedItem!) : _placeholder;
 
+        // If not focused, only render a simple single-line element
+        if (!_isFocused)
+        {
+            // Render as a simple bordered text field showing current selection or placeholder
+            var text = displayText;
+            var maxWidth = (int)layout.Width - 4; // Leave room for brackets and spacing
+            if (text.Length > maxWidth)
+            {
+                text = text.Substring(0, maxWidth - 3) + "...";
+            }
+            
+            var style = hasSelection
+                ? Style.Default.WithForegroundColor(Color.White)
+                : Style.Default.WithForegroundColor(Color.DarkGray);
+            
+            // Simple single-line rendering with brackets
+            elements.Add(
+                Element("text")
+                    .WithProp("x", layout.AbsoluteX)
+                    .WithProp("y", layout.AbsoluteY)
+                    .WithProp("style", style)
+                    .WithChild(new TextNode($"[ {text} ]"))
+                    .Build()
+            );
+            
+            return Fragment(elements.ToArray());
+        }
+
+        // When focused, render the full dropdown
         // Calculate inner width
         var innerWidth = (int)layout.Width - 2; // -2 for borders
 
-        // Top border with current selection
-        var topBorder = "┌" + new string('─', innerWidth) + "┐";
+        // Top border with current selection embedded
+        var selectionText = displayText;
+        var maxSelectionLength = Math.Max(0, innerWidth - 4); // Leave room for "─ " and " ─"
+        if (selectionText.Length > maxSelectionLength && maxSelectionLength > 3)
+        {
+            selectionText = selectionText.Substring(0, maxSelectionLength - 3) + "...";
+        }
+        else if (selectionText.Length > maxSelectionLength)
+        {
+            selectionText = selectionText.Substring(0, maxSelectionLength);
+        }
+
+        // Build the top border with embedded selection text
+        var remainingWidth = innerWidth - selectionText.Length - 2; // -2 for the spaces around text
+        var leftPadding = remainingWidth / 2;
+        var rightPadding = remainingWidth - leftPadding;
+        
+        // Render the complete top border as a single line
+        var topBorderLine = "┌" + new string('─', leftPadding) + " " + selectionText + " " + new string('─', rightPadding) + "┐";
+        
         elements.Add(
             Element("text")
                 .WithProp("x", layout.AbsoluteX)
                 .WithProp("y", layout.AbsoluteY)
                 .WithProp("style", borderStyle)
-                .WithChild(new TextNode(topBorder))
-                .Build()
-        );
-
-        // Show current selection on top border
-        var selectionText = displayText;
-        if (selectionText.Length > innerWidth - 4)
-        {
-            selectionText = selectionText.Substring(0, innerWidth - 7) + "...";
-        }
-
-        var selectionStyle = hasSelection
-            ? Style.Default.WithForegroundColor(Color.White)
-            : Style.Default.WithForegroundColor(Color.DarkGray);
-
-        elements.Add(
-            Element("text")
-                .WithProp("x", layout.AbsoluteX + 2)
-                .WithProp("y", layout.AbsoluteY)
-                .WithProp("style", selectionStyle)
-                .WithChild(new TextNode($" {selectionText} "))
+                .WithChild(new TextNode(topBorderLine))
                 .Build()
         );
 
@@ -273,12 +319,14 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
         {
             var itemIndex = _scrollOffset + i;
             var lineContent = "";
-            var lineStyle = Style.Default;
+            var isHighlighted = false;
+            var isSelected = false;
+            T? currentItem = default;
 
             if (itemIndex < _items.Count)
             {
-                var item = _items[itemIndex];
-                var itemText = _itemRenderer(item);
+                currentItem = _items[itemIndex];
+                var itemText = _itemRenderer(currentItem);
 
                 // Add selection indicator
                 if (_showIndicator)
@@ -287,53 +335,72 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
                     itemText = indicator + itemText;
                 }
 
-                // Highlight current item
-                if (_isFocused && itemIndex == _highlightedIndex)
-                {
-                    lineStyle = Style.Default
-                        .WithForegroundColor(Color.Black)
-                        .WithBackgroundColor(Color.White);
-                }
-                else if (hasSelection && EqualityComparer<T>.Default.Equals(item, selectedItem))
-                {
-                    lineStyle = Style.Default.WithForegroundColor(Color.Green);
-                }
-
+                isHighlighted = _isFocused && itemIndex == _highlightedIndex;
+                isSelected = hasSelection && EqualityComparer<T>.Default.Equals(currentItem, selectedItem);
                 lineContent = itemText;
             }
 
-            // Truncate or pad to fit
+            // Truncate to fit (leave room for borders)
             if (lineContent.Length > innerWidth)
             {
                 lineContent = lineContent.Substring(0, innerWidth - 3) + "...";
             }
+            
+            // Pad content to exactly innerWidth for consistent rendering
+            lineContent = lineContent.PadRight(innerWidth);
+
+            // Render entire line as a single element to ensure consistent background
+            // This prevents partial background rendering issues
+            var fullLine = "│" + lineContent + "│";
+            
+            // Determine the style for this line
+            Style lineStyle;
+            if (isHighlighted)
+            {
+                // Highlighted - entire line with inverted colors
+                lineStyle = Style.Default
+                    .WithForegroundColor(Color.Black)
+                    .WithBackgroundColor(Color.White);
+            }
+            else if (isSelected)
+            {
+                // Selected but not highlighted - green text
+                lineStyle = Style.Default.WithForegroundColor(Color.Green);
+            }
             else
             {
-                lineContent = lineContent.PadRight(innerWidth);
+                // Normal line
+                lineStyle = borderStyle;
             }
-
-            // Render line with borders
+            
+            // Check if we have a scroll indicator
+            var hasScrollIndicator = _items.Count > _visibleItems;
+            
+            // For highlighted lines, ensure the background extends to cover any gaps
+            if (isHighlighted && hasScrollIndicator)
+            {
+                // The scroll indicator is at position layout.AbsoluteX + innerWidth + 2
+                // We need to make sure our line covers from layout.AbsoluteX to just before the scroll indicator
+                // There should be no gap between the line and the scroll indicator
+                
+                // We need the line to extend to position scrollIndicatorX (exclusive)
+                // So the line needs to be scrollIndicatorX characters long
+                var scrollIndicatorX = innerWidth + 2;
+                var targetWidth = scrollIndicatorX;
+                if (fullLine.Length < targetWidth)
+                {
+                    fullLine = fullLine.PadRight(targetWidth);
+                }
+            }
+            
+            // Render the line
             elements.Add(
-                Fragment(
-                    Element("text")
-                        .WithProp("x", layout.AbsoluteX)
-                        .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", borderStyle)
-                        .WithChild(new TextNode("│"))
-                        .Build(),
-                    Element("text")
-                        .WithProp("x", layout.AbsoluteX + 1)
-                        .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", lineStyle)
-                        .WithChild(new TextNode(lineContent))
-                        .Build(),
-                    Element("text")
-                        .WithProp("x", layout.AbsoluteX + innerWidth + 1)
-                        .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", borderStyle)
-                        .WithChild(new TextNode("│"))
-                        .Build()
-                )
+                Element("text")
+                    .WithProp("x", layout.AbsoluteX)
+                    .WithProp("y", layout.AbsoluteY + i + 1)
+                    .WithProp("style", lineStyle)
+                    .WithChild(new TextNode(fullLine))
+                    .Build()
             );
         }
 
@@ -349,6 +416,8 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
         );
 
         // Show scroll indicator if needed
+        // Note: We render the scroll indicator AFTER the lines to ensure it appears on top
+        // of any background colors from highlighted lines
         if (_items.Count > _visibleItems)
         {
             var scrollBarHeight = Math.Max(1, (_visibleItems * _visibleItems) / _items.Count);
@@ -358,12 +427,21 @@ public class SelectInputInstance<T> : ViewInstance, IFocusable
             {
                 var isScrollBar = i >= scrollBarPos && i < scrollBarPos + scrollBarHeight;
                 var scrollChar = isScrollBar ? "█" : "░";
+                
+                // Check if this row has a highlighted item
+                var rowIndex = _scrollOffset + i;
+                var isHighlightedRow = rowIndex < _items.Count && rowIndex == _highlightedIndex && _isFocused;
+                
+                // Use appropriate style for scroll indicator based on whether row is highlighted
+                var scrollStyle = isHighlightedRow
+                    ? Style.Default.WithForegroundColor(Color.DarkGray).WithBackgroundColor(Color.White)
+                    : Style.Default.WithForegroundColor(Color.DarkGray);
 
                 elements.Add(
                     Element("text")
                         .WithProp("x", layout.AbsoluteX + innerWidth + 2)
                         .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", Style.Default.WithForegroundColor(Color.DarkGray))
+                        .WithProp("style", scrollStyle)
                         .WithChild(new TextNode(scrollChar))
                         .Build()
                 );

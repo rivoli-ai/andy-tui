@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using Andy.TUI.VirtualDom;
 using Andy.TUI.Layout;
 
@@ -30,7 +31,11 @@ public class ZStack : ISimpleComponent, IEnumerable<ISimpleComponent>
         _alignment = alignment;
     }
 
-    // Collection initializer support
+    /// <summary>
+    /// DO NOT CALL DIRECTLY. Use collection initializer syntax: new ZStack { component1, component2 }
+    /// This method is only for collection initializer support.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public void Add(ISimpleComponent component)
     {
         if (component != null)
@@ -39,6 +44,11 @@ public class ZStack : ISimpleComponent, IEnumerable<ISimpleComponent>
         }
     }
 
+    /// <summary>
+    /// DO NOT CALL DIRECTLY. Use collection initializer syntax: new ZStack { "text1", "text2" }
+    /// This method is only for collection initializer support.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public void Add(string text)
     {
         if (!string.IsNullOrEmpty(text))

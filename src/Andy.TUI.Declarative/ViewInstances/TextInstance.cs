@@ -121,8 +121,19 @@ public class TextInstance : ViewInstance
 
         if (_wrappedLines.Count == 0)
         {
-            _logger.Debug("No wrapped lines, returning empty fragment");
-            return Fragment();
+            // Fallback: if layout was not previously calculated, render raw content once
+            // to avoid empty output during instance-only rendering scenarios
+            var content = _content ?? string.Empty;
+            _logger.Debug("No wrapped lines, rendering raw content: '{0}'", content);
+            return Fragment(
+                Element("text")
+                    .WithProp("style", _style)
+                    .WithProp("x", layout.AbsoluteX)
+                    .WithProp("y", layout.AbsoluteY)
+                    .WithProp("z-index", AbsoluteZIndex)
+                    .WithChild(new TextNode(content))
+                    .Build()
+            );
         }
 
         var elements = new List<VirtualNode>();
@@ -132,6 +143,7 @@ public class TextInstance : ViewInstance
             var line = _wrappedLines[i];
             if (line.Length > layout.Width)
             {
+                // Use truncation helper to preserve consistency with existing behavior
                 line = ApplyTruncation(line, (int)layout.Width);
             }
 

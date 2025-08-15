@@ -7,6 +7,7 @@ using Andy.TUI.Declarative.Components;
 using Andy.TUI.Layout;
 using Andy.TUI.Declarative.State;
 using Andy.TUI.Terminal;
+using Andy.TUI.Theming;
 using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative;
@@ -42,6 +43,10 @@ public class TextAreaInstance : ViewInstance, IFocusable
     {
         _isFocused = true;
         UpdateLinesFromText();
+        // Ensure cursor is within bounds and visible at start of focus to prevent empty-looking frames
+        if (_cursorRow >= _lines.Count) _cursorRow = Math.Max(0, _lines.Count - 1);
+        _cursorCol = Math.Min(_cursorCol, _lines[_cursorRow].Length);
+        UpdateScroll();
         InvalidateView();
     }
 
@@ -388,8 +393,10 @@ public class TextAreaInstance : ViewInstance, IFocusable
         var layout = new LayoutBox();
 
         // TextArea has fixed dimensions based on rows/cols
-        layout.Width = constraints.ConstrainWidth(_cols + 2); // +2 for borders
-        layout.Height = constraints.ConstrainHeight(_rows + 2); // +2 for borders
+        var cols = Math.Max(1, _cols);
+        var rows = Math.Max(1, _rows);
+        layout.Width = constraints.ConstrainWidth(cols + 2); // +2 for borders
+        layout.Height = constraints.ConstrainHeight(rows + 2); // +2 for borders
 
         return layout;
     }
@@ -399,16 +406,20 @@ public class TextAreaInstance : ViewInstance, IFocusable
         _logger.Debug("TextArea rendering with {0} lines, cursor at ({1},{2})", _lines.Count, _cursorRow, _cursorCol);
         var elements = new List<VirtualNode>();
 
-        // Draw border
+        // Draw border - always draw full rectangle corners/sides first
+        var theme = ThemeManager.Instance.CurrentTheme;
         var borderStyle = _isFocused
-            ? Style.Default.WithForegroundColor(Color.White)
-            : Style.Default.WithForegroundColor(Color.DarkGray);
+            ? Style.Default.WithForegroundColor(new Color(theme.FocusedBorder.Color.R, theme.FocusedBorder.Color.G, theme.FocusedBorder.Color.B))
+            : Style.Default.WithForegroundColor(new Color(theme.DefaultBorder.Color.R, theme.DefaultBorder.Color.G, theme.DefaultBorder.Color.B));
+
+        // Avoid explicit interior clear to reduce flicker; each content line fully repaints its background
 
         // Top border
         elements.Add(
             Element("text")
                 .WithProp("x", layout.AbsoluteX)
                 .WithProp("y", layout.AbsoluteY)
+                .WithProp("z-index", 10)
                 .WithProp("style", borderStyle)
                 .WithChild(new TextNode("┌" + new string('─', _cols) + "┐"))
                 .Build()
@@ -426,6 +437,20 @@ public class TextAreaInstance : ViewInstance, IFocusable
                 if (i == 0)
                 {
                     lineContent = _placeholder;
+
+                    // When focused and empty, still show caret at current column
+                    if (_isFocused)
+                    {
+                        var col = Math.Max(0, Math.Min(_cursorCol, lineContent.Length));
+                        if (col < lineContent.Length)
+                        {
+                            lineContent = lineContent.Insert(col, "│");
+                        }
+                        else
+                        {
+                            lineContent += "│";
+                        }
+                    }
                 }
             }
             else if (lineIndex < _lines.Count)
@@ -458,9 +483,12 @@ public class TextAreaInstance : ViewInstance, IFocusable
             }
 
             // Line style
+            var baseFg = new Color(theme.Default.Foreground.R, theme.Default.Foreground.G, theme.Default.Foreground.B);
+            var baseBg = new Color(theme.Default.Background.R, theme.Default.Background.G, theme.Default.Background.B);
+            var placeholderFg = new Color(theme.Disabled.Foreground.R, theme.Disabled.Foreground.G, theme.Disabled.Foreground.B);
             var lineStyle = (_lines.Count == 0 || (_lines.Count == 1 && string.IsNullOrEmpty(_lines[0]))) && i == 0
-                ? Style.Default.WithForegroundColor(Color.DarkGray) // Placeholder style
-                : Style.Default;
+                ? Style.Default.WithForegroundColor(placeholderFg).WithBackgroundColor(baseBg)
+                : Style.Default.WithForegroundColor(baseFg).WithBackgroundColor(baseBg);
 
             // Left border + content + right border
             elements.Add(
@@ -468,18 +496,21 @@ public class TextAreaInstance : ViewInstance, IFocusable
                     Element("text")
                         .WithProp("x", layout.AbsoluteX)
                         .WithProp("y", layout.AbsoluteY + i + 1)
+                        .WithProp("z-index", 10)
                         .WithProp("style", borderStyle)
                         .WithChild(new TextNode("│"))
                         .Build(),
                     Element("text")
                         .WithProp("x", layout.AbsoluteX + 1)
                         .WithProp("y", layout.AbsoluteY + i + 1)
+                        .WithProp("z-index", 5)
                         .WithProp("style", lineStyle)
                         .WithChild(new TextNode(lineContent))
                         .Build(),
                     Element("text")
                         .WithProp("x", layout.AbsoluteX + _cols + 1)
                         .WithProp("y", layout.AbsoluteY + i + 1)
+                        .WithProp("z-index", 10)
                         .WithProp("style", borderStyle)
                         .WithChild(new TextNode("│"))
                         .Build()
@@ -492,6 +523,7 @@ public class TextAreaInstance : ViewInstance, IFocusable
             Element("text")
                 .WithProp("x", layout.AbsoluteX)
                 .WithProp("y", layout.AbsoluteY + _rows + 1)
+                .WithProp("z-index", 10)
                 .WithProp("style", borderStyle)
                 .WithChild(new TextNode("└" + new string('─', _cols) + "┘"))
                 .Build()
@@ -512,7 +544,7 @@ public class TextAreaInstance : ViewInstance, IFocusable
                     Element("text")
                         .WithProp("x", layout.AbsoluteX + _cols + 2)
                         .WithProp("y", layout.AbsoluteY + i + 1)
-                        .WithProp("style", Style.Default.WithForegroundColor(Color.DarkGray))
+                        .WithProp("style", Style.Default.WithForegroundColor(new Color(theme.Disabled.Foreground.R, theme.Disabled.Foreground.G, theme.Disabled.Foreground.B)))
                         .WithChild(new TextNode(scrollChar))
                         .Build()
                 );

@@ -121,4 +121,34 @@ public class LayoutBox
                $"AbsX:{AbsoluteX}, AbsY:{AbsoluteY}, " +
                $"Padding:{Padding}, Margin:{Margin})";
     }
+
+        /// <summary>
+        /// Validates containment of a child layout within this layout's content area.
+        /// </summary>
+        public void AssertContainsChild(LayoutBox child)
+        {
+            // Skip check if either layout has invalid dimensions (NaN or <= 0)
+            if (double.IsNaN(Width) || double.IsNaN(Height) || 
+                double.IsNaN(child.Width) || double.IsNaN(child.Height) ||
+                Width <= 0 || Height <= 0 || child.Width <= 0 || child.Height <= 0)
+            {
+                return;
+            }
+            
+            int contentX = ContentX;
+            int contentY = ContentY;
+            // Use conservative extents to prevent false containment failures when children have
+            // fractional sizes due to flex distribution. Treat child's sub-cell size as not
+            // extending into the next whole cell (floor), while keeping parent extent inclusive (ceil).
+            int contentRight = contentX + (int)Math.Ceiling(Width);
+            int contentBottom = contentY + (int)Math.Ceiling(Height);
+            int childRight = child.AbsoluteX + Math.Max(0, (int)Math.Floor(child.Width));
+            int childBottom = child.AbsoluteY + Math.Max(0, (int)Math.Floor(child.Height));
+
+            if (child.AbsoluteX < contentX || child.AbsoluteY < contentY ||
+                childRight > contentRight || childBottom > contentBottom)
+            {
+                throw new InvalidOperationException($"Child layout not contained in parent content: parent={this}, child={child}");
+            }
+        }
 }

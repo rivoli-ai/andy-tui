@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Andy.TUI.VirtualDom;
 
@@ -70,8 +71,10 @@ public class TabView : ISimpleComponent
     }
 
     /// <summary>
-    /// Adds a tab to the TabView.
+    /// DO NOT CALL DIRECTLY. Use collection initializer syntax or constructor parameters.
+    /// This method is only for collection initializer support.
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public void Add(Tab tab)
     {
         if (tab == null)
@@ -81,8 +84,10 @@ public class TabView : ISimpleComponent
     }
 
     /// <summary>
-    /// Adds a tab with text header and content.
+    /// DO NOT CALL DIRECTLY. Use collection initializer syntax or constructor parameters.
+    /// This method is only for collection initializer support.
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public void Add(string headerText, ISimpleComponent content)
     {
         Add(new Tab(headerText, content));

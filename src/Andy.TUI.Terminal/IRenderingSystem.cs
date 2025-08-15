@@ -29,4 +29,8 @@ public interface IRenderingSystem
     /// Fills a rectangle with the specified character and style.
     /// </summary>
     void FillRect(int x, int y, int width, int height, char character, Style style);
+
+    // Clipping API used by display list rasterization
+    void SetClipRegion(int x, int y, int width, int height);
+    void ResetClipRegion();
 }

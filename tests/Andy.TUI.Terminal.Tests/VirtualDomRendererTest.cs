@@ -304,5 +304,15 @@ public class VirtualDomRendererTest
                 }
             }
         }
+
+        public void SetClipRegion(int x, int y, int width, int height)
+        {
+            // No-op for unit tests
+        }
+
+        public void ResetClipRegion()
+        {
+            // No-op for unit tests
+        }
     }
 }

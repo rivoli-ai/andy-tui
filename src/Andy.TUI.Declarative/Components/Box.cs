@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using Andy.TUI.VirtualDom;
 using Andy.TUI.Layout;
 
@@ -43,6 +44,7 @@ public class Box : ISimpleComponent, IEnumerable<ISimpleComponent>
     // Display properties
     public bool Display { get; set; } = true;
     public Overflow Overflow { get; set; } = Overflow.Visible;
+    public Andy.TUI.Terminal.Color BackgroundColor { get; set; } = default;
 
     /// <summary>
     /// Creates a new Box component.
@@ -52,6 +54,11 @@ public class Box : ISimpleComponent, IEnumerable<ISimpleComponent>
     }
 
     // Collection initializer support
+    /// <summary>
+    /// DO NOT CALL DIRECTLY. Use collection initializer syntax: new Box { component1, component2 }
+    /// This method is only for collection initializer support.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public void Add(ISimpleComponent component)
     {
         if (component != null)
@@ -60,6 +67,11 @@ public class Box : ISimpleComponent, IEnumerable<ISimpleComponent>
         }
     }
 
+    /// <summary>
+    /// DO NOT CALL DIRECTLY. Use collection initializer syntax: new Box { "text1", "text2" }
+    /// This method is only for collection initializer support.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public void Add(string text)
     {
         if (!string.IsNullOrEmpty(text))
@@ -95,6 +107,7 @@ public class Box : ISimpleComponent, IEnumerable<ISimpleComponent>
     public Box Hide() { Display = false; return this; }
     public Box Show() { Display = true; return this; }
     public Box WithOverflow(Overflow overflow) { Overflow = overflow; return this; }
+    public Box Background(Andy.TUI.Terminal.Color color) { BackgroundColor = color; return this; }
 
     // ISimpleComponent implementation
     public VirtualNode Render()

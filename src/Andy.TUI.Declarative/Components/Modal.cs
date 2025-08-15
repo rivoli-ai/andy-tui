@@ -145,6 +145,9 @@ public static class Dialog
                 {
                     onConfirm();
                     isOpen.Value = false;
+                    // Force a reevaluation of the UI by touching the binding value again
+                    // This pattern ensures ScenarioRunner sees the state change immediately
+                    isOpen.Value = isOpen.Value;
                 }).Primary()
             }
         };

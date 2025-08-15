@@ -14,6 +14,7 @@ public class RenderScheduler : IDisposable
     private readonly object _renderLock = new();
     private readonly Queue<Action> _renderQueue = new();
     private readonly ManualResetEventSlim _renderEvent = new(false);
+    private readonly ManualResetEventSlim _frameRendered = new(false);
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private readonly ILogger _logger;
 
@@ -124,6 +125,17 @@ public class RenderScheduler : IDisposable
     {
         _forceRender = true;
         _renderEvent.Set();
+    }
+
+    /// <summary>
+    /// Forces a render and blocks until the frame is flushed.
+    /// </summary>
+    public void ForceRenderSync(int timeoutMs = 100)
+    {
+        _frameRendered.Reset();
+        _forceRender = true;
+        _renderEvent.Set();
+        _frameRendered.Wait(timeoutMs);
     }
 
     /// <summary>
@@ -244,7 +256,17 @@ public class RenderScheduler : IDisposable
             }
             catch (Exception ex)
             {
-                // Log error but continue rendering
+                // If the error is an invariant violation, crash the process to surface the bug immediately
+                var typeName = ex.GetType().Name;
+                if (typeName.Contains("InvariantViolationException", StringComparison.Ordinal))
+                {
+                    try { _logger.Error(ex, "Invariant violation detected in render loop. Failing fast."); }
+                    catch { /* ignore logging failures */ }
+                    // Crash the process to avoid running in a corrupted state
+                    Environment.FailFast($"Invariant violation: {ex.Message}", ex);
+                }
+
+                // Otherwise, log error but continue rendering
                 _logger.Error(ex, "Render loop error");
             }
         }
@@ -304,6 +326,9 @@ public class RenderScheduler : IDisposable
 
         // Raise after render event
         AfterRender?.Invoke(this, frameArgs);
+
+        // Signal synchronous waiters that a frame has been rendered
+        _frameRendered.Set();
     }
 
     /// <summary>

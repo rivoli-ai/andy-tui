@@ -27,6 +27,8 @@ public class DiffEngineMovementTests
         public void WriteText(int x, int y, string text, Style style) => _writes.Add((x, y, text, style));
         public void FillRect(int x, int y, int width, int height, char fill, Style style) => _fills.Add((x, y, width, height, fill, style));
         public void DrawBox(int x, int y, int width, int height, Style style, BoxStyle boxStyle) { }
+        public void SetClipRegion(int x, int y, int width, int height) { }
+        public void ResetClipRegion() { }
         public void Initialize() { }
         public void SetCursorPosition(int x, int y) { }
         public void ShowCursor() { }

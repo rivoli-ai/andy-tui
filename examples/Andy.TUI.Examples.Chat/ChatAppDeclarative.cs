@@ -3,17 +3,19 @@ using Andy.TUI.Declarative.Components;
 using Andy.TUI.Declarative.Layout;
 using Andy.TUI.Declarative.Rendering;
 using Andy.TUI.Declarative.Extensions;
+using Andy.TUI.Declarative.State;
 using Andy.TUI.Terminal;
 
 namespace Andy.TUI.Examples.Chat;
 
 public class ChatAppDeclarative
 {
-    // State
-    private readonly List<ChatMessage> _messages = new();
-    private string _input = string.Empty;
-    private string _status = "Ready";
+    // State - Using observable types for automatic UI updates
+    private readonly ObservableList<ChatMessage> _messages = new();
+    private readonly ObservableProperty<string> _input = new("");
+    private readonly ObservableProperty<string> _status = new("Ready");
     private int _scroll = 0;
+    private DeclarativeRenderer? _renderer;
 
     private CerebrasHttpChatClient? _client;
 
@@ -21,19 +23,72 @@ public class ChatAppDeclarative
     {
         var terminal = new AnsiTerminal();
         using var renderingSystem = new RenderingSystem(terminal);
-        var renderer = new DeclarativeRenderer(renderingSystem);
-        renderingSystem.Initialize();
 
         var cfg = ChatConfiguration.Load();
         if (string.IsNullOrWhiteSpace(cfg.ApiKey))
         {
-            _status = "Missing CEREBRAS_API_KEY environment variable";
+            _status.Value = "Missing CEREBRAS_API_KEY environment variable";
         }
         else
         {
             _client = new CerebrasHttpChatClient(cfg);
         }
-        renderer.Run(BuildUI);
+
+        // Attach key handler for Enter/Alt+Enter behavior while TextArea focused
+        var inputHandler = new ConsoleInputHandler();
+        inputHandler.KeyPressed += OnKey;
+
+        // Create a single renderer instance wired to the input handler
+        _renderer = new DeclarativeRenderer(renderingSystem, inputHandler);
+
+        // Initialize rendering after renderer is created
+        renderingSystem.Initialize();
+
+        // Subscribe to observable changes to trigger UI updates on the active renderer
+        _messages.CollectionChanged += (_, __) => _renderer?.RequestRender();
+        _input.PropertyChanged += (_, __) => _renderer?.RequestRender();
+        _status.PropertyChanged += (_, __) => _renderer?.RequestRender();
+
+        _renderer.Run(BuildUI);
+    }
+
+    private void OnKey(object? sender, KeyEventArgs e)
+    {
+        // Enter to send; Alt+Enter to insert newline
+        if (e.Key == ConsoleKey.Enter)
+        {
+            if (e.Modifiers.HasFlag(System.ConsoleModifiers.Alt))
+            {
+                _input.Value += "\n";
+            }
+            else
+            {
+                // Only send if the TextArea is focused to avoid double-handling
+                var focused = _renderer?.Context?.FocusManager.FocusedComponent;
+                if (focused is TextAreaInstance)
+                {
+                    // Fire-and-forget send and prevent TextArea from also inserting a newline
+                    _ = SendAsync();
+                }
+            }
+        }
+
+        // Alt+Up/Alt+Down to scroll conversation
+        if (e.Modifiers.HasFlag(System.ConsoleModifiers.Alt))
+        {
+            if (e.Key == ConsoleKey.UpArrow)
+            {
+                // Increase scroll up to max lines - viewport
+                var maxScroll = Math.Max(0, RenderLines(100 - 4).Count - 16);
+                _scroll = Math.Min(_scroll + 1, maxScroll);
+                _renderer?.RequestRender();
+            }
+            else if (e.Key == ConsoleKey.DownArrow)
+            {
+                _scroll = Math.Max(0, _scroll - 1);
+                _renderer?.RequestRender();
+            }
+        }
     }
 
     private ISimpleComponent BuildUI()
@@ -44,39 +99,63 @@ public class ChatAppDeclarative
         return new VStack(spacing: 1)
         {
             new Text($"Andy.TUI Chat — Model: {(_client?.Model ?? "<not configured>")}").Title().Color(Color.Cyan),
-            new Text(_status).Color(Color.Gray),
+            new Text(_status.Value).Color(Color.Gray),
 
+            // Conversation area: render lines directly without extra nested clears
             new Box
             {
                 BuildConversation(conversationLines, width - 2, height: 16)
             }.WithWidth(width).WithHeight(16).WithPadding(new Andy.TUI.Layout.Spacing(1,1,1,1)),
 
-            new HStack(spacing: 1)
+            new VStack(spacing: 1)
             {
                 new Text("> ").Bold().Color(Color.Green),
-                new TextField("Type a message…", this.Bind(() => _input))
-            },
-
-            new HStack(spacing: 2)
-            {
-                new Button("Send", async () => await SendAsync()).Primary(),
-                new Button("New Chat", () => { _messages.Clear(); _input = string.Empty; _status = "New conversation"; }).Secondary()
+                // Larger TextArea for composing; Enter to send, Alt+Enter for newline
+                new TextArea("Type a message…", new Binding<string>(
+                    () => _input.Value,
+                    v => _input.Value = v,
+                    "Input"), rows: 4, cols: width - 4),
+                new HStack(spacing: 2)
+                {
+                    // Remove Send button; keep New Chat to clear
+                    new Button("New Chat", () => { _messages.Clear(); _input.Value = ""; _status.Value = "New conversation"; }).Secondary()
+                }
             }
         };
     }
 
     private VStack BuildConversation(List<(string Text, bool IsUser)> lines, int width, int height)
     {
+        // Make scrollable and ellipsize consistently
         var v = new VStack(spacing: 0);
         var start = Math.Max(0, lines.Count - height - _scroll);
         var end = Math.Min(lines.Count, start + height);
         for (int i = start; i < end; i++)
         {
             var (text, isUser) = lines[i];
-            var padded = text.Length > width ? text.Substring(0, width) : text.PadRight(width);
-            v.Add(new Text(padded).Color(isUser ? Color.Cyan : Color.White));
+            var content = text.Length > width ? text.Substring(0, width) : text.PadRight(width);
+            if (content.StartsWith("You: "))
+            {
+                v.Add(new HStack(spacing: 1)
+                {
+                    new Text("You:").Bold().Color(Color.Cyan),
+                    new Text(content.Substring(5)).Color(Color.White)
+                });
+            }
+            else if (content.StartsWith("Assistant: ") || content.StartsWith("Model: "))
+            {
+                var body = content.StartsWith("Assistant: ") ? content.Substring(11) : content.Substring(7);
+                v.Add(new HStack(spacing: 1)
+                {
+                    new Text("Model:").Bold().Color(Color.Yellow),
+                    new Text(body).Color(Color.White)
+                });
+            }
+            else
+            {
+                v.Add(new Text(content).Color(isUser ? Color.Cyan : Color.White));
+            }
         }
-        // Pad to fixed height
         int current = CountChildren(v);
         for (int i = current; i < height; i++) v.Add(" ");
         return v;
@@ -124,27 +203,28 @@ public class ChatAppDeclarative
 
     private async Task SendAsync()
     {
-        var content = (_input ?? string.Empty).Trim();
+        var content = _input.Value.Trim();
         if (content.Length == 0) return;
         if (_client == null)
         {
-            _status = "Set CEREBRAS_API_KEY and restart";
+            _status.Value = "Set CEREBRAS_API_KEY and restart";
             return;
         }
         _messages.Add(new ChatMessage("user", content));
-        _input = string.Empty;
-        _status = "Sending…";
+        // Clear editor and reset caret to top-left
+        _input.Value = string.Empty;
+        _status.Value = "Sending…";
 
         try
         {
-            var reply = await _client.CreateCompletionAsync(_messages);
+            var reply = await _client.CreateCompletionAsync(_messages.ToList());
             _messages.Add(new ChatMessage("assistant", reply));
-            _status = "Ready";
+            _status.Value = "Ready";
         }
         catch (Exception ex)
         {
             _messages.Add(new ChatMessage("assistant", $"[error] {ex.Message}"));
-            _status = "Error";
+            _status.Value = "Error";
         }
     }
 }

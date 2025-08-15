@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Andy.TUI.VirtualDom;
 using Andy.TUI.Diagnostics;
@@ -6,6 +7,8 @@ using Andy.TUI.Terminal;
 using Andy.TUI.Terminal.Rendering;
 using Andy.TUI.Declarative.Components;
 using Andy.TUI.Layout;
+using System.ComponentModel;
+using System.Reflection;
 
 namespace Andy.TUI.Declarative.Rendering;
 
@@ -35,12 +38,63 @@ public class DeclarativeRenderer
 
         _logger.Info($"DeclarativeRenderer initialized (autoFocus={autoFocus})");
 
+        // Auto-subscribe to owner (and its immediate state fields) change notifications to trigger re-renders
+        if (owner != null)
+        {
+            TrySubscribeOwnerChangeNotifications(owner);
+        }
+
         // Re-render on terminal resize when possible
         if (_renderingSystem is RenderingSystem rs)
         {
             rs.Terminal.SizeChanged += (_, __) => { _needsRender = true; };
         }
     }
+
+    private void TrySubscribeOwnerChangeNotifications(object owner)
+    {
+        void SubscribeObject(object target)
+        {
+            if (target == null) return;
+
+            // Subscribe INotifyPropertyChanged
+            if (target is INotifyPropertyChanged inpc)
+            {
+                inpc.PropertyChanged += (_, __) => { _needsRender = true; };
+            }
+
+            // Subscribe to an Action OnPropertyChanged event if present
+            var evt = target.GetType().GetEvent("OnPropertyChanged", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (evt != null && evt.EventHandlerType == typeof(Action))
+            {
+                var handler = (Action)(() => { _needsRender = true; });
+                evt.AddEventHandler(target, handler);
+            }
+        }
+
+        // Subscribe owner itself
+        SubscribeObject(owner);
+
+        // Subscribe immediate fields of owner (e.g., private state container)
+        var fields = owner.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        foreach (var field in fields)
+        {
+            try
+            {
+                var value = field.GetValue(owner);
+                SubscribeObject(value!);
+            }
+            catch
+            {
+                // Ignore reflection failures
+            }
+        }
+    }
+
+    /// <summary>
+    /// Exposes the underlying declarative context for advanced scenarios.
+    /// </summary>
+    public DeclarativeContext Context => _context;
 
     public DeclarativeRenderer(IRenderingSystem renderingSystem, IInputHandler inputHandler, object? owner = null, bool autoFocus = true)
         : this(renderingSystem, owner, autoFocus)
@@ -111,10 +165,37 @@ public class DeclarativeRenderer
         // Calculate layout with terminal constraints
         var terminalWidth = _renderingSystem.Width;
         var terminalHeight = _renderingSystem.Height;
-        var constraints = LayoutConstraints.Loose(terminalWidth, terminalHeight);
+        // Prevent negative or degenerate constraints (can happen during terminal resize)
+        var safeWidth = Math.Max(0, terminalWidth);
+        var safeHeight = Math.Max(0, terminalHeight);
+        var constraints = LayoutConstraints.Loose(safeWidth, safeHeight);
         _logger.Debug("Layout constraints: {0}x{1}", terminalWidth, terminalHeight);
 
         rootInstance.CalculateLayout(constraints);
+        // Clamp invalid results (NaN, Infinity, negatives) defensively
+        if (float.IsNaN(rootInstance.Layout.Width) || float.IsNegativeInfinity(rootInstance.Layout.Width) || rootInstance.Layout.Width < 0)
+        {
+            _logger.Warning("Root layout produced invalid width (W={0}). Clamping to 0.", rootInstance.Layout.Width);
+            rootInstance.Layout.Width = 0;
+        }
+        else if (float.IsPositiveInfinity(rootInstance.Layout.Width))
+        {
+            rootInstance.Layout.Width = safeWidth;
+        }
+
+        if (float.IsNaN(rootInstance.Layout.Height) || float.IsNegativeInfinity(rootInstance.Layout.Height) || rootInstance.Layout.Height < 0)
+        {
+            _logger.Warning("Root layout produced invalid height (H={0}). Clamping to 0.", rootInstance.Layout.Height);
+            rootInstance.Layout.Height = 0;
+        }
+        else if (float.IsPositiveInfinity(rootInstance.Layout.Height))
+        {
+            rootInstance.Layout.Height = safeHeight;
+        }
+        // Layout invariants: sizes non-negative after clamping
+        Guard(rootInstance.Layout.Width >= 0 && rootInstance.Layout.Height >= 0, "Root layout produced negative size");
+        // Layout invariants: content size non-negative; absolute position set next
+        Guard(rootInstance.Layout.ContentWidth >= 0 && rootInstance.Layout.ContentHeight >= 0, "Root content size negative");
         _logger.Debug("Layout calculated");
 
         // Set the root's absolute position BEFORE rendering
@@ -130,8 +211,34 @@ public class DeclarativeRenderer
         _context.ViewInstanceManager.RegisterFocusableComponents(rootInstance);
         _logger.Debug("Registered focusable components in document order");
 
+        // Set initial focus if needed and auto-focus is enabled
+        if (!_hasSetInitialFocus && _autoFocus && _context.FocusManager.FocusableCount > 0 && _context.FocusManager.FocusedComponent == null)
+        {
+            _logger.Debug("Setting initial focus during first render");
+            _context.FocusManager.MoveFocus(Focus.FocusDirection.Next);
+            _hasSetInitialFocus = true;
+            _logger.Debug("Initial focus set to: {0}",
+                _context.FocusManager.FocusedComponent?.GetType().Name ?? "null");
+        }
+
+        // Focus invariants: exactly one focused component when focusables exist
+        var focusables = _context.FocusManager.FocusableCount;
+        var hasFocus = _context.FocusManager.FocusedComponent != null;
+        if (focusables > 0)
+        {
+            Guard(hasFocus, "No focused component while focusables exist");
+        }
+
+        // First, fill the entire terminal with a background color to prevent gaps
+        // This happens before any virtual DOM rendering
+        _renderingSystem.FillRect(0, 0, terminalWidth, terminalHeight, ' ', 
+            Style.Default.WithBackgroundColor(Color.Black));
+        
         // Render the virtual DOM from instances
         var newTree = rootInstance.Render();
+        
+        // VDOM invariants: ready to render
+        VirtualDomInvariants.AssertTreeIsRenderable(newTree);
         _logger.Debug("Virtual DOM rendered - tree depth: {0}, node count: {1}",
             CalculateTreeDepth(newTree), CountNodes(newTree));
 
@@ -165,6 +272,9 @@ public class DeclarativeRenderer
             else
             {
                 _virtualDomRenderer.ApplyPatches(patches);
+                // Diff invariants: applying only Update* patches should not change structure; verify by re-diffing structure
+                var structurePatches = patches.Where(p => p.Type != PatchType.UpdateProps && p.Type != PatchType.UpdateText).ToList();
+                Guard(structurePatches.Count == 0, $"Unexpected structural patches during incremental update: {string.Join(",", structurePatches.Select(p => p.Type))}");
             }
         }
 
@@ -178,8 +288,8 @@ public class DeclarativeRenderer
             // Debug logging (uncomment to debug buffer state)
             // Console.Error.WriteLine($"[DeclarativeRenderer] Buffer dirty before flush: {rs.Buffer.IsDirty}");
 
-            // Now force a render to flush the buffer to screen
-            rs.Render();
+            // Now force a render to flush the buffer to screen, synchronously to reduce flicker
+            rs.Scheduler.ForceRenderSync();
             _logger.Debug("Forced render flush");
             // Console.Error.WriteLine("[DeclarativeRenderer] Called rs.Render() to flush");
 
@@ -195,22 +305,15 @@ public class DeclarativeRenderer
 
         _previousTree = newTree;
         _logger.Debug("Render complete");
-
-        // Set initial focus if not already done and auto-focus is enabled
-        if (!_hasSetInitialFocus && _autoFocus)
-        {
-            _logger.Debug("Setting initial focus");
-            _context.FocusManager.MoveFocus(Focus.FocusDirection.Next);
-            _hasSetInitialFocus = true;
-            _logger.Debug("Initial focus set to: {0}",
-                _context.FocusManager.FocusedComponent?.GetType().Name ?? "null");
-            // Request another render so focus styles are visible immediately
-            _needsRender = true;
-        }
     }
 
-    private void OnKeyPressed(object? sender, KeyEventArgs e)
-    {
+        private static void Guard(bool condition, string message)
+        {
+            if (!condition) throw new LayoutInvariantViolationException(message);
+        }
+
+        private void OnKeyPressed(object? sender, KeyEventArgs e)
+        {
         _logger.Debug("Key pressed: {0} (Modifiers: {1})", e.Key, e.Modifiers);
         // Debug logging (uncomment to debug key handling)
         // Console.Error.WriteLine($"[DeclarativeRenderer] Key pressed: {e.Key} Char: '{e.KeyChar}'");
@@ -231,7 +334,9 @@ public class DeclarativeRenderer
 
         _context.EventRouter.RouteKeyPress(keyInfo);
         // Console.Error.WriteLine($"[DeclarativeRenderer] After routing key, needsRender: {_needsRender}");
-    }
+
+        // Do not force an extra render here; components request renders as needed
+        }
 
     private int CalculateTreeDepth(VirtualNode node, int currentDepth = 0)
     {
@@ -254,4 +359,9 @@ public class DeclarativeRenderer
         return 1 + node.Children.Sum(CountNodes);
     }
 
+}
+
+public sealed class LayoutInvariantViolationException : Exception
+{
+    public LayoutInvariantViolationException(string message) : base(message) { }
 }

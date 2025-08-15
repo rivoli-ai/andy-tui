@@ -705,11 +705,33 @@ public class GridInstance : ViewInstance
 
         var elements = new List<VirtualNode>();
 
+        // Clear grid area before rendering to avoid stale text
+        elements.Add(
+            Element("rect")
+                .WithProp("x", layout.AbsoluteX)
+                .WithProp("y", layout.AbsoluteY)
+                .WithProp("width", (int)Math.Max(0, layout.Width))
+                .WithProp("height", (int)Math.Max(0, layout.Height))
+                .WithProp("z-index", -100)
+                .WithProp("fill", Andy.TUI.Terminal.Color.Black)
+                .Build()
+        );
+
         foreach (var (instance, _) in _childInstances)
         {
             // Update absolute position
             instance.Layout.AbsoluteX = layout.AbsoluteX + (int)Math.Round(instance.Layout.X);
             instance.Layout.AbsoluteY = layout.AbsoluteY + (int)Math.Round(instance.Layout.Y);
+
+            // Layout invariant: child contained in parent content area
+            try
+            {
+                layout.AssertContainsChild(instance.Layout);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Grid child containment failed for child {instance.GetType().Name}", ex);
+            }
 
             // Render child
             var childNode = instance.Render();

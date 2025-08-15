@@ -1,5 +1,6 @@
 using Andy.TUI.VirtualDom;
 using System.Collections;
+using System.ComponentModel;
 using static Andy.TUI.VirtualDom.VirtualDomBuilder;
 
 namespace Andy.TUI.Declarative.Layout;
@@ -18,7 +19,10 @@ public class VStack : ISimpleComponent, IEnumerable<ISimpleComponent>
         _spacing = spacing;
     }
 
-    // Collection initializer support - enables { } syntax
+    /// <summary>
+    /// DO NOT CALL DIRECTLY. Use collection initializer syntax: new VStack { component1, component2 }
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public void Add(ISimpleComponent component)
     {
         if (component != null)
@@ -27,7 +31,10 @@ public class VStack : ISimpleComponent, IEnumerable<ISimpleComponent>
         }
     }
 
-    // Support for Text shorthand
+    /// <summary>
+    /// DO NOT CALL DIRECTLY. Use collection initializer syntax: new VStack { "text1", "text2" }
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public void Add(string text)
     {
         if (!string.IsNullOrEmpty(text))
