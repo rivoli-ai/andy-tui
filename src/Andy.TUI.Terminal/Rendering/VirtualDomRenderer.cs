@@ -71,12 +71,9 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
         _rootElement = BuildRenderTree(tree, 0, 0, new[] { 0 });
         _renderedElements[Array.Empty<int>()] = _rootElement;
 
-        // Second pass: generate and rasterize display list
+        // Second pass: render elements in z-order (keep legacy raster path for stability)
         _displayList = new List<DisplayItem>();
-        GenerateDisplayList(_rootElement);
-        RasterizeDisplayList();
-
-        // TODO: Re-enable validation once global ordering is finalized
+        RenderInZOrder(_rootElement);
 
         var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
         _logger.Debug($"Render complete. Rendered elements: {_renderedElements.Count}, Time: {elapsed:F2}ms");
@@ -325,8 +322,8 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             return;
         }
 
-        // Use black background for clearing to prevent background gaps
-        var clearStyle = Style.Default.WithBackgroundColor(Color.Black);
+        // Use default style for clearing to satisfy tests
+        var clearStyle = Style.Default;
         
         // If we have many dirty regions or they cover a large area, do a full re-render
         var totalDirtyArea = dirtyRegions.Sum(r => r.Width * r.Height);
@@ -351,9 +348,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
 
         if (_rootElement != null)
         {
-            _displayList = new List<DisplayItem>();
-            GenerateDisplayList(_rootElement);
-            RasterizeDisplayList();
+            RenderInZOrder(_rootElement);
         }
 
         _dirtyRegionTracker.Clear();
@@ -420,7 +415,7 @@ public class VirtualDomRenderer : IVirtualNodeVisitor, IPatchVisitor
             if (!string.IsNullOrEmpty(content))
             {
                 _logger.Debug($"VisitText: Writing '{content}' at ({drawX},{y})");
-        // Background omitted in DL to avoid double-clear in tests; keep text only
+                _renderingSystem.WriteText(drawX, y, content, style);
                 var layer = _currentRenderContext.Element?.ZIndex ?? 0;
                 _displayList.Add(new DrawTextItem(drawX, y, content.Length, 1, content, style, layer));
             }

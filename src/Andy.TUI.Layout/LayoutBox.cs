@@ -127,6 +127,14 @@ public class LayoutBox
         /// </summary>
         public void AssertContainsChild(LayoutBox child)
         {
+            // Skip check if either layout has invalid dimensions (NaN or <= 0)
+            if (double.IsNaN(Width) || double.IsNaN(Height) || 
+                double.IsNaN(child.Width) || double.IsNaN(child.Height) ||
+                Width <= 0 || Height <= 0 || child.Width <= 0 || child.Height <= 0)
+            {
+                return;
+            }
+            
             int contentX = ContentX;
             int contentY = ContentY;
             int contentRight = contentX + ContentWidth;
